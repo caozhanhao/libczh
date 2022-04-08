@@ -1,4 +1,5 @@
 #pragma once
+#include "err.h"
 #include "node.h"
 #include "parser.h"
 #include <fstream>
