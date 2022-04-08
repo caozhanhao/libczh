@@ -20,7 +20,6 @@ namespace czh
 	}
 	class Czh
 	{
-		friend std::ostream& operator<<(std::ostream& os, Czh& czh);
 	private:
 		Lexer lexer;
 		Parser parser;
