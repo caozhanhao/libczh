@@ -30,6 +30,7 @@ void test()
 }
 int main()
 {
+//  test();
   try
   {
     test();

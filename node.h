@@ -51,9 +51,9 @@ namespace czh
 				for (auto& r : val)
 				{
 					if (r.second.type() != value_type)
-						throw Err(CZH_ERROR_LOCATION, __func__, "Type is not same.", Err::internal);
+						throw Err(CZH_ERROR_LOCATION, __func__, "Type is not same.", error::internal);
 					else if (r.second.type() == node_type)
-						throw Err(CZH_ERROR_LOCATION, __func__, "Type is Node.", Err::internal);
+						throw Err(CZH_ERROR_LOCATION, __func__, "Type is Node.", error::internal);
 					else
 						(*result)[r.first] = r.second.get<T>();
 				}
@@ -121,7 +121,7 @@ namespace czh
 			}
 			void error(const std::string& str) const
 			{
-				throw Err(CZH_ERROR_LOCATION, __func__, str, Err::internal);
+				throw Err(CZH_ERROR_LOCATION, __func__, str, error::internal);
 			}
 		};
 	}

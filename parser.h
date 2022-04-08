@@ -111,7 +111,7 @@ namespace czh
 				}
 				catch (Err& err)
 				{
-					get().error(err.get_details(Err::dont_add_location));
+					get().error(err.get_details(error::dont_add_location));
 				}
 				next();//eat id
 				return val;
@@ -134,7 +134,7 @@ namespace czh
 					}
 					catch (Err& err)
 					{
-						get().error(err.get_details(Err::dont_add_location));
+						get().error(err.get_details(error::dont_add_location));
 					}
 				}
 				return nullptr;
@@ -153,15 +153,17 @@ namespace czh
 				return std::move(ret);
 			}
 
-			bool check(const std::size_t& s = 0)
+			bool check(const int& s = 0)
 			{
 				return (pos + s) < tokens->size();
 			}
-			Token& get(const std::size_t& s = 0)
+			Token& get(const int& s = 0)
 			{
+				if (!check(s))
+					get(s-1).error("Unexpected end of tokens.");
 				return (*tokens)[pos + s];
 			}
-			void next(const std::size_t& s = 1)
+			void next(const int& s = 1)
 			{
 				pos += s;
 			}

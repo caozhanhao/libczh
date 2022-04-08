@@ -73,18 +73,52 @@ namespace czh
     inline std::string get_mean(const Type& t)
     {
       if (means.find(t) == means.end())
-        throw Err(CZH_ERROR_LOCATION, __func__, "unexpected error mean",  Err::internal);
+        throw Err(CZH_ERROR_LOCATION, __func__, "unexpected error mean",  error::internal);
       return means[t];
     }
     inline bool  is_end(const Type& t)
     {
       return (t == Type::COLON_TOK || t == Type::SENTENCE_END_TOK || t == Type::FILE_END_TOK);
     }
-    inline bool is_newline(char c)
-    {
-      return (c == '\n' || c == '\r');
-    }
 
+    inline bool is_newline_and_next(const std::string& str, std::size_t& pos, int delta = 1)
+    {
+      if (str[pos] == '\r')
+      {
+        if (pos + 1 < str.size() && str[pos + 1] == '\n')
+        {
+          pos += 2 * delta;
+          return true;
+        }
+        pos += 1 * delta;
+        return true;
+      }
+      else if (str[pos] == '\n')
+      {
+        pos += 1 * delta;
+        return true;
+      }
+      return false;
+    }
+    inline bool is_newline_and_next(const std::string& str, std::string::iterator& it, int delta = 1)
+    {
+      if (*it == '\r')
+      {
+        if (it + 1 * delta < str.end() && *(it + 1) == '\n')
+        {
+          it += 2 * delta;
+          return true;
+        }
+        it += 1 * delta;
+        return true;
+      }
+      else if (*it == '\n')
+      {
+        it += 1 * delta;
+        return true;
+      }
+      return false;
+    }
     class Pos
     {
     private:
@@ -95,7 +129,8 @@ namespace czh
     public:
       Pos(const std::shared_ptr<std::string>& _filename,
         const std::shared_ptr<std::string>& _code)
-        :pos(0), filename(_filename), code(_code), size(0) {  }
+        :pos(0), filename(_filename), code(_code), size(0) 
+      {  }
       operator std::size_t() { return pos; }
       Pos& operator+=(const std::size_t& p)
       {
@@ -107,19 +142,21 @@ namespace czh
         pos -= p;
         return *this;
       }
-      std::string location() const
+      std::size_t get_lineno() const
       {
-        std::size_t line = 1;
+        std::size_t lineno = 1;
         for (std::size_t i = 0; i < pos; i++)
         {
-          if (is_newline((*code)[i]))
+          if (is_newline_and_next(*code, i))
           {
-            line++;
-            if ((*code)[i] == '\r' && i + 1 < pos && (*code)[i + 1] == '\n')
-              i++;
+            lineno++;
           }
         }
-        return (*filename + ":line " + std::to_string(line));
+        return lineno;
+      }
+      std::string location() const
+      {
+        return (*filename + ":line " + std::to_string(get_lineno()));
       }
     public:
       Pos& set_size(std::size_t s)
@@ -127,20 +164,70 @@ namespace czh
         size = s;
         return *this;
       }
-      std::unique_ptr<std::string> get_details_from_code() const
-      {
-        std::size_t next = pos;
-        std::size_t last = pos;
 
-        while (next < code->size() && !is_newline((*code)[next]))
-          next++;
-        while (last > 0 && !is_newline((*code)[last]))
-          last--;
-        if (next != pos) next--;
-        if (last != pos) last++;
-        std::string temp = code->substr(last, next - last + 1);
-        std::string arrow = "\n" + std::string(pos - last - size, ' ') + std::string(size, '^') + std::string(next - pos, ' ');
-        return std::move(std::make_unique<std::string>(temp + arrow));
+      std::unique_ptr<std::string> get_details_from_code() const
+      {      
+        const std::size_t neednext = 2;
+        const std::size_t needlast = 3;
+        std::size_t next = pos + 1;
+        std::size_t last = pos - 1;
+
+        std::size_t nextedline = 0;
+        std::size_t lastedline = 0;
+        
+        int firstnewline = -1;
+
+        while (next < code->size() && nextedline < neednext + 1)
+        {
+          if (next < code->size() && is_newline_and_next(*code, next))
+          {
+            nextedline++;
+            if (firstnewline == -1)
+              firstnewline = next;
+          }
+          else
+            next++;
+        }
+        int lastnewline = -1;
+        while (last > 0 && lastedline < needlast + 1)
+        {
+          if (last > 0 && is_newline_and_next(*code, --last, -1))
+          {
+            lastedline++;
+            if (lastnewline == -1)
+              lastnewline = last;
+          }
+          else
+            last--;
+        }
+
+        const std::size_t lineno = get_lineno();
+        const std::size_t linenosize = std::to_string(lineno).size();
+        std::string temp1 = code->substr(last, firstnewline - last - 1);
+        std::string arrow = "\n" + std::string(pos - lastnewline + size - linenosize, ' ') 
+          + "\033[0;32;32m^ \033[m" + std::string(next - pos, ' ') + "\n";
+        std::string temp2 = code->substr(firstnewline, next - firstnewline + 1);
+        std::string errorstring = temp1 + arrow + temp2;
+
+        std::size_t added_lineno = lineno - lastedline + 1;
+        bool skipped_arrow = false;
+        for (auto it = errorstring.begin(); it < errorstring.end(); it++)
+        {
+          if (added_lineno < lineno + nextedline && is_newline_and_next(errorstring, it))
+          {
+            if (!skipped_arrow && added_lineno - 1 == lineno)
+              skipped_arrow = true;
+            else
+            {
+              std::string addedstr = std::to_string(added_lineno);
+              std::string linenostr(linenosize - addedstr.size(), '0');
+              linenostr += addedstr;
+              it = errorstring.insert(it, linenostr.begin(), linenostr.end()) + 1;
+              added_lineno++;
+            }
+          }
+        }
+        return std::move(std::make_unique<std::string>(errorstring));
       }
     };
 
@@ -539,6 +626,8 @@ namespace czh
       }
       char& get(const std::size_t& s = 0)
       {
+        if (!check(s))
+          Token(Type::UNEXPECTED, 0, get_pos().set_size(0)).error(std::string("Unexpected end of tokens.'")); 
         return (*code)[codepos + s];
       }
       void next(const std::size_t& s = 1)
