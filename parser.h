@@ -111,7 +111,7 @@ namespace czh
 				}
 				catch (Err& err)
 				{
-					get().error(err.get_details(Err::dont_add_location));
+					get().error(err.get_details(error::dont_add_location));
 				}
 				next();//eat id
 				return val;
@@ -134,7 +134,7 @@ namespace czh
 					}
 					catch (Err& err)
 					{
-						get().error(err.get_details(Err::dont_add_location));
+						get().error(err.get_details(error::dont_add_location));
 					}
 				}
 				return nullptr;

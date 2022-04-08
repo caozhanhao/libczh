@@ -10,11 +10,10 @@ namespace czh
 {
   namespace error
   {
+    const bool internal = true;
+    const bool dont_add_location = false;
     class Err : public std::logic_error
     {
-    public:
-      static const bool internal = true;
-      static const bool dont_add_location = false;
     private:
       std::string location;
       std::string func_name;

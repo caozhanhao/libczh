@@ -73,7 +73,7 @@ namespace czh
     inline std::string get_mean(const Type& t)
     {
       if (means.find(t) == means.end())
-        throw Err(CZH_ERROR_LOCATION, __func__, "unexpected error mean",  Err::internal);
+        throw Err(CZH_ERROR_LOCATION, __func__, "unexpected error mean",  error::internal);
       return means[t];
     }
     inline bool  is_end(const Type& t)
