@@ -105,12 +105,12 @@ namespace czh
 		value = v;
 		return *this;
 	  }
-	  template <>
-	  Value& operator=(const Value& v)
-	  {
+	};
+	template <>
+	Value& Value::operator=(const Value& v)
+	{
 		value = v.value;
 		return *this;
-	  }
-	};
+	}
   }
 }
