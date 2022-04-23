@@ -23,12 +23,17 @@ namespace czh
       Err(std::string _location, std::string _func_name, std::string _details, bool _internal = false)
         :logic_error(_details), location(_location), func_name(_func_name), details(_details), is_internal_(_internal){}
 
-      std::string get_details(const bool& add_location = true) const
+      std::string get(const bool& add_location = true) const
       {
+        std::string ret;
+        if (add_location)
+          ret += "\033[1;37m" + location + ":";
         if (!is_internal())
-          return ("\033[1;37m" + location + ":\033[0;32;31m error: \033[m" + details);
-        else if (add_location)
-          return (location + ":" + func_name + "(): \n" + details);
+          ret += "\033[0;32;31m error : \033[m" + details;
+        return ret;
+      }
+      std::string get_detail() const
+      {
         return details;
       }
       bool is_internal() const

@@ -11,13 +11,7 @@ using czh::lexer::Lexer;
 using czh::error::Err;
 namespace czh
 {
-	std::shared_ptr<std::string> get_string_from_file(const std::string& path)
-	{
-		std::ifstream file{ path, std::ios::binary };
-		std::stringstream ss;
-		ss << file.rdbuf();
-		return std::move(std::make_shared<std::string>(ss.str()));
-	}
+
 	class Czh
 	{
 	private:
@@ -25,7 +19,7 @@ namespace czh
 		Parser parser;
 	public:
 		Czh(const std::string& czh_path)
-			:lexer(get_string_from_file(czh_path), std::make_shared<std::string>(czh_path)) {}
+			:lexer(czh_path, czh_path) {}
 		std::shared_ptr<Node> parse()
 		{
 			parser.set_tokens(lexer.get_all_token());

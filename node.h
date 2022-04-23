@@ -121,7 +121,7 @@ namespace czh
 			}
 			void error(const std::string& str) const
 			{
-				throw Err(CZH_ERROR_LOCATION, __func__, str, error::internal);
+				throw Err(CZH_ERROR_LOCATION, __func__, str);
 			}
 		};
 	}

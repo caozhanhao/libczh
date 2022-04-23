@@ -4,6 +4,8 @@
 #include "err.h"
 
 #include <memory>
+#include <fstream>
+#include <sstream>
 #include <vector>
 #include <string>
 #include <map>
@@ -90,7 +92,8 @@ namespace czh
           pos += 2 * delta;
           return true;
         }
-        pos += 1 * delta;
+        else
+          pos += 1 * delta;
         return true;
       }
       else if (str[pos] == '\n')
@@ -100,36 +103,110 @@ namespace czh
       }
       return false;
     }
-    inline bool is_newline_and_next(const std::string& str, std::string::iterator& it, int delta = 1)
+    class File
     {
-      if (*it == '\r')
+    private:
+      std::string filename;
+      std::string code;
+    public:
+      File(const std::string& name, const std::string& code_)
+        :filename(name), code(code_) {}
+      std::string getline(std::size_t beg, std::size_t end, std::size_t linenosize = 0) const
       {
-        if (it + 1 * delta < str.end() && *(it + 1) == '\n')
+        std::string ret;
+        if(linenosize == 0)
+          linenosize = std::to_string(end).size();
+        std::size_t lineno = 1;
+        bool first_line_flag = false;
+        auto add = [&]()
         {
-          it += 2 * delta;
-          return true;
+          std::string addition = std::to_string(lineno);
+          if (addition.size() < linenosize)
+            ret += std::string(linenosize - addition.size(), '0'); 
+          ret += addition + " ";
+        };
+        for (std::size_t i = 0; i < code.size();)
+        {
+          if (lineno >= beg && lineno < end)
+          {
+            if (!first_line_flag && lineno == 1)
+            {
+              add();
+              first_line_flag = true;
+            }
+            if(code[i] != '\r' && code[i] != '\n')
+              ret += code[i];
+          }
+          if (is_newline_and_next(code, i))
+          {
+            lineno++;
+            if (lineno >= beg && lineno < end)
+            {
+              ret += '\n';
+              add();
+            }
+          }
+          else
+            i++;
         }
-        it += 1 * delta;
-        return true;
+        return ret;
       }
-      else if (*it == '\n')
+      std::size_t get_lineno(std::size_t pos) const
       {
-        it += 1 * delta;
-        return true;
+        std::size_t lineno = 1;
+        for (std::size_t i = 0; i < pos; i++)
+        {
+          if (is_newline_and_next(code, i))
+            lineno++;
+        }
+        return lineno;
       }
-      return false;
-    }
+      std::size_t get_error_size(std::size_t pos) const
+      {
+        std::size_t i = pos;
+        while (i > 0)
+        {
+          if (is_newline_and_next(code, i, -1))
+            break;
+          else i--;
+        }
+        auto a = code[i];
+        if (code[i] == '\r' && i + 1 < code.size() && code[i + 1] == '\n')
+          return pos - i - 2;
+        return pos - i - 1;
+      }
+      std::string get_name() const
+      {
+        return filename;
+      }
+      void set_file(const std::string& name, const std::string& code_)
+      {
+        filename = name; 
+        code = code_;
+      }
+      void reset()
+      {
+        filename = "";
+        code = "";
+      }
+      std::size_t size() const
+      {
+        return code.size();
+      }
+      char& operator[](std::size_t pos)
+      {
+        return code[pos];
+      }
+    };
     class Pos
     {
     private:
       std::size_t pos;
       std::size_t size;
-      std::shared_ptr<std::string> filename;
-      std::shared_ptr<std::string> code;
+      std::shared_ptr<File> code;
     public:
-      Pos(const std::shared_ptr<std::string>& _filename,
-        const std::shared_ptr<std::string>& _code)
-        :pos(0), filename(_filename), code(_code), size(0) 
+      Pos(const std::shared_ptr<File>& _code)
+        :pos(0), code(_code), size(0) 
       {  }
       operator std::size_t() { return pos; }
       Pos& operator+=(const std::size_t& p)
@@ -142,21 +219,9 @@ namespace czh
         pos -= p;
         return *this;
       }
-      std::size_t get_lineno() const
-      {
-        std::size_t lineno = 1;
-        for (std::size_t i = 0; i < pos; i++)
-        {
-          if (is_newline_and_next(*code, i))
-          {
-            lineno++;
-          }
-        }
-        return lineno;
-      }
       std::string location() const
       {
-        return (*filename + ":line " + std::to_string(get_lineno()));
+        return (code->get_name() + ":line " + std::to_string(code->get_lineno(pos)));
       }
     public:
       Pos& set_size(std::size_t s)
@@ -166,68 +231,31 @@ namespace czh
       }
 
       std::unique_ptr<std::string> get_details_from_code() const
-      {      
-        const std::size_t neednext = 2;
-        const std::size_t needlast = 3;
-        std::size_t next = pos + 1;
-        std::size_t last = pos - 1;
-
-        std::size_t nextedline = 0;
-        std::size_t lastedline = 0;
-        
-        int firstnewline = -1;
-
-        while (next < code->size() && nextedline < neednext + 1)
-        {
-          if (next < code->size() && is_newline_and_next(*code, next))
-          {
-            nextedline++;
-            if (firstnewline == -1)
-              firstnewline = next;
-          }
-          else
-            next++;
-        }
-        int lastnewline = -1;
-        while (last > 0 && lastedline < needlast + 1)
-        {
-          if (last > 0 && is_newline_and_next(*code, --last, -1))
-          {
-            lastedline++;
-            if (lastnewline == -1)
-              lastnewline = last;
-          }
-          else
-            last--;
-        }
-
-        const std::size_t lineno = get_lineno();
-        const std::size_t linenosize = std::to_string(lineno).size();
-        std::string temp1 = code->substr(last, firstnewline - last - 1);
-        std::string arrow = "\n" + std::string(pos - lastnewline + size - linenosize, ' ') 
-          + "\033[0;32;32m^ \033[m" + std::string(next - pos, ' ') + "\n";
-        std::string temp2 = code->substr(firstnewline, next - firstnewline + 1);
+      {  
+        const std::size_t last = 3;
+        const std::size_t next = 3;
+        std::size_t lineno = code->get_lineno(pos);
+        std::size_t linenosize = std::to_string(lineno + next).size();
+        std::size_t actual_last = last;
+        std::size_t actual_next = next;
+        if (lineno - 1 < last)
+          actual_last = lineno - 1;
+        if (code->get_lineno(code->size() - 1) < lineno + next - 1)
+          actual_next = lineno - 1;
+        std::string temp1 = code->getline(lineno - actual_last, lineno + 1, linenosize);//[beg, end)
+        std::string arrow = "\n" + std::string(code->get_error_size(pos) - size + linenosize + 1, ' ') +"\033[0;32;32m";
+        for (auto i = 0; i < size; i++)
+          arrow += "^";
+        arrow += "\033[m";
+        std::string temp2 = code->getline(lineno + 1, lineno + actual_next + 1, linenosize);
         std::string errorstring = temp1 + arrow + temp2;
-
-        std::size_t added_lineno = lineno - lastedline + 1;
-        bool skipped_arrow = false;
-        for (auto it = errorstring.begin(); it < errorstring.end(); it++)
-        {
-          if (added_lineno < lineno + nextedline && is_newline_and_next(errorstring, it))
-          {
-            if (!skipped_arrow && added_lineno - 1 == lineno)
-              skipped_arrow = true;
-            else
-            {
-              std::string addedstr = std::to_string(added_lineno);
-              std::string linenostr(linenosize - addedstr.size(), '0');
-              linenostr += addedstr;
-              it = errorstring.insert(it, linenostr.begin(), linenostr.end()) + 1;
-              added_lineno++;
-            }
-          }
-        }
         return std::move(std::make_unique<std::string>(errorstring));
+      }
+
+      void reset()
+      {
+        pos = 0;
+        size = 0;
       }
     };
 
@@ -343,10 +371,14 @@ namespace czh
       }
       Type guess_if_forget(Type t) const
       {
+        if (many != nullptr)
+          return many->guess_if_forget(t);
         return matches.guess_if_forget(t);
       }
       Type guess_one() const
       {
+        if (many != nullptr)
+          return many->guess_one();
         return matches.guess_one();
       }
     private:
@@ -463,12 +495,17 @@ namespace czh
 
       {Type::SCOPE_END_TOK} // end
     };
-
+    std::string get_string_from_file(const std::string& path)
+    {
+      std::ifstream file{ path, std::ios::binary };
+      std::stringstream ss;
+      ss << file.rdbuf();
+      return ss.str();
+    }
     class Lexer
     {
     private:
-      std::shared_ptr<std::string> code;
-      std::shared_ptr<std::string> filename;
+      std::shared_ptr<File> code;
       std::shared_ptr<std::vector<Token>> tokens;
       Match match;
       Match* match_ptr;
@@ -476,26 +513,24 @@ namespace czh
       Pos codepos;
       bool parsing_path;
     public:
-      Lexer(const std::shared_ptr<std::string>& _code, const std::shared_ptr<std::string>& _filename)
-        : code(_code), filename(_filename),
+      Lexer(const std::string& path, const std::string& _filename)
+        : code(std::make_shared<File>(_filename, get_string_from_file(path))),
         tokens(std::make_shared<std::vector<Token>>(std::vector<Token>())),
         match(make_match(all_rules)),
         match_ptr(&match),
         last_match_ptr(match_ptr),
-        codepos(filename, code),
+        codepos(code),
         parsing_path(false)
         {  }
-      void set_file(const std::shared_ptr<std::string>& _code, const std::shared_ptr<std::string>& _filename)
+      void set_file(const std::string& _code, const std::string& _filename)
       {
-        code = _code;
-        filename = _filename;
+        code->set_file(_code, _filename);
       }
       void reset()
       {
-        code = nullptr;
-        filename = nullptr;
+        code->reset();
         tokens = nullptr;
-        codepos = Pos(filename, code);
+        codepos.reset();
         parsing_path = false;
       }
       std::shared_ptr<std::vector<Token>> get_all_token()

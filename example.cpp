@@ -30,7 +30,6 @@ void test()
 }
 int main()
 {
-//  test();
   try
   {
     test();
@@ -39,7 +38,7 @@ int main()
   {
 	if (err.is_internal())
 	  std::cout << "internal:\n";
-	std::cout << err.get_details() << std::endl;
+	std::cout << err.get() << std::endl;
   }
   return 0;
 }
