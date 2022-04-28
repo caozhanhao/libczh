@@ -506,6 +506,7 @@ namespace czh
     {
     private:
       std::shared_ptr<File> code;
+      std::size_t code_size;
       std::shared_ptr<std::vector<Token>> tokens;
       Match match;
       Match* match_ptr;
@@ -515,6 +516,7 @@ namespace czh
     public:
       Lexer(const std::string& path, const std::string& _filename)
         : code(std::make_shared<File>(_filename, get_string_from_file(path))),
+        code_size(code->size()),
         tokens(std::make_shared<std::vector<Token>>(std::vector<Token>())),
         match(make_match(all_rules)),
         match_ptr(&match),
@@ -529,6 +531,7 @@ namespace czh
       void reset()
       {
         code->reset();
+        code_size = 0;
         tokens = nullptr;
         codepos.reset();
         parsing_path = false;
@@ -550,7 +553,7 @@ namespace czh
         last_match_ptr = match_ptr;
         match_ptr = match_ptr->match(token.type);
         if (match_ptr)
-          tokens->push_back(token);
+          tokens->emplace_back(token);
         else
         {
           auto t = last_match_ptr->guess_if_forget(token.type);
@@ -657,7 +660,7 @@ namespace czh
       }
       bool check(const std::size_t& s = 0) 
       { 
-        return (codepos + s) < code->size(); 
+        return (codepos + s) < code_size; 
       }
       char& get(const std::size_t& s = 0)
       {
