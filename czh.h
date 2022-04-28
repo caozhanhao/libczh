@@ -8,7 +8,7 @@
 using czh::parser::Parser;
 using czh::node::Node;
 using czh::lexer::Lexer;
-using czh::error::Err;
+using czh::error::Error;
 namespace czh
 {
 

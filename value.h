@@ -12,38 +12,6 @@ namespace czh
 {
 	namespace value
 	{
-		template <typename VT>
-		std::string vector_string(const VT& v)
-		{
-			std::string result = "[";
-			for (auto it = v.cbegin(); it != (v.cend() - 1); ++it)
-			{
-				result += std::to_string(*it);
-				result += ",";
-			}
-			result += std::to_string(*(v.cend() - 1));
-			result += "]";
-			return result;
-		}
-		template <>
-		std::string vector_string(const std::vector<std::string>& v)
-		{
-			std::string result = "";
-			result += "[";
-			for (auto it = v.cbegin(); it != (v.cend() - 1); ++it)
-			{
-				result += "\"";
-				result += *it;
-				result += "\"";
-				result += ",";
-			}
-			result += "\"";
-			result += *(v.cend() - 1);
-			result += "\"";
-			result += "]";
-			return result;
-		}
-
 		class Value
 		{
 		private:
@@ -69,47 +37,26 @@ namespace czh
 				return value_type;
 			}
 
-			// std::string get_string() const
-			// {
-			 //auto t = type();
-			 //if (t == typeid(int))
-			 //  return std::to_string(get<int>());
-			 //else if (t == typeid(std::string))
-			 //  return ("\"" + get<std::string>() + "\"");
-			 //else if (t == typeid(double))
-			 //  return std::to_string(get<double>());
-			 //else if (t == typeid(std::vector<int>))
-			 //  return vector_string(get<std::vector<int>>());
-			 //else if (t == typeid(std::vector<std::string>))
-			 //  return vector_string(get<std::vector<std::string>>());
-			 //else if (t == typeid(std::vector<double>))
-			 //  return vector_string(get<std::vector<double>>());
-
-			 ////Value*
-			 //if (t != typeid(Value*)) 
-			 //  throw Err(CZH_ERROR_LOCATION, __func__, "unexpected error", Err::is_ICE);
-			 //std::string res;
-			 //auto path = last_node.lock()->get_path();
-			 //for (auto it = path->crbegin(); it < path->crend(); it++)
-			 //{
-			 //  res += "-";
-			 //  res += *it;
-			 //}
-			 //res += ":";
-			 //res += get<Value*>()->name;
-			 //return res;
-			// }
 			template <typename T>
 			Value& operator=(const T& v)
 			{
 				value = v;
+				value_type = typeid(T);
+				return *this;
+			}
+			Value& operator=(const char* v)
+			{
+				value = std::string(v);
+				value_type = typeid(std::string);
 				return *this;
 			}
 		};
+
 		template <>
 		Value& Value::operator=(const Value& v)
 		{
 			value = v.value;
+			value_type = typeid(Value*);
 			return *this;
 		}
 	}

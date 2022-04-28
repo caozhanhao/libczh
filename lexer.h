@@ -11,7 +11,7 @@
 #include <map>
 #include <algorithm>
 #include <cstdio>
-using czh::error::Err;
+using czh::error::Error;
 using czh::value::Value;
 namespace czh
 {
@@ -75,7 +75,7 @@ namespace czh
     inline std::string get_mean(const Type& t)
     {
       if (means.find(t) == means.end())
-        throw Err(CZH_ERROR_LOCATION, __func__, "unexpected error mean",  error::internal);
+        throw Error(CZH_ERROR_LOCATION, __func__, "unexpected error mean",  Error::internal);
       return means[t];
     }
     inline bool  is_end(const Type& t)
@@ -274,7 +274,8 @@ namespace czh
 
       void error(const std::string& details) const
       {
-        throw Err(pos.location(), __func__, details + ": \n" + *(pos.get_details_from_code()));
+        throw Error(pos.location(), __func__, details + ": \n" 
+          + *(pos.get_details_from_code()));
       }
     };
 

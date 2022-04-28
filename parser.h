@@ -12,7 +12,7 @@
 using czh::lexer::Type;
 using czh::lexer::Token;
 using czh::node::Node;
-using czh::error::Err;
+using czh::error::Error;
 namespace czh
 {
 	namespace parser
@@ -54,8 +54,8 @@ namespace czh
 				pos = 0;
 			}
 		private:
-			void parse_end() 
-			{ 
+			void parse_end()
+			{
 				curr_node = curr_node->to_last_node();
 				if (check())
 					next();
@@ -107,16 +107,16 @@ namespace czh
 				next(); //eat :
 				try
 				{
-					val = &(*call)[get().what.get<std::string>()];
+					val = &(*call)[get().what.get<std::string>()].get_value();
 				}
-				catch (Err& err)
+				catch (Error& err)
 				{
 					get().error(err.get_detail());
 				}
 				next();//eat id
 				return val;
 			}
-			Node* to_scope(const std::string& id, Node* ptr) 
+			Node* to_scope(const std::string& id, Node* ptr)
 			{
 				if (ptr == nullptr) ptr = node.get();
 
@@ -125,14 +125,14 @@ namespace czh
 				else
 				{
 					if (ptr->has_node(id))
-						return &(*ptr)(id);
+						return &(*ptr)[id];
 					else
 						ptr = node.get();
 					try
 					{
-						return &(*ptr)(id);
+						return &(*ptr)[id];
 					}
-					catch (Err& err)
+					catch (Error& err)
 					{
 						get().error(err.get_detail());
 					}
@@ -160,7 +160,7 @@ namespace czh
 			Token& get(const int& s = 0)
 			{
 				if (!check(s))
-					get(s-1).error("Unexpected end of tokens.");
+					get(s - 1).error("Unexpected end of tokens.");
 				return (*tokens)[pos + s];
 			}
 			void next(const int& s = 1)

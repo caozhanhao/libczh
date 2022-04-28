@@ -10,17 +10,18 @@ namespace czh
 {
   namespace error
   {
-    const bool internal = true;
-    const bool dont_add_location = false;
-    class Err : public std::logic_error
+    class Error : public std::logic_error
     {
+    public:
+      static const bool internal = true;
+      static const bool dont_add_location = false;
     private:
       std::string location;
       std::string func_name;
       std::string details;
       bool is_internal_;
     public:
-      Err(std::string _location, std::string _func_name, std::string _details, bool _internal = false)
+      Error(std::string _location, std::string _func_name, std::string _details, bool _internal = false)
         :logic_error(_details), location(_location), func_name(_func_name), details(_details), is_internal_(_internal){}
 
       std::string get(const bool& add_location = true) const
