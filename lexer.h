@@ -154,10 +154,12 @@ namespace czh
       std::size_t get_lineno(std::size_t pos) const
       {
         std::size_t lineno = 1;
-        for (std::size_t i = 0; i < pos; i++)
+        for (std::size_t i = 0; i < pos;)
         {
           if (is_newline_and_next(code, i))
             lineno++;
+          else 
+            i++;
         }
         return lineno;
       }
