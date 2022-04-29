@@ -172,7 +172,6 @@ namespace czh
             break;
           else i--;
         }
-        auto a = code[i];
         if (code[i] == '\r' && i + 1 < code.size() && code[i + 1] == '\n')
           return pos - i - 2;
         return pos - i - 1;
@@ -208,7 +207,7 @@ namespace czh
       std::shared_ptr<File> code;
     public:
       Pos(const std::shared_ptr<File>& _code)
-        :pos(0), code(_code), size(0) 
+        :pos(0), size(0), code(_code)
       {  }
       operator std::size_t() { return pos; }
       Pos& operator+=(const std::size_t& p)
@@ -246,7 +245,7 @@ namespace czh
           actual_next = lineno - 1;
         std::string temp1 = code->getline(lineno - actual_last, lineno + 1, linenosize);//[beg, end)
         std::string arrow = "\n" + std::string(code->get_error_size(pos) - size + linenosize + 1, ' ') +"\033[0;32;32m";
-        for (auto i = 0; i < size; i++)
+        for (std::size_t i = 0; i < size; i++)
           arrow += "^";
         arrow += "\033[m";
         std::string temp2 = code->getline(lineno + 1, lineno + actual_next + 1, linenosize);
@@ -334,16 +333,16 @@ namespace czh
       friend bool operator==(const Match& m1, const Match& m2);
       friend class MatchesHelper<Match>;
     private:
+      Type type;
       MatchesHelper<Match> matches;
       Match* last_match;
       Match* many;
-      Type type;
     public:
       Match(const Type& t, Match* last = nullptr)
-        :type(t), many(nullptr), last_match(last){}
+        :type(t), last_match(last), many(nullptr) {}
 
-      Match(const Match& t) 
-        : matches(t.matches), many(t.many), type(t.type), last_match(t.last_match){}
+      Match(const Match& t)
+        :type(t.type), matches(t.matches), last_match(t.last_match), many(t.many) {}
       void set_many(Match* p)
       {
         many = p;
@@ -439,7 +438,6 @@ namespace czh
       for (std::size_t i = 0; i < rule_vec.size(); i++)
       {
         Match* beg = nullptr;
-        Match* beforebeg = nullptr;
         for (std::size_t j = 0; j < rule_vec[i].size(); j++)
         {
           switch (rule_vec[i][j])
@@ -586,7 +584,7 @@ namespace czh
             if (get() == '.') has_dot = true;
             temp += get();
             next();
-          } while (check() && (isdigit(get())) || get() == '.');
+          } while (check() && (isdigit(get()) || get() == '.'));
 
           if (has_dot)
             return Token(Type::DOUBLE_TOK, std::stod(temp), get_pos().set_size(temp.size()));

@@ -150,7 +150,7 @@ namespace czh
 					ret->push_back(get().what.get<T>());
 				}
 				next();//eat ]
-				return std::move(ret);
+				return ret;
 			}
 
 			bool check(const int& s = 0)

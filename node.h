@@ -59,8 +59,8 @@ namespace czh
 			Node* last_node;
 			std::map<std::string, Node> node;
 			Value value;
-			bool is_node;
 			bool outputable;
+			bool is_node;
 			std::shared_ptr<std::vector<std::string>> output_list;
 		public:
 			Node(Node* node_ptr, const std::string& node_name, bool _outputable = true)
