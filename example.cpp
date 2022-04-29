@@ -29,6 +29,7 @@ void test()
   //同理，还有map<string, vector<double>>和map<string, vector<string>>
 
   example["example"]["double_example"].get_value() = "edit test";
+  example["example"].add("add test", "123", "double_example");
   example["example"]["int_example"].remove();
   example["example"]["block_example"].remove();
   std::cout << "\n\noutput test:\n" << example << "\n";

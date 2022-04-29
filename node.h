@@ -105,13 +105,34 @@ namespace czh
 				return value;
 			}
 			template <typename T>
-			void add(const std::string& name, const T& _value)
+			void add(const std::string& name, const T& _value, const std::string& before = "")
 			{
 				if (!is_node)
 					throw Error(CZH_ERROR_LOCATION, __func__, "Can not add Value to Value");
 				node[name] = Node(this, name, Value(_value));
 				if (outputable)
-					output_list->emplace_back(name);
+				{
+					if(before == "")
+						output_list->emplace_back(name);
+					else
+					{
+						bool added = false;
+						for (auto it = output_list->begin(); it < output_list->end(); it++)
+						{
+							if (*it == before)
+							{
+								output_list->insert(it, name);
+								added = true;
+								break;
+							}
+						}
+						if (!added)
+						{
+							throw Error(CZH_ERROR_LOCATION, __func__, "There is no Node named '"
+								+ before + "'.");
+						}
+					}
+				}
 			}
 
 			Node* add_node(const std::string& name)

@@ -23,6 +23,8 @@ namespace czh
 			template<typename T>
 			Value(const T& data)
 				: value(data), value_type(typeid(T)) {  }
+			Value(const char* v)
+				: value(std::string(v)), value_type(typeid(std::string)) {}
 			Value() :value(0), value_type(typeid(void)) {  }
 			template <typename T>
 			T get() const
