@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "value.h"
 #include "err.h"
@@ -59,10 +59,10 @@ namespace czh
       {Type::ARR_LPAREN_TOK, "["},
       {Type::ARR_RPAREN_TOK, "]"},
       {Type::FILE_END_TOK, "end of file"},
-      {Type::SENTENCE_END_TOK, ";"}, 
-      {Type::COMMA_TOK, ","}, 
-      {Type::COLON_TOK, ":"}, 
-      {Type::BPATH_TOK, "-"}, 
+      {Type::SENTENCE_END_TOK, ";"},
+      {Type::COMMA_TOK, ","},
+      {Type::COLON_TOK, ":"},
+      {Type::BPATH_TOK, "-"},
 
       {Type::UNEXPECTED, "unexpected token"},
       {Type::MB, "many begin"},
@@ -75,7 +75,7 @@ namespace czh
     inline std::string get_mean(const Type& t)
     {
       if (means.find(t) == means.end())
-        throw Error(CZH_ERROR_LOCATION, __func__, "unexpected error mean",  Error::internal);
+        throw Error(CZH_ERROR_LOCATION, __func__, "unexpected error mean", Error::internal);
       return means[t];
     }
     inline bool  is_end(const Type& t)
@@ -114,7 +114,7 @@ namespace czh
       std::string getline(std::size_t beg, std::size_t end, std::size_t linenosize = 0) const
       {
         std::string ret;
-        if(linenosize == 0)
+        if (linenosize == 0)
           linenosize = std::to_string(end).size();
         std::size_t lineno = 1;
         bool first_line_flag = false;
@@ -122,7 +122,7 @@ namespace czh
         {
           std::string addition = std::to_string(lineno);
           if (addition.size() < linenosize)
-            ret += std::string(linenosize - addition.size(), '0'); 
+            ret += std::string(linenosize - addition.size(), '0');
           ret += addition + " ";
         };
         for (std::size_t i = 0; i < code.size();)
@@ -134,7 +134,7 @@ namespace czh
               add();
               first_line_flag = true;
             }
-            if(code[i] != '\r' && code[i] != '\n')
+            if (code[i] != '\r' && code[i] != '\n')
               ret += code[i];
           }
           if (is_newline_and_next(code, i))
@@ -158,7 +158,7 @@ namespace czh
         {
           if (is_newline_and_next(code, i))
             lineno++;
-          else 
+          else
             i++;
         }
         return lineno;
@@ -182,7 +182,7 @@ namespace czh
       }
       void set_file(const std::string& name, const std::string& code_)
       {
-        filename = name; 
+        filename = name;
         code = code_;
       }
       void reset()
@@ -232,7 +232,7 @@ namespace czh
       }
 
       std::unique_ptr<std::string> get_details_from_code() const
-      {  
+      {
         const std::size_t last = 3;
         const std::size_t next = 3;
         std::size_t lineno = code->get_lineno(pos);
@@ -244,7 +244,7 @@ namespace czh
         if (code->get_lineno(code->size() - 1) < lineno + next - 1)
           actual_next = lineno - 1;
         std::string temp1 = code->getline(lineno - actual_last, lineno + 1, linenosize);//[beg, end)
-        std::string arrow = "\n" + std::string(code->get_error_size(pos) - size + linenosize + 1, ' ') +"\033[0;32;32m";
+        std::string arrow = "\n" + std::string(code->get_error_size(pos) - size + linenosize + 1, ' ') + "\033[0;32;32m";
         for (std::size_t i = 0; i < size; i++)
           arrow += "^";
         arrow += "\033[m";
@@ -273,7 +273,7 @@ namespace czh
 
       void error(const std::string& details) const
       {
-        throw Error(pos.location(), __func__, details + ": \n" 
+        throw Error(pos.location(), __func__, details + ": \n"
           + *(pos.get_details_from_code()));
       }
     };
@@ -326,7 +326,7 @@ namespace czh
         return vec[0]->get_type();
       }
     };
-    class Match 
+    class Match
     {
       //friend void debug_check_match(const Match& m);
       friend Match make_match(const std::vector<Rule>& rule_vec);
@@ -354,7 +354,7 @@ namespace czh
       }
       Match* get_many() const { return many; }
 
-      Match* match(const Type& t) 
+      Match* match(const Type& t)
       {
         if (many != nullptr)
           return many->match(t);
@@ -448,7 +448,7 @@ namespace czh
             beg = curr;
             break;
           case Type::ME:
-            if(beg)
+            if (beg)
               curr = curr->add(beg->get_type());
             curr->set_many(beg);
             j++;// skip ME
@@ -467,26 +467,26 @@ namespace czh
     }
 
     const std::vector<Rule> all_rules =
-    { 
+    {
       {Type::ID_TOK, Type::EQUAL_TOK, Type::BPATH_TOK,
       Type::MB, Type::ID_TOK, Type::BPATH_TOK, Type::ME,
       Type::ID_TOK, Type::COLON_TOK, Type::ID_TOK},// 'id = -a-b-c-d:val' or 'id = -a:val'
-      
+
       {Type::ID_TOK, Type::COLON_TOK}, // 'id:'
 
       {Type::ID_TOK, Type::EQUAL_TOK, Type::COLON_TOK,
       Type::ID_TOK},// 'id = :val' 
 
-      {Type::ID_TOK, Type::EQUAL_TOK, Type::ARR_LPAREN_TOK, 
-      Type::MB, Type::INT_TOK, Type::COMMA_TOK, Type::ME, 
+      {Type::ID_TOK, Type::EQUAL_TOK, Type::ARR_LPAREN_TOK,
+      Type::MB, Type::INT_TOK, Type::COMMA_TOK, Type::ME,
       Type::INT_TOK, Type::ARR_RPAREN_TOK},//'id = [1,2]' or 'id = [1]'   
 
-      {Type::ID_TOK, Type::EQUAL_TOK, Type::ARR_LPAREN_TOK, 
-      Type::MB, Type::DOUBLE_TOK, Type::COMMA_TOK, Type::ME, 
+      {Type::ID_TOK, Type::EQUAL_TOK, Type::ARR_LPAREN_TOK,
+      Type::MB, Type::DOUBLE_TOK, Type::COMMA_TOK, Type::ME,
       Type::DOUBLE_TOK, Type::ARR_RPAREN_TOK},//'id = [1.1,2.2]' or 'id = [1.1]'   
 
-      {Type::ID_TOK, Type::EQUAL_TOK, Type::ARR_LPAREN_TOK, 
-      Type::MB, Type::STRING_TOK, Type::COMMA_TOK, Type::ME, 
+      {Type::ID_TOK, Type::EQUAL_TOK, Type::ARR_LPAREN_TOK,
+      Type::MB, Type::STRING_TOK, Type::COMMA_TOK, Type::ME,
       Type::STRING_TOK, Type::ARR_RPAREN_TOK},//'id = ["1","2"]' or 'id = ["1"]'
 
 
@@ -524,7 +524,7 @@ namespace czh
         last_match_ptr(match_ptr),
         codepos(code),
         parsing_path(false)
-        {  }
+      {  }
       void set_file(const std::string& _code, const std::string& _filename)
       {
         code->set_file(_code, _filename);
@@ -572,7 +572,7 @@ namespace czh
 
       Token get_tok()
       {
-        while (check() && isspace(get())) 
+        while (check() && isspace(get()))
           next();
 
         if (check() && isdigit(get()))//num
@@ -605,7 +605,7 @@ namespace czh
         }
 
         else if ((check() && (isalpha(get()) || get() == '_')) || (parsing_path ? (get() == '.') : false))//id
-          //½âÎöpathÊ±½«'.'ºÍ'..'×÷Îªid
+          //pathÊ±'.''..'Îªid
         {
           std::string temp = "";
           if (parsing_path && get() == '.')
@@ -622,7 +622,7 @@ namespace czh
           {
             temp += get();
             next();
-          } 
+          }
 
           if (temp == "end")
             return Token(Type::SCOPE_END_TOK, temp, get_pos().set_size(temp.size()));
@@ -659,14 +659,14 @@ namespace czh
       {
         return codepos;
       }
-      bool check(const std::size_t& s = 0) 
-      { 
-        return (codepos + s) < code_size; 
+      bool check(const std::size_t& s = 0)
+      {
+        return (codepos + s) < code_size;
       }
       char& get(const std::size_t& s = 0)
       {
         if (!check(s))
-          Token(Type::UNEXPECTED, 0, get_pos().set_size(0)).error(std::string("Unexpected end of tokens.'")); 
+          Token(Type::UNEXPECTED, 0, get_pos().set_size(0)).error(std::string("Unexpected end of tokens.'"));
         return (*code)[codepos + s];
       }
       void next(const std::size_t& s = 1)

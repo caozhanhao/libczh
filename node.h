@@ -48,7 +48,7 @@ namespace czh
 			result += "]";
 			return result;
 		}
-	
+
 		class Node
 		{
 			friend std::ostream& operator<<(std::ostream&, const Node&);
@@ -78,7 +78,7 @@ namespace czh
 			}
 			Node(bool _outputable = true)
 				:name("/"), last_node(nullptr), outputable(_outputable), is_node(true)
-			{  
+			{
 				if (outputable)
 					output_list = std::make_shared<std::vector<std::string>>();
 			}
@@ -112,7 +112,7 @@ namespace czh
 				node[name] = Node(this, name, Value(_value));
 				if (outputable)
 				{
-					if(before == "")
+					if (before == "")
 						output_list->emplace_back(name);
 					else
 					{
@@ -256,38 +256,38 @@ namespace czh
 					ret += std::string(i * 2, ' ') + "end;\n";
 				return ret;
 			}
-			private:
-				std::string value_to_string(const std::string& name, const Value& value) const
+		private:
+			std::string value_to_string(const std::string& name, const Value& value) const
+			{
+				auto t = value.type();
+				if (t == typeid(int))
+					return std::to_string(value.get<int>());
+				else if (t == typeid(std::string))
+					return ("\"" + value.get<std::string>() + "\"");
+				else if (t == typeid(double))
+					return std::to_string(value.get<double>());
+				else if (t == typeid(std::vector<int>))
+					return vector_to_string(value.get<std::vector<int>>());
+				else if (t == typeid(std::vector<std::string>))
+					return vector_to_string(value.get<std::vector<std::string>>());
+				else if (t == typeid(std::vector<double>))
+					return vector_to_string(value.get<std::vector<double>>());
+
+				//Value*
+				if (t != typeid(Value*))
+					throw Error(CZH_ERROR_LOCATION, __func__, "Unexpected error", Error::internal);
+
+				std::string res;
+				auto path = get_path();
+				for (auto it = path->crbegin(); it < path->crend(); it++)
 				{
-					auto t = value.type();
-					if (t == typeid(int))
-						return std::to_string(value.get<int>());
-					else if (t == typeid(std::string))
-						return ("\"" + value.get<std::string>() + "\"");
-					else if (t == typeid(double))
-						return std::to_string(value.get<double>());
-					else if (t == typeid(std::vector<int>))
-						return vector_to_string(value.get<std::vector<int>>());
-					else if (t == typeid(std::vector<std::string>))
-						return vector_to_string(value.get<std::vector<std::string>>());
-					else if (t == typeid(std::vector<double>))
-						return vector_to_string(value.get<std::vector<double>>());
-
-					//Value*
-					if (t != typeid(Value*))
-						throw Error(CZH_ERROR_LOCATION, __func__, "Unexpected error", Error::internal);
-
-					std::string res;
-					auto path = get_path();
-					for (auto it = path->crbegin(); it < path->crend(); it++)
-					{
-						res += "-";
-						res += *it;
-					}
-					res += ":";
-					res += name;
-					return res;
+					res += "-";
+					res += *it;
 				}
+				res += ":";
+				res += name;
+				return res;
+			}
 		};
 		std::ostream& operator<<(std::ostream& os, const Node& node)
 		{

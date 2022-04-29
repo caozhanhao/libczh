@@ -19,20 +19,25 @@ void test()
   cout << "\nvalue_map(map<string, int>): ";
   auto m1 = *example["example"]["value_map_example"].value_map<int>();
   for (auto& r : m1)
-	cout << r.second << ",";
+    cout << r.second << ",";
   //同理，还有map<string, double>和map<string, string>
   cout << "\nexample value_array_map(to map<string, vector<int>>): ";
   auto m2 = *example["example"]["value_array_map_example"].value_map<vector<int>>();
   for (auto& r : m2)
-	for (auto& a : r.second)
-	  cout << a << ",";
+    for (auto& a : r.second)
+      cout << a << ",";
   //同理，还有map<string, vector<double>>和map<string, vector<string>>
 
   example["example"]["double_example"].get_value() = "edit test";
-  example["example"].add("add test", "123", "double_example");
+  example["example"].add("add_test", "123", "double_example");
   example["example"]["int_example"].remove();
   example["example"]["block_example"].remove();
-  std::cout << "\n\noutput test:\n" << example << "\n";
+
+  std::ofstream out("output.czh");
+  out << example;
+  out.close();
+  czh::Czh e1("output.czh");
+  auto example1 = *e1.parse();
 }
 int main()
 {
