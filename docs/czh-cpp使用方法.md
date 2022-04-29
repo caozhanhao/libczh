@@ -1,7 +1,7 @@
 # czh-cpp使用方法
 
 ### 作用域
-##### Noe:::operator[]
+##### Node:::operator[]
 - 进入作用域
 - 返回类型为`Node`
 
