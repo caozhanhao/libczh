@@ -27,6 +27,9 @@
 ##### Node::add(key, value, before = "")
 - 在名为'before'的Node前添加
 - before为空时添加在末尾
+#### 删除值
+##### Node::remove()
+- 删除该Node
 
 ### 输出
 ##### Node::to_string()
