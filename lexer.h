@@ -270,7 +270,7 @@ namespace czh
       template <typename T>
       Token(Type _type, const T& _what, const Pos& _pos)
         :type(_type), what(_what), pos(_pos) {  }
-
+        
       void error(const std::string& details) const
       {
         throw Error(pos.location(), __func__, details + ": \n"
@@ -494,7 +494,8 @@ namespace czh
       {Type::ID_TOK, Type::EQUAL_TOK, Type::DOUBLE_TOK},//'id = 1.1'
       {Type::ID_TOK, Type::EQUAL_TOK, Type::STRING_TOK},// 'id = "11"'
 
-      {Type::SCOPE_END_TOK} // end
+      {Type::SCOPE_END_TOK}, // end
+      {Type::NOTE_TOK} // end
     };
     std::string get_string_from_file(const std::string& path)
     {
@@ -550,7 +551,7 @@ namespace czh
     private:
       void check(const Token& token)
       {
-        if (token.type == Type::NOTE_TOK || token.type == Type::FILE_END_TOK || token.type == Type::SENTENCE_END_TOK) return;
+        if (token.type == Type::FILE_END_TOK || token.type == Type::SENTENCE_END_TOK) return;
         last_match_ptr = match_ptr;
         match_ptr = match_ptr->match(token.type);
         if (match_ptr)
@@ -648,7 +649,7 @@ namespace czh
             next();
           }
           next(3);//eat '/e/'
-          return Token(Type::NOTE_TOK, temp, get_pos().set_size(temp.size()));
+          return Token(Type::NOTE_TOK, value::Note(temp), get_pos().set_size(temp.size()));
         }
         else if (codepos == code->size()) return Token(Type::FILE_END_TOK, 0, get_pos().set_size(0));
         else

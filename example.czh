@@ -1,9 +1,9 @@
 /b/ note example /e/
-example:
+example:/b/also/e/
     array_example = [1,2,3];
     string_array_example = ["1", "2", "3"];
     string_example = "string test";
-    double_example = 2.4;
+    double_example = 2.4;/b/double/e/
     int_example = 234;
     block_example:
         ref_example0 = -example:int_example;
@@ -11,10 +11,10 @@ example:
             ref_example1 = -..:ref_example0;
         end;		
         ref_example2 = -.-test:ref_example1;
-    end;
+    end;/b/eeee/e/
    value_map_example:
         k1 = 1;
-        k2 = 2;
+        k2 = 2;/b/ref/e/
         k3 = 3;
     end;
     value_array_map_example:

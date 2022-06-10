@@ -10,14 +10,21 @@
 
 namespace czh
 {
+  namespace node{class Node;}
 	namespace value
 	{
+    class Note
+    {
+    public:
+      std::string note;
+      Note(const std::string& str) : note(str){}
+    };
 		class Value
 		{
 		private:
-			std::variant<int, double, std::string,
+			std::variant<int, double, std::string, Note,
 				std::vector<int>, std::vector<double>, std::vector<std::string>,
-				Value*> value;
+				node::Node*> value;
 			std::type_index value_type;
 		public:
 			template<typename T>
@@ -29,8 +36,6 @@ namespace czh
 			template <typename T>
 			T get() const
 			{
-				if (value_type == std::type_index(typeid(Value*)))
-					return std::get<Value*>(value)->get<T>();
 				return std::get<T>(value);
 			}
 

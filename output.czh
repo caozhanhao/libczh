@@ -1,12 +1,24 @@
+/b/ note example /e/
 example:
+/b/also/e/
   array_example = [1,2,3];
   string_array_example = ["1","2","3"];
-  string_example = "string test";
   add_test = "123";
   double_example = "edit test";
+/b/double/e/
+  int_example = 234;
+  block_example:
+    ref_example0 = -..:int_example;
+    test:
+      ref_example1 = -..:ref_example0;
+    end;
+    ref_example2 = -test:ref_example1;
+  end;
+/b/eeee/e/
   value_map_example:
     k1 = 1;
     k2 = 2;
+/b/ref/e/
     k3 = 3;
   end;
   value_array_map_example:

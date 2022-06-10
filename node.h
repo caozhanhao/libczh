@@ -3,6 +3,7 @@
 #include "value.h"
 #include "err.h"
 #include <iostream>
+#include <algorithm>
 #include <string>
 #include <vector>
 #include <map>
@@ -82,6 +83,7 @@ namespace czh
 				if (outputable)
 					output_list = std::make_shared<std::vector<std::string>>();
 			}
+      std::string get_name()const{return name;}
 			void remove()
 			{
 				if (last_node->outputable)
@@ -155,9 +157,12 @@ namespace czh
 
 				std::type_index value_type(typeid(T));
 				std::type_index node_type(typeid(Node));
+				std::type_index note_type(typeid(value::Note));
 				for (auto& r : node)
 				{
-					if (r.second.type() != value_type)
+          if(r.second.type() == note_type)
+            continue;
+					else if (r.second.type() != value_type)
 						throw Error(CZH_ERROR_LOCATION, __func__, "Type is not same.", Error::internal);
 					else if (r.second.type() == node_type)
 						throw Error(CZH_ERROR_LOCATION, __func__, "Type is Node.", Error::internal);
@@ -169,7 +174,7 @@ namespace czh
 
 			Node* to_last_node() const
 			{
-				return last_node;
+        return last_node;
 			}
 			Node* get_root() const
 			{
@@ -193,18 +198,22 @@ namespace czh
 					throw Error(CZH_ERROR_LOCATION, __func__, "There is no node named '" + s + "'.");
 				return node.at(s);
 			}
+      auto type() const
+      {
+        if (is_node)
+          throw Error(CZH_ERROR_LOCATION, __func__, "Node not get type.", Error::internal);
+        return value.type();
+      }
 			template <typename T>
 			T get() const
 			{
 				if (is_node)
 					throw Error(CZH_ERROR_LOCATION, __func__, "Can not get value from a Node.", Error::internal);
-				return value.get<T>();
-			}
-			auto type() const
-			{
-				if (is_node)
-					throw Error(CZH_ERROR_LOCATION, __func__, "Node not get type.", Error::internal);
-				return value.type();
+        if(type() == typeid(Node*))
+        {
+          return value.get<Node*>()->get<T>();
+        }
+        return value.get<T>();
 			}
 			std::unique_ptr<std::vector<std::string>> get_path() const
 			{
@@ -223,10 +232,9 @@ namespace czh
 			bool has_node(const std::string& name) const
 			{
 				if (!is_node)
-					throw Error(CZH_ERROR_LOCATION, __func__, "Value has no node.", Error::internal);
+          throw Error(CZH_ERROR_LOCATION, __func__, "Value has no node.", Error::internal);
 				return (node.find(name) != node.end());
 			}
-
 			std::string to_string(std::size_t i = 0) const
 			{
 				if (!outputable)
@@ -236,7 +244,7 @@ namespace czh
 				}
 				std::string ret;
 				if (is_node && name != "/")
-					ret += std::string(i * 2, ' ') + name + ":\n";
+					ret += std::string(i * 2, ' ') + name + ":" + "\n";
 				for (auto& r : *output_list)
 				{
 					if (node.at(r).is_node)
@@ -248,8 +256,15 @@ namespace czh
 					}
 					else
 					{
-						ret += std::string((i + 1) * 2, ' ') + node.at(r).name + " = "
-							+ value_to_string(r, node.at(r).value) + ";\n";
+            if(node.at(r).type() != typeid(value::Note))
+            {
+              ret += std::string((i + 1) * 2, ' ') + node.at(r).name + " = "
+							+ value_to_string(r, node.at(r).value) + ";" + "\n";
+            }
+            else
+            {
+              ret += "/b/" + node.at(r).value.get<value::Note>().note + "/e/\n";
+            }
 					}
 				}
 				if (is_node && name != "/")
@@ -273,23 +288,50 @@ namespace czh
 				else if (t == typeid(std::vector<double>))
 					return vector_to_string(value.get<std::vector<double>>());
 
-				//Value*
-				if (t != typeid(Value*))
+				//Node*
+				if (t != typeid(Node*))
 					throw Error(CZH_ERROR_LOCATION, __func__, "Unexpected error", Error::internal);
 
 				std::string res;
-				auto path = get_path();
-				for (auto it = path->crbegin(); it < path->crend(); it++)
+				auto path = *value.get<Node*>()->get_path();
+				auto this_path = *get_path();
+        std::reverse(path.begin(), path.end());
+        std::reverse(this_path.begin(), this_path.end());
+        std::size_t samepos = 0;
+        for (auto i = 0;i<std::min(path.size(),this_path.size()); i++)
+        {
+          if(path[i] == this_path[i])
+          {
+            samepos++;
+            if(i == this_path.size())
+            {
+              res += "-.";
+              break;
+            }
+          }
+          else
+          {
+            if(i == this_path.size() - 1)
+            {
+              res += "-..";
+              break;
+            }
+            samepos = 0;
+            break;
+          }
+        }
+        
+        for (auto it = path.cbegin() + samepos; it < path.cend() - 1; it++)
 				{
 					res += "-";
-					res += *it;
+          res += *it;
 				}
 				res += ":";
-				res += name;
+				res += *path.crbegin();
 				return res;
 			}
 		};
-		std::ostream& operator<<(std::ostream& os, const Node& node)
+    std::ostream& operator<<(std::ostream& os, const Node& node)
 		{
 			os << node.to_string();
 			return os;

@@ -25,9 +25,10 @@ namespace czh
 			std::size_t pos;
 			std::shared_ptr<Node> node;
 			Node* curr_node;
+      int note;
 		public:
 			Parser(const std::shared_ptr<std::vector<Token>>& _tokens = {})
-				: tokens(_tokens), pos(0), node(std::make_shared<Node>(Node())), curr_node(node.get()) {}
+				: tokens(_tokens), pos(0), note(0),node(std::make_shared<Node>(Node())), curr_node(node.get()) {}
 			std::shared_ptr<Node> parse()
 			{
 				while (check())
@@ -36,6 +37,11 @@ namespace czh
 					{
 					case Type::ID_TOK:        parse_id();  break;
 					case Type::SCOPE_END_TOK: parse_end(); break;
+          case Type::NOTE_TOK:
+            curr_node->add(std::to_string(note), get().what);
+            note++;
+            next();
+          break;
 					default:
 						get().error("unexpected token");
 						break;
@@ -68,21 +74,21 @@ namespace czh
 				// id:
 				if (get().type == Type::COLON_TOK)//scope
 				{
-					curr_node = curr_node->add_node(id_name);
-					next();
+          next();
+          curr_node = curr_node->add_node(id_name);
 					return;
 				}
 				//id = xxx
 				next();//eat '='
 				if (get().type == Type::BPATH_TOK)//ref id = -x:x
 				{
-					curr_node->add(id_name, parse_ref());
+					curr_node->add(id_name, parse_ref() );
 					return;
 				}
 				if (get().type == Type::ARR_LPAREN_TOK)// array id = [1,2,3]
 				{
 					if (get(1).type == Type::INT_TOK)
-						curr_node->add(id_name, *parse_array<int>());
+						curr_node->add(id_name, *parse_array<int>()) ;
 					else if (get(1).type == Type::DOUBLE_TOK)
 						curr_node->add(id_name, *parse_array<double>());
 					else if (get(1).type == Type::STRING_TOK)
@@ -94,11 +100,11 @@ namespace czh
 				return;
 			}
 
-			Value* parse_ref()
+			Node* parse_ref()
 			{
 				if (!check()) return nullptr;
 				Node* call = curr_node;
-				Value* val = nullptr;
+				Node* val = nullptr;
 				for (; get().type != Type::COLON_TOK; next())
 				{
 					if (get().type == Type::BPATH_TOK) continue;
@@ -107,7 +113,7 @@ namespace czh
 				next(); //eat :
 				try
 				{
-					val = &(*call)[get().what.get<std::string>()].get_value();
+					val = &(*call)[get().what.get<std::string>()];
 				}
 				catch (Error& err)
 				{
