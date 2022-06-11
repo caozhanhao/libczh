@@ -17,7 +17,6 @@ namespace czh
 {
 	namespace node
 	{
-
 		template <typename VT>
 		std::string vector_to_string(const VT& v)
 		{
@@ -25,12 +24,25 @@ namespace czh
 			for (auto it = v.cbegin(); it != (v.cend() - 1); ++it)
 			{
 				result += std::to_string(*it);
-				result += ",";
+				result += ", ";
 			}
 			result += std::to_string(*(v.cend() - 1));
 			result += "]";
 			return result;
 		}
+    template <>
+    std::string vector_to_string(const std::vector<bool>& v)
+    {
+      std::string result = "[";
+      for (auto it = v.cbegin(); it != (v.cend() - 1); ++it)
+      {
+        result += (*it ? "true" : "false");
+        result += ", ";
+      }
+      result += (*(v.cend() - 1) ? "true" : "false");
+      result += "]";
+      return result;
+    }
 		template <>
 		std::string vector_to_string(const std::vector<std::string>& v)
 		{
@@ -41,7 +53,7 @@ namespace czh
 				result += "\"";
 				result += *it;
 				result += "\"";
-				result += ",";
+				result += ", ";
 			}
 			result += "\"";
 			result += *(v.cend() - 1);
@@ -263,6 +275,8 @@ namespace czh
             }
             else
             {
+              if(!ret.empty() && *ret.crbegin() == '\n')
+                ret.pop_back();//eat '\n'
               ret += "/b/" + node.at(r).value.get<value::Note>().note + "/e/\n";
             }
 					}
@@ -281,12 +295,16 @@ namespace czh
 					return ("\"" + value.get<std::string>() + "\"");
 				else if (t == typeid(double))
 					return std::to_string(value.get<double>());
+        else if (t == typeid(bool))
+          return std::to_string(value.get<bool>());
 				else if (t == typeid(std::vector<int>))
 					return vector_to_string(value.get<std::vector<int>>());
 				else if (t == typeid(std::vector<std::string>))
 					return vector_to_string(value.get<std::vector<std::string>>());
 				else if (t == typeid(std::vector<double>))
 					return vector_to_string(value.get<std::vector<double>>());
+        else if (t == typeid(std::vector<bool>))
+          return vector_to_string(value.get<std::vector<bool>>());
 
 				//Node*
 				if (t != typeid(Node*))

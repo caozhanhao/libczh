@@ -20,7 +20,7 @@ namespace czh
     enum class Type
     {
       ID_TOK,
-      INT_TOK, DOUBLE_TOK, STRING_TOK,
+      INT_TOK, DOUBLE_TOK, STRING_TOK, BOOL_TOK,
       EQUAL_TOK,//=
       LPAREN_TOK, RPAREN_TOK, //()
       ARR_LPAREN_TOK, ARR_RPAREN_TOK,//[]
@@ -53,10 +53,12 @@ namespace czh
       {Type::INT_TOK, "int"},
       {Type::DOUBLE_TOK, "double"},
       {Type::STRING_TOK, "string"},
+      {Type::BOOL_TOK, "bool"},
       {Type::EQUAL_TOK, "="},
       {Type::LPAREN_TOK, "("},
       {Type::RPAREN_TOK, ")"},
       {Type::ARR_LPAREN_TOK, "["},
+      {Type::ARR_RPAREN_TOK, "]"},
       {Type::ARR_RPAREN_TOK, "]"},
       {Type::FILE_END_TOK, "end of file"},
       {Type::SENTENCE_END_TOK, ";"},
@@ -105,13 +107,14 @@ namespace czh
     }
     class File
     {
-    private:
+    public:
       std::string filename;
       std::string code;
     public:
       File(const std::string& name, const std::string& code_)
         :filename(name), code(code_) {}
-      std::string getline(std::size_t beg, std::size_t end, std::size_t linenosize = 0) const
+        
+        std::string getline(std::size_t beg, std::size_t end, std::size_t linenosize = 0) const
       {
         std::string ret;
         if (linenosize == 0)
@@ -201,7 +204,7 @@ namespace czh
     };
     class Pos
     {
-    private:
+    public:
       std::size_t pos;
       std::size_t size;
       std::shared_ptr<File> code;
@@ -209,6 +212,7 @@ namespace czh
       Pos(const std::shared_ptr<File>& _code)
         :pos(0), size(0), code(_code)
       {  }
+      
       operator std::size_t() { return pos; }
       Pos& operator+=(const std::size_t& p)
       {
@@ -269,12 +273,17 @@ namespace czh
     public:
       template <typename T>
       Token(Type _type, const T& _what, const Pos& _pos)
-        :type(_type), what(_what), pos(_pos) {  }
+        :type(_type), what(_what), pos(_pos)
+        {  }
         
       void error(const std::string& details) const
       {
         throw Error(pos.location(), __func__, details + ": \n"
           + *(pos.get_details_from_code()));
+      }
+      std::string get_string() const
+      {
+        return pos.code->code.substr(pos.pos - pos.size, pos.size);
       }
     };
 
@@ -479,7 +488,7 @@ namespace czh
 
       {Type::ID_TOK, Type::EQUAL_TOK, Type::ARR_LPAREN_TOK,
       Type::MB, Type::INT_TOK, Type::COMMA_TOK, Type::ME,
-      Type::INT_TOK, Type::ARR_RPAREN_TOK},//'id = [1,2]' or 'id = [1]'   
+      Type::INT_TOK, Type::ARR_RPAREN_TOK},//'id = [1,2]' or 'id = [1]'
 
       {Type::ID_TOK, Type::EQUAL_TOK, Type::ARR_LPAREN_TOK,
       Type::MB, Type::DOUBLE_TOK, Type::COMMA_TOK, Type::ME,
@@ -489,10 +498,15 @@ namespace czh
       Type::MB, Type::STRING_TOK, Type::COMMA_TOK, Type::ME,
       Type::STRING_TOK, Type::ARR_RPAREN_TOK},//'id = ["1","2"]' or 'id = ["1"]'
 
+      {Type::ID_TOK, Type::EQUAL_TOK, Type::ARR_LPAREN_TOK,
+          Type::MB, Type::BOOL_TOK, Type::COMMA_TOK, Type::ME,
+          Type::BOOL_TOK, Type::ARR_RPAREN_TOK},//'id = [false,true]' or 'id = [true]'
+
 
       {Type::ID_TOK, Type::EQUAL_TOK, Type::INT_TOK},//'id = 1'
       {Type::ID_TOK, Type::EQUAL_TOK, Type::DOUBLE_TOK},//'id = 1.1'
       {Type::ID_TOK, Type::EQUAL_TOK, Type::STRING_TOK},// 'id = "11"'
+      {Type::ID_TOK, Type::EQUAL_TOK, Type::BOOL_TOK},// 'id = true'
 
       {Type::SCOPE_END_TOK}, // end
       {Type::NOTE_TOK} // end
@@ -560,10 +574,10 @@ namespace czh
         {
           auto t = last_match_ptr->guess_if_forget(token.type);
           if (t != Type::UNEXPECTED)
-            token.error("Unexpected token '" + get_mean(token.type) + "'.Did you forget '"
+            token.error("Unexpected " + get_mean(token.type) + "'" + token.get_string() + "'.Did you forget '"
               + get_mean(t) + "'?");
           else
-            token.error("Unexpected token '" + get_mean(token.type) + "'.Did you mean '"
+            token.error("Unexpected " + get_mean(token.type) + "'" + token.get_string() + "'.Did you mean '"
               + get_mean(last_match_ptr->guess_one()) + "'?");
         }
         if (match_ptr && match_ptr->has_completed())
@@ -626,7 +640,11 @@ namespace czh
           }
 
           if (temp == "end")
-            return Token(Type::SCOPE_END_TOK, temp, get_pos().set_size(temp.size()));
+            return Token(Type::SCOPE_END_TOK, temp, get_pos().set_size(3));
+          else if (temp == "true")
+            return Token(Type::BOOL_TOK, true, get_pos().set_size(4));
+          else if (temp == "false")
+            return Token(Type::BOOL_TOK, false, get_pos().set_size(5));
           else
             return Token(Type::ID_TOK, temp, get_pos().set_size(temp.size()));
         }

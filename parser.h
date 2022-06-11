@@ -93,6 +93,8 @@ namespace czh
 						curr_node->add(id_name, *parse_array<double>());
 					else if (get(1).type == Type::STRING_TOK)
 						curr_node->add(id_name, *parse_array<std::string>());
+          else if (get(1).type == Type::BOOL_TOK)
+            curr_node->add(id_name, *parse_array<bool>());
 					return;
 				}
 				curr_node->add(id_name, get().what);
