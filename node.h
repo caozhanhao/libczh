@@ -100,17 +100,21 @@ namespace czh
       {
         if (outputable)
         {
-          auto& l = *output_list;
-          for (auto it = l.begin(); it < l.end(); it++)
+          for (auto it = output_list->begin(); it < output_list->end(); it++)
           {
-            if (*it == name)
+            if (*it == item)
             {
-              l.erase(it);
+              output_list->erase(it);
               break;
             }
           }
         }
         node.erase(name);
+      }
+      void clear()
+      {
+        node.clear();
+        output_list->clear();
       }
       Value& get_value()
       {

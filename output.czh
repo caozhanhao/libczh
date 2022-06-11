@@ -20,8 +20,5 @@ example:
     k3 = 3;
   end;
   value_array_map_example:
-    k1 = [1, 2, 3];
-    k2 = [4, 5, 6];/b/note/e/
-    k3 = [6, 7, 8];
   end;
 end;
