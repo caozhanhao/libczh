@@ -30,7 +30,7 @@ void test()
 
   example["example"]["double_example"].get_value() = "edit test";
   example["example"].add("add_test", "123", "double_example");
-  example["example"]["string_example"].remove();
+  example["example"].remove("string_example");
 
   std::ofstream out("output.czh");
   out << example;
