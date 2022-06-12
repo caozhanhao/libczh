@@ -300,7 +300,7 @@ namespace czh
         else if (t == typeid(double))
           return std::to_string(value.get<double>());
         else if (t == typeid(bool))
-          return std::to_string(value.get<bool>());
+          return (value.get<bool>() ? "true" : "false");
         else if (t == typeid(std::vector<int>))
           return vector_to_string(value.get<std::vector<int>>());
         else if (t == typeid(std::vector<std::string>))

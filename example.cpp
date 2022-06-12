@@ -29,6 +29,7 @@ void test()
   //同理，还有map<string, vector<double>>和map<string, vector<string>>
 
   example["example"]["double_example"].get_value() = "edit test";
+  example["example"]["bool_example"].get_value() = false;
   example["example"].add("add_test", "123", "double_example");
   example["example"].remove("string_example");
   example["example"]["value_array_map_example"].clear();

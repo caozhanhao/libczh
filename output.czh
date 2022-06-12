@@ -5,7 +5,7 @@ example:
   bool_array_example = [true, true, false];
   add_test = "123";
   double_example = "edit test";/b/double/e/
-  bool_example = 1;/b/bool/e/
+  bool_example = false;/b/bool/e/
   int_example = 234;
   block_example:
     ref_example0 = -..:int_example;
