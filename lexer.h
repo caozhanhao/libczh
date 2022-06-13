@@ -610,11 +610,11 @@ namespace czh
         {
           std::string temp = "";
           next();//eat '"'.
-          do
+          while (check() && get() != '"')
           {
             temp += get();
             next();
-          } while (check() && get() != '"');
+          }
           next();//eat '"'
           return Token(Type::STRING_TOK, temp, get_pos().set_size(temp.size()));
         }
