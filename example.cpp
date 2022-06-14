@@ -2,13 +2,12 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <map>
 
 using namespace std;
 
 void test()
 {
-  czh::Czh e("example.czh");
+  czh::Czh e("example.czh", czh::Czh::file);
   auto example = *e.parse();
 
   cout << "example int: " << example["example"]["int_example"].get<int>() << endl;
@@ -37,7 +36,7 @@ void test()
   std::ofstream out("output.czh");
   out << example;
   out.close();
-  czh::Czh e1("output.czh");
+  czh::Czh e1("output.czh", czh::Czh::file);
   auto example1 = *e1.parse();
 }
 int main()

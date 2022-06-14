@@ -17,7 +17,7 @@ namespace czh
     {
     public:
       std::string note;
-      Note(const std::string& str) : note(str){}
+      explicit Note(std::string note_) : note(std::move(note_)){}
     };
 		class Value
 		{
@@ -28,9 +28,9 @@ namespace czh
 			std::type_index value_type;
 		public:
 			template<typename T>
-			Value(const T& data)
+		 	explicit Value(const T& data)
 				: value(data), value_type(typeid(T)) {  }
-			Value(const char* v)
+			explicit Value(const char* v)
 				: value(std::string(v)), value_type(typeid(std::string)) {}
 			Value() :value(0), value_type(typeid(void)) {  }
 			template <typename T>
@@ -38,8 +38,8 @@ namespace czh
 			{
 				return std::get<T>(value);
 			}
-
-			std::type_index type() const
+      
+      [[nodiscard]] std::type_index type() const
 			{
 				return value_type;
 			}

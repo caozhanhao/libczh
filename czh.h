@@ -14,12 +14,17 @@ namespace czh
 
 	class Czh
 	{
+  public:
+    static const bool file = false;
 	private:
 		Lexer lexer;
 		Parser parser;
 	public:
-		Czh(const std::string& czh_path)
-			:lexer(czh_path, czh_path) {}
+    explicit Czh(std::string code)
+    : lexer(std::move(code))
+    {}
+	  explicit Czh(const std::string& czh_, bool is_file = file)
+    : lexer(czh_, czh_) {}
 		std::shared_ptr<Node> parse()
 		{
 			parser.set_tokens(lexer.get_all_token());
