@@ -4,8 +4,8 @@ example:
   string_array_example = ["1", "2", "3"];
   bool_array_example = [true, true, false];
   add_test = "123";
-  double_example = "edit test";/b/double/e/
-  bool_example = false;/b/bool/e/
+  edit_example = "edit example";/b/double/e/
+  bool_example = true;/b/bool/e/
   int_example = 234;
   block_example:
     ref_example0 = -..:int_example;
@@ -14,11 +14,9 @@ example:
     end;
     ref_example2 = -test:ref_example1;
   end;
-  value_map_example:
-    k1 = 1;
-    k2 = 2;
-    k3 = 3;
-  end;
   value_array_map_example:
   end;
+end;
+ref:
+  ref = -..-example:edit_example;
 end;

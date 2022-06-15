@@ -10,54 +10,86 @@
 #include <memory>
 #include <variant>
 
-
 using czh::value::Value;
 using czh::error::Error;
 namespace czh::node
 {
+  enum class Type
+  {
+    ID, REF_ID, NUM, STR, BOOL, BLOCK_BEG, BLOCK_END, REF_BLOCK_ID, NOTE
+  };
+  enum class Color
+  {
+    BLUE, LIGHT_BLUE, GREEN, PURPLE, YELLOW, WHITE, RED
+  };
+  const std::map<Type, Color> colors =
+      {
+          {Type::ID,           Color::PURPLE},
+          {Type::REF_ID,       Color::PURPLE},
+          {Type::NUM,          Color::BLUE},
+          {Type::STR,          Color::GREEN},
+          {Type::BOOL,         Color::BLUE},
+          {Type::BLOCK_BEG,    Color::LIGHT_BLUE},
+          {Type::BLOCK_END,    Color::LIGHT_BLUE},
+          {Type::REF_BLOCK_ID, Color::LIGHT_BLUE},
+          {Type::NOTE,         Color::YELLOW}
+      };
+  std::string colorify(const std::string& str, bool with_color, Type type)
+  {
+    if(!with_color)
+      return str;
+    if(colors.find(type) == colors.end())
+      throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected type");
+    switch (colors.at(type))
+    {
+      case Color::PURPLE:
+        return "\033[35m" + str + "\033[0m";
+      case Color::LIGHT_BLUE:
+        return "\033[36m" + str + "\033[0m";
+      case Color::BLUE:
+        return "\033[34m" + str + "\033[0m";
+      case  Color::GREEN:
+        return "\033[32m" + str + "\033[0m";
+      case Color::YELLOW:
+        return  "\033[33m" + str + "\033[0m";
+      case Color::WHITE:
+        return  "\033[37m" + str + "\033[0m";
+      case Color::RED:
+        return  "\033[31m" + str + "\033[0m";
+      default:
+        throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected color");
+    }
+  }
+  template <typename T>
+  std::string to_czhstr(const T& val, bool color)
+  {
+    return colorify(std::to_string(val), color, Type::NUM);
+  }
+  template <>
+  std::string to_czhstr(const bool& val, bool color)
+  {
+    return colorify((val ? "true" : "false"), color, Type::BOOL);
+  }
+  template <>
+  std::string to_czhstr(const std::string& val, bool color)
+  {
+    return colorify(("\"" + val + "\""), color, Type::STR);
+  }
+  template <>
+  std::string to_czhstr(const value::Note& val, bool color)
+  {
+    return colorify(("/b/" + val.note + "/e/"), color, Type::NOTE);
+  }
   template<typename VT>
-  std::string vector_to_string(const VT &v)
+  std::string vector_to_string(const VT &v, bool color)
   {
     std::string result = "[";
     for (auto it = v.cbegin(); it != (v.cend() - 1); ++it)
     {
-      result += std::to_string(*it);
+      result += to_czhstr(*it, color);
       result += ", ";
     }
-    result += std::to_string(*(v.cend() - 1));
-    result += "]";
-    return result;
-  }
-  
-  template<>
-  std::string vector_to_string(const std::vector<bool> &v)
-  {
-    std::string result = "[";
-    for (auto it = v.cbegin(); it != (v.cend() - 1); ++it)
-    {
-      result += (*it ? "true" : "false");
-      result += ", ";
-    }
-    result += (*(v.cend() - 1) ? "true" : "false");
-    result += "]";
-    return result;
-  }
-  
-  template<>
-  std::string vector_to_string(const std::vector<std::string> &v)
-  {
-    std::string result;
-    result += "[";
-    for (auto it = v.cbegin(); it != (v.cend() - 1); ++it)
-    {
-      result += "\"";
-      result += *it;
-      result += "\"";
-      result += ", ";
-    }
-    result += "\"";
-    result += *(v.cend() - 1);
-    result += "\"";
+    result += to_czhstr(*(v.cend() - 1), color);
     result += "]";
     return result;
   }
@@ -68,6 +100,7 @@ namespace czh::node
   
   public:
     static const bool disable_output = false;
+    static const bool color = true;
   private:
     std::string name;
     Node *last_node;
@@ -101,37 +134,68 @@ namespace czh::node
     
     [[nodiscard]] std::string get_name() const { return name; }
     
-    void remove(const std::string &item)
+    Node& remove(const std::string &item)
     {
       if (outputable)
       {
-        for (auto it = output_list->begin(); it < output_list->end(); it++)
+        auto it = std::find(output_list->begin(), output_list->end(), item);
+        if (it == output_list->end())
         {
-          if (*it == item)
-          {
-            output_list->erase(it);
-            break;
-          }
+          throw Error(CZH_ERROR_LOCATION, __func__, "There is no Node named '"
+                                                    + item + "'.");
         }
+        output_list->erase(it);
       }
       node.erase(name);
+      return *this;
     }
     
-    void clear()
+    Node& clear()
     {
       node.clear();
       output_list->clear();
+      return *this;
+    }
+  
+    Node& rename(const std::string& item, const std::string& newname)
+    {
+      if (outputable)
+      {
+        auto it = std::find(output_list->begin(), output_list->end(), item);
+        if (it == output_list->end())
+        {
+          throw Error(CZH_ERROR_LOCATION, __func__, "There is no Node named '"
+                                                    + item + "'.");
+        }
+        *it = newname;
+      }
+      if (node.find(item) == node.end())
+      {
+        throw Error(CZH_ERROR_LOCATION, __func__, "There is no Node named '"
+                                                  + item + "'.");
+      }
+      node[item].name = newname;
+      auto n = node.extract(item);
+      n.key() = newname;
+      node.insert(std::move(n));
+      return *this;
     }
     
     Value &get_value()
     {
       if (is_node)
-        throw Error(CZH_ERROR_LOCATION, __func__, "Node is not Value.");
+        throw Error(CZH_ERROR_LOCATION, __func__, "This Node is not Value.");
       return value;
     }
     
+    Value get_ref()
+    {
+      if (is_node)
+        throw Error(CZH_ERROR_LOCATION, __func__, "Can not make a reference to a Node.");
+      return value::Value(this);
+    }
     template<typename T>
-    void add(const std::string &add_name, const T &_value, const std::string &before = "")
+    Node& add(const std::string &add_name, const T &_value, const std::string &before = "")
     {
       if (!is_node)
         throw Error(CZH_ERROR_LOCATION, __func__, "Can not add Value to Value");
@@ -159,6 +223,7 @@ namespace czh::node
           }
         }
       }
+      return *this;
     }
     
     Node *add_node(const std::string &add_name)
@@ -268,7 +333,7 @@ namespace czh::node
       return (node.find(tag) != node.end());
     }
   
-    [[nodiscard]] std::string to_string(std::size_t i = 0) const
+    [[nodiscard]] std::string to_string(bool with_color = !color, std::size_t i = 0) const
     {
       if (!outputable)
       {
@@ -277,54 +342,60 @@ namespace czh::node
       }
       std::string ret;
       if (is_node && name != "/")
-        ret += std::string(i * 2, ' ') + name + ":" + "\n";
+        ret += std::string(i * 2, ' ')
+            + colorify(name, with_color, Type::BLOCK_BEG) //node name
+            + ":" + "\n";
       for (auto &r:*output_list)
       {
         if (node.at(r).is_node)
         {
           if (name != "/")
-            ret += node.at(r).to_string(i + 1);
+            ret += node.at(r).to_string(with_color,i + 1);
           else
-            ret += node.at(r).to_string(i);
+            ret += node.at(r).to_string(with_color,i);
         } else
         {
           if (node.at(r).type() != typeid(value::Note))
           {
-            ret += std::string((i + 1) * 2, ' ') + node.at(r).name + " = "
-                   + value_to_string(r, node.at(r).value) + ";" + "\n";
+            ret += std::string((i + 1) * 2, ' ') +
+                colorify(node.at(r).name, with_color, Type::ID)// id name
+                + " = " + value_to_string(r, node.at(r).value, with_color)// value
+                + ";" + "\n";
           } else
           {
             if (!ret.empty() && *ret.crbegin() == '\n')
               ret.pop_back();//eat '\n'
-            ret += "/b/" + node.at(r).value.get<value::Note>().note + "/e/\n";
+            ret += to_czhstr(node.at(r).value.get<value::Note>(), with_color) + "\n";
           }
         }
       }
       if (is_node && name != "/")
-        ret += std::string(i * 2, ' ') + "end;\n";
+        ret += std::string(i * 2, ' ') +
+            colorify("end", with_color, Type::BLOCK_END)
+            + ";\n";
       return ret;
     }
   
   private:
-    [[nodiscard]] std::string value_to_string(const std::string &value_name, const Value &val) const
+    [[nodiscard]] std::string value_to_string(const std::string &value_name, const Value &val, bool with_color) const
     {
       auto t = val.type();
       if (t == typeid(int))
-        return std::to_string(val.get<int>());
+        return to_czhstr(val.get<int>(), with_color);
       else if (t == typeid(std::string))
-        return ("\"" + val.get<std::string>() + "\"");
+        return to_czhstr(val.get<std::string>(), with_color);
       else if (t == typeid(double))
-        return std::to_string(val.get<double>());
+        return to_czhstr(val.get<double>(), with_color);
       else if (t == typeid(bool))
-        return (val.get<bool>() ? "true" : "false");
+        return to_czhstr(val.get<bool>(), with_color);
       else if (t == typeid(std::vector<int>))
-        return vector_to_string(val.get<std::vector<int>>());
+        return vector_to_string(val.get<std::vector<int>>(), with_color);
       else if (t == typeid(std::vector<std::string>))
-        return vector_to_string(val.get<std::vector<std::string>>());
+        return vector_to_string(val.get<std::vector<std::string>>(), with_color);
       else if (t == typeid(std::vector<double>))
-        return vector_to_string(val.get<std::vector<double>>());
+        return vector_to_string(val.get<std::vector<double>>(), with_color);
       else if (t == typeid(std::vector<bool>))
-        return vector_to_string(val.get<std::vector<bool>>());
+        return vector_to_string(val.get<std::vector<bool>>(), with_color);
       
       //Node*
       if (t != typeid(Node *))
@@ -361,10 +432,10 @@ namespace czh::node
       for (auto it = path.cbegin() + samepos; it < path.cend() - 1; it++)
       {
         res += "-";
-        res += *it;
+        res += colorify(*it, with_color, Type::REF_BLOCK_ID);
       }
       res += ":";
-      res += *path.crbegin();
+      res += colorify(*path.crbegin(), with_color, Type::REF_ID);
       return res;
     }
   };
