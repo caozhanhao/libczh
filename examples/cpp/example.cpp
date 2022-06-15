@@ -1,4 +1,4 @@
-#include "czh.h"
+#include "../../src/czh.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -7,10 +7,10 @@ using namespace std;
 
 void test()
 {
-  czh::Czh e("example.czh", czh::Czh::file);
+  czh::Czh e("../czh/example.czh", czh::Czh::file);
   auto example = *e.parse();
 
-  //???
+  //get value
   cout << "example int: " << example["example"]["int_example"].get<int>() << endl;
   cout << "example double: " << example["example"]["double_example"].get<double>() << endl;
   cout << "example string: " << example["example"]["string_example"].get<std::string>() << endl;
@@ -27,34 +27,36 @@ void test()
     for (auto& a : r.second)
       cout << a << ",";
 
-  //???
+  //edit
   example["example"]["double_example"].get_value() = "edit example";
-  //???
+  //rename
   example["example"].rename("double_example", "edit_example");
-  //??Value
+  //add Value
   example["example"].add("add_test", "123", "edit_example");
-  //??Value
+  //remove Value
   example["example"].remove("string_example");
-  //??Node
+  //clear Node
   example["example"]["value_array_map_example"].clear();
-  //??Node
+  //add Node
   example.add_node("ref")->add("ref", example["example"]["edit_example"].get_ref());
-  //??Node
+  //remove Node
   example["example"].remove("value_map_example");
   
-  //??(??)
+  //output(hightlight)
   std::cout << "\n" << example.to_string(czh::node::Node::color) << std::endl;
   
-  //????
-  std::ofstream out("output.czh");
+  //output to file
+  std::ofstream out("../czh/output.czh");
   out << example;
   out.close();
 
   //test
-  czh::Czh e1("output.czh", czh::Czh::file);
-  czh::Czh e2("onelinetest.czh", czh::Czh::file);
+  czh::Czh e1("../czh/output.czh", czh::Czh::file);
   auto example1 = *e1.parse();
+  czh::Czh e2("../czh/onelinetest.czh", czh::Czh::file);
   auto example2 = *e2.parse();
+  czh::Czh e3("../czh/czh.czh", czh::Czh::file);
+  auto example3 = *e3.parse();
 }
 int main()
 {

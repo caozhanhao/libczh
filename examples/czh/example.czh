@@ -11,7 +11,7 @@ example:
         ref_example0 = -example:int_example;
         test:
             ref_example1 = -..:ref_example0;/b/ref/e/
-        end;		
+        end;
         ref_example2 = -.-test:ref_example1;
     end;
    value_map_example:

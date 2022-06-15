@@ -1,0 +1,13 @@
+/b/ note /e/
+example:
+    array = [6, 6, 6];
+    int = 666;
+    string = "666";
+    double = 6.66;
+    ref = -.:int;
+    arrays:
+        k1 = [1,2,3];
+        k2 = [4,5,6];
+        k3 = [7,8,9];
+    end;
+end;
