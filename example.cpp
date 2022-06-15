@@ -52,7 +52,9 @@ void test()
 
   //test
   czh::Czh e1("output.czh", czh::Czh::file);
+  czh::Czh e2("onelinetest.czh", czh::Czh::file);
   auto example1 = *e1.parse();
+  auto example2 = *e2.parse();
 }
 int main()
 {
