@@ -9,7 +9,7 @@
 #include <cstdio>
 #include <string>
 #include <memory>  
-using czh::lexer::Type;
+using czh::lexer::TokenType;
 using czh::lexer::Token;
 using czh::node::Node;
 using czh::error::Error;
@@ -33,13 +33,13 @@ namespace czh::parser
       {
         switch (get().type)
         {
-          case Type::ID_TOK:
+          case TokenType::ID:
             parse_id();
             break;
-          case Type::SCOPE_END_TOK:
+          case TokenType::SCEND:
             parse_end();
             break;
-          case Type::NOTE_TOK:
+          case TokenType::NOTE:
             curr_node->add(std::to_string(note), get().what);
             note++;
             next();
@@ -71,7 +71,7 @@ namespace czh::parser
       auto id_name = get().what.get<std::string>();
       next();//eat name
       // id:
-      if (get().type == Type::COLON_TOK)//scope
+      if (get().type == TokenType::COLON)//scope
       {
         next();
         curr_node = curr_node->add_node(id_name);
@@ -79,20 +79,20 @@ namespace czh::parser
       }
       //id = xxx
       next();//eat '='
-      if (get().type == Type::BPATH_TOK)//ref id = -x:x
+      if (get().type == TokenType::BPATH)//ref id = -x:x
       {
         curr_node->add(id_name, parse_ref());
         return;
       }
-      if (get().type == Type::ARR_LPAREN_TOK)// array id = [1,2,3]
+      if (get().type == TokenType::ARR_LP)// array id = [1,2,3]
       {
-        if (get(1).type == Type::INT_TOK)
+        if (get(1).type == TokenType::INT)
           curr_node->add(id_name, *parse_array<int>());
-        else if (get(1).type == Type::DOUBLE_TOK)
+        else if (get(1).type == TokenType::DOUBLE)
           curr_node->add(id_name, *parse_array<double>());
-        else if (get(1).type == Type::STRING_TOK)
+        else if (get(1).type == TokenType::STRING)
           curr_node->add(id_name, *parse_array<std::string>());
-        else if (get(1).type == Type::BOOL_TOK)
+        else if (get(1).type == TokenType::BOOL)
           curr_node->add(id_name, *parse_array<bool>());
         return;
       }
@@ -105,9 +105,9 @@ namespace czh::parser
       if (!check()) return nullptr;
       Node *call = curr_node;
       Node *val = nullptr;
-      for (; get().type != Type::COLON_TOK; next())
+      for (; get().type != TokenType::COLON; next())
       {
-        if (get().type == Type::BPATH_TOK) continue;
+        if (get().type == TokenType::BPATH) continue;
         call = to_scope(get().what.get<std::string>(), call);
       }
       next(); //eat :
@@ -152,9 +152,9 @@ namespace czh::parser
     {
       std::unique_ptr<std::vector<T>> ret = std::make_unique<std::vector<T>>(std::vector<T>());
       next();//eat [
-      for (; get().type != Type::ARR_RPAREN_TOK; next())
+      for (; get().type != TokenType::ARR_RP; next())
       {
-        if (get().type == Type::COMMA_TOK) continue;
+        if (get().type == TokenType::COMMA) continue;
         ret->push_back(get().what.get<T>());
       }
       next();//eat ]

@@ -252,9 +252,9 @@ namespace czh::node
         if (r.second.type() == note_type)
           continue;
         else if (r.second.type() != value_type)
-          throw Error(CZH_ERROR_LOCATION, __func__, "Type is not same.", Error::internal);
+          throw Error(CZH_ERROR_LOCATION, __func__, "TokenType is not same.", Error::internal);
         else if (r.second.type() == node_type)
-          throw Error(CZH_ERROR_LOCATION, __func__, "Type is Node.", Error::internal);
+          throw Error(CZH_ERROR_LOCATION, __func__, "TokenType is Node.", Error::internal);
         else
           (*result)[r.first] = r.second.get<T>();
       }

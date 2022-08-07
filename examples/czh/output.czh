@@ -1,12 +1,12 @@
 /b/ note example /e/
 example:
-  array_example = [1, 2, 3];
+  array_example = [-6, 2, -90];
   string_array_example = ["1", "2", "3"];
   bool_array_example = [true, true, false];
   add_test = "123";
   edit_example = "edit example";/b/double/e/
   bool_example = true;/b/bool/e/
-  int_example = 234;
+  int_example = 6;
   block_example:
     ref_example0 = -..:int_example;
     test:

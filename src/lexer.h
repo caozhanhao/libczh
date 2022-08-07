@@ -5,9 +5,10 @@
 
 #include <memory>
 #include <fstream>
-#include <sstream>
 #include <vector>
+#include <sstream>
 #include <string>
+#include <set>
 #include <map>
 #include <algorithm>
 #include <cstdio>
@@ -15,64 +16,53 @@ using czh::error::Error;
 using czh::value::Value;
 namespace czh::lexer
 {
-  enum class Type
+  enum class TokenType
   {
-    ID_TOK,
-    INT_TOK, DOUBLE_TOK, STRING_TOK, BOOL_TOK,
-    EQUAL_TOK,//=
-    LPAREN_TOK, RPAREN_TOK, //()
-    ARR_LPAREN_TOK, ARR_RPAREN_TOK,//[]
-    COMMA_TOK, COLON_TOK,
-    BPATH_TOK,//-
-    
-    FILE_END_TOK, SENTENCE_END_TOK, SCOPE_END_TOK,
-    
-    NOTE_TOK,
-    //The following is not token
-    UNEXPECTED, ME, MB//many begin
+    ID,
+    INT, DOUBLE, STRING, BOOL,
+    EQUAL,//=
+    ARR_LP, ARR_RP,//[]
+    COMMA, COLON,
+    BPATH,//-
+    FEND, SEND, SCEND,
+    NOTE,
+    UNEXPECTED
   };
   
-  const std::map<char, Type> marks =
+  const std::map<char, TokenType> marks =
       {
-          {'=', Type::EQUAL_TOK},
-          {'(', Type::LPAREN_TOK},
-          {')', Type::RPAREN_TOK},
-          {'[', Type::ARR_LPAREN_TOK},
-          {']', Type::ARR_RPAREN_TOK},
-          {':', Type::COLON_TOK},
-          {'-', Type::BPATH_TOK},
-          {';', Type::SENTENCE_END_TOK},
-          {',', Type::COMMA_TOK}
+          {'=', TokenType::EQUAL},
+          {'[', TokenType::ARR_LP},
+          {']', TokenType::ARR_RP},
+          {':', TokenType::COLON},
+          {'-', TokenType::BPATH},
+          {';', TokenType::SEND},
+          {',', TokenType::COMMA}
       };
   
-  const std::map<Type, std::string> means =
+  const std::map<TokenType, std::string> means =
       {
-          {Type::ID_TOK,           "identifier"},
-          {Type::INT_TOK,          "int"},
-          {Type::DOUBLE_TOK,       "double"},
-          {Type::STRING_TOK,       "string"},
-          {Type::BOOL_TOK,         "bool"},
-          {Type::EQUAL_TOK,        "="},
-          {Type::LPAREN_TOK,       "("},
-          {Type::RPAREN_TOK,       ")"},
-          {Type::ARR_LPAREN_TOK,   "["},
-          {Type::ARR_RPAREN_TOK,   "]"},
-          {Type::ARR_RPAREN_TOK,   "]"},
-          {Type::FILE_END_TOK,     "end of file"},
-          {Type::SENTENCE_END_TOK, ";"},
-          {Type::COMMA_TOK,        ","},
-          {Type::COLON_TOK,        ":"},
-          {Type::BPATH_TOK,        "-"},
+          {TokenType::ID,               "identifier"},
+          {TokenType::INT,           "int"},
+          {TokenType::DOUBLE,        "double"},
+          {TokenType::STRING,        "string"},
+          {TokenType::BOOL,          "bool"},
+          {TokenType::EQUAL,         "="},
+          {TokenType::ARR_LP,        "["},
+          {TokenType::ARR_RP,        "]"},
+          {TokenType::ARR_RP,        "]"},
+          {TokenType::FEND,       "end of file"},
+          {TokenType::SEND,       ";"},
+          {TokenType::COMMA,      ","},
+          {TokenType::COLON,      ":"},
+          {TokenType::BPATH,      "-"},
           
-          {Type::UNEXPECTED,       "unexpected token"},
-          {Type::MB,               "many begin"},
-          {Type::ME,               "many end"},
-          {Type::SENTENCE_END_TOK, "sentence end"},
-          {Type::SCOPE_END_TOK,    "scope end"},
-          {Type::NOTE_TOK,         "note"}
+          {TokenType::UNEXPECTED, "unexpected token"},
+          {TokenType::SEND,       "sentence end"},
+          {TokenType::SCEND,      "scope end"},
+          {TokenType::NOTE, "note"}
       };
-  
-  inline std::string get_mean(const Type &t)
+  inline std::string get_mean(const TokenType &t)
   {
     if (means.find(t) == means.end())
       throw Error(CZH_ERROR_LOCATION, __func__, "unexpected error mean", Error::internal);
@@ -271,12 +261,12 @@ namespace czh::lexer
   class Token
   {
   public:
-    Type type;
+    TokenType type;
     Value what;
     Pos pos;
   public:
     template<typename T>
-    Token(Type type_, T what_, Pos pos_)
+    Token(TokenType type_, T what_, Pos pos_)
         :type(type_), what(std::move(what_)), pos(std::move(pos_))
         {}
     
@@ -291,244 +281,234 @@ namespace czh::lexer
       return pos.code->code.substr(pos.pos - pos.size, pos.size);
     }
   };
+//  enum class TokenType
+//  {
+//    ID,
+//    INT, DOUBLE, STRING, BOOL,
+//    EQUAL,//=
+//    LP, RP, //()
+//    ARR_LP, ARR_RP,//[]
+//    COMMA, SC_COLON,
+//    BPATH,//-
+//    
+//    FEND, SEND, SCEND,
+//    
+//    NOTE,
+//    //The following is not token
+//    UNEXPECTED, ME, MB//many begin
+//  };
+//  
+//  enum class State
+//  {
+//    ID, VALUE, EQUAL, LP, RP, ARR_LP, ARR_RP,
+//    COMMA, SC_COLON, BPATH, FEND, SEND, SCEND,
+//    UNEXPECTED, END
+//  };
   
-  using Rule = std::vector<Type>;
-  class Match;
-  template<typename T>
-  class MatchesHelper
+  enum class State
   {
-  private:
-    std::vector<std::shared_ptr<T>> vec;
-  public:
-    [[nodiscard]] T *find(const T &i) const
-    {
-      auto r = std::find_if(vec.cbegin(), vec.cend(),
-                            [&](const std::shared_ptr<T> &p1)
-                            {
-                              return *p1 == i;
-                            });
-      if (r != vec.cend())
-        return r->get();
-      return nullptr;
-    }
-  
-    [[nodiscard]] bool empty() const
-    {
-      return vec.empty();
-    }
-    
-    T *insert(const T &i)
-    {
-      auto p = find(Match(i.get_type()));
-      if (p != nullptr)
-        return p;
-      vec.emplace_back(std::make_shared<T>(i));
-      return vec[vec.size() - 1].get();
-    }
-  
-    [[nodiscard]] auto begin() const { return vec.begin(); }
-  
-    [[nodiscard]] auto end() const { return vec.end(); }
-  
-    [[nodiscard]] Type guess_if_forget(Type t) const
-    {
-      for (auto &r:vec)
-      {
-        if (r->match(t) != nullptr)
-          return r->get_type();
-      }
-      return Type::UNEXPECTED;
-    }
-  
-    [[nodiscard]] Type guess_one() const
-    {
-      return vec[0]->get_type();
-    }
+    INIT,
+    ID, VALUE,
+    ARR_VALUE,EQUAL, ARR_LP, ARR_RP,
+    COMMA, SC_COLON, PATH_COLON, BPATH, PATH_ID_TARGET, PATH_ID,
+    UNEXPECTED
   };
-  
   class Match
   {
-    //friend void debug_check_match(const Match& m);
-    friend Match make_match(const std::vector<Rule> &rule_vec);
-    
-    friend bool operator==(const Match &m1, const Match &m2);
-    
-    friend class MatchesHelper<Match>;
-  
   private:
-    Type type;
-    MatchesHelper<Match> matches;
-    Match *last_match;
-    Match *many;
+    State state;
+    State last_state;
   public:
-    explicit Match(const Type &t, Match *last = nullptr)
-        : type(t), last_match(last), many(nullptr) {}
-    
-    Match(const Match &t) = default;
-    
-    void set_many(Match *p)
+    Match(): state(State::INIT), last_state(State::UNEXPECTED) {}
+    std::string error_correct()
     {
-      many = p;
+      switch (last_state)
+      {
+        case State::INIT:
+        case State::PATH_COLON:
+        case State::BPATH:
+          return "identifier";
+        case State::ID:
+          return "'=' or ':'";
+        case State::EQUAL:
+          return "value or '['";
+        case State::ARR_LP:
+          return "value or ']'";
+        case State::ARR_VALUE:
+          return "'[' or ','";
+        case State::COMMA:
+          return "value";
+        case State::PATH_ID:
+          return "'-' or ':'";
+        default:
+          throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected state.");
+      }
     }
-  
-    [[nodiscard]] Type get_type() const
+    void match(const Token& token)
     {
-      return type;
+      if(token.type == TokenType::NOTE) return;
+      switch (state)
+      {
+        case State::INIT:
+          switch (token.type)
+          {
+            case TokenType::ID:
+              state = State::ID;
+              break;
+            case TokenType::SCEND:
+              reset();
+              break;
+            default:
+              last_state = state;
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::ID:
+          switch (token.type)
+          {
+            case TokenType::EQUAL:
+              state = State::EQUAL;
+              break;
+            case TokenType::COLON:
+              reset();
+              break;
+            default:
+              last_state = state;
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::EQUAL:
+          switch (token.type)
+          {
+            case TokenType::INT:
+            case TokenType::DOUBLE:
+            case TokenType::STRING:
+            case TokenType::BOOL:
+              reset();
+              break;
+            case TokenType::ARR_LP:
+              state = State::ARR_LP;
+              break;
+            case TokenType::BPATH:
+              state = State::BPATH;
+              break;
+            default:
+              last_state = state;
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::ARR_LP:
+          switch (token.type)
+          {
+            case TokenType::INT:
+            case TokenType::DOUBLE:
+            case TokenType::STRING:
+            case TokenType::BOOL:
+              state = State::ARR_VALUE;
+              break;
+            case TokenType::ARR_RP:
+              reset();
+              break;
+            default:
+              last_state = state;
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::ARR_VALUE:
+          switch (token.type)
+          {
+            case TokenType::COMMA:
+              state = State::COMMA;
+              break;
+            case TokenType::ARR_RP:
+              reset();
+              break;
+            default:
+              last_state = state;
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::COMMA:
+          switch (token.type)
+          {
+            case TokenType::INT:
+            case TokenType::DOUBLE:
+            case TokenType::STRING:
+            case TokenType::BOOL:
+              state = State::ARR_VALUE;
+              break;
+            default:
+              last_state = state;
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::BPATH:
+          switch (token.type)
+          {
+            case TokenType::ID:
+              state = State::PATH_ID;
+              break;
+            default:
+              last_state = state;
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::PATH_ID:
+          switch (token.type)
+          {
+            case TokenType::BPATH:
+              state = State::BPATH;
+              break;
+            case TokenType::COLON:
+              state = State::PATH_COLON;
+              break;
+            default:
+              last_state = state;
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::PATH_COLON:
+          switch (token.type)
+          {
+            case TokenType::ID:
+              reset();
+              break;
+            default:
+              last_state = state;
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::VALUE:
+        case State::ARR_RP:
+        case State::SC_COLON:
+        case State::PATH_ID_TARGET:
+          break;
+        case State::UNEXPECTED:
+          throw error::Error(CZH_ERROR_LOCATION, __func__,
+                             "Unexpected state can not match.");
+        default:
+          throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected state.");
+      }
     }
-  
-    Match *match(const Type &t)
+    bool good()
     {
-      if (many != nullptr)
-        return many->match(t);
-      return matches.find(Match(t));
+      return state != State::UNEXPECTED;
     }
-    
-    [[nodiscard]] Match *to_last_match() const
+    void reset()
     {
-      return last_match;
-    }
-  
-    [[nodiscard]] bool has_completed() const
-    {
-      if (many != nullptr)
-        return matches.empty() && many->has_completed();
-      return matches.empty();
-    }
-  
-    [[nodiscard]] Type guess_if_forget(Type t) const
-    {
-      if (many != nullptr)
-        return many->guess_if_forget(t);
-      return matches.guess_if_forget(t);
-    }
-  
-    [[nodiscard]] Type guess_one() const
-    {
-      if (many != nullptr)
-        return many->guess_one();
-      return matches.guess_one();
-    }
-  
-  private:
-    Match *add(const Type &t)
-    {
-      return matches.insert(Match(t, this));
+      state = State::INIT;
+      last_state = State::UNEXPECTED;
     }
   };
-  
-  bool operator==(const Match &m1, const Match &m2)
-  {
-    return m1.type == m2.type;
-  }
-  
-  //size_t debug_count_many(const Match& m)
-  //{
-  //  const Match* ptr = m.to_last_match();
-  //  const Match* many = m.get_many();
-  //  std::size_t num = 1;
-  //  while (ptr != many)
-  //  {
-  //    ptr = ptr->to_last_match();
-  //    num++;
-  //  }
-  //  return num;
-  //}
-  //size_t debug_size_of_match(const Match& m)
-  //{
-  //  const Match* ptr = &m;
-  //  std::size_t size = 0;
-  //  while (ptr != nullptr)
-  //  {
-  //    ptr = ptr->to_last_match();
-  //    size++;
-  //  }
-  //  return size;
-  //}
-  //void debug_check_match(const Match& m)
-  //{
-  //  std::string space(debug_size_of_match(m) * 5, '-');
-  //  std::cout << space << "type: " << get_mean(m.get_type()) << "   ";
-  //  if (m.many)
-  //  {
-  //    std::cout << "~~~many: " << debug_count_many(m);
-  //  }
-  //  std::cout << std::endl;
-  //  for (auto& r : m.matches)
-  //  {
-  //    debug_check_match(*r);
-  //  }
-  //}
-  Match make_match(const std::vector<Rule> &rule_vec)
-  {
-    Match ret(Type::UNEXPECTED);
-    Match *curr = &ret;
-    for (auto& i : rule_vec)
-    {
-      Match *beg = nullptr;
-      for (std::size_t j = 0; j < i.size(); j++)
-      {
-        switch (i[j])
-        {
-          case Type::MB:
-            j++;
-            curr = curr->add(i[j]);
-            beg = curr;
-            break;
-          case Type::ME:
-            if (beg)
-              curr = curr->add(beg->get_type());
-            curr->set_many(beg);
-            j++;// skip ME
-            curr = beg;
-            beg = nullptr;
-            break;
-          default:
-            curr = curr->add(i[j]);
-            break;
-        }
-      }
-      curr = &ret;
-    }
-    //debug_check_match(ret);
-    return ret;
-  }
-  
-  const std::vector<Rule> all_rules =
-      {
-          {Type::ID_TOK, Type::EQUAL_TOK, Type::BPATH_TOK,
-              Type::MB, Type::ID_TOK,     Type::BPATH_TOK, Type::ME,
-              Type::ID_TOK,     Type::COLON_TOK, Type::ID_TOK},// 'id = -a-b-c-d:val' or 'id = -a:val'
-          
-          {Type::ID_TOK, Type::COLON_TOK}, // 'id:'
-          
-          {Type::ID_TOK, Type::EQUAL_TOK, Type::COLON_TOK,
-              Type::ID_TOK},// 'id = :val'
-          
-          {Type::ID_TOK, Type::EQUAL_TOK, Type::ARR_LPAREN_TOK,
-              Type::MB, Type::INT_TOK,    Type::COMMA_TOK, Type::ME,
-              Type::INT_TOK,    Type::ARR_RPAREN_TOK},//'id = [1,2]' or 'id = [1]'
-          
-          {Type::ID_TOK, Type::EQUAL_TOK, Type::ARR_LPAREN_TOK,
-              Type::MB, Type::DOUBLE_TOK, Type::COMMA_TOK, Type::ME,
-              Type::DOUBLE_TOK, Type::ARR_RPAREN_TOK},//'id = [1.1,2.2]' or 'id = [1.1]'
-          
-          {Type::ID_TOK, Type::EQUAL_TOK, Type::ARR_LPAREN_TOK,
-              Type::MB, Type::STRING_TOK, Type::COMMA_TOK, Type::ME,
-              Type::STRING_TOK, Type::ARR_RPAREN_TOK},//'id = ["1","2"]' or 'id = ["1"]'
-          
-          {Type::ID_TOK, Type::EQUAL_TOK, Type::ARR_LPAREN_TOK,
-              Type::MB, Type::BOOL_TOK,   Type::COMMA_TOK, Type::ME,
-              Type::BOOL_TOK,   Type::ARR_RPAREN_TOK},//'id = [false,true]' or 'id = [true]'
-          
-          
-          {Type::ID_TOK, Type::EQUAL_TOK, Type::INT_TOK},//'id = 1'
-          {Type::ID_TOK, Type::EQUAL_TOK, Type::DOUBLE_TOK},//'id = 1.1'
-          {Type::ID_TOK, Type::EQUAL_TOK, Type::STRING_TOK},// 'id = "11"'
-          {Type::ID_TOK, Type::EQUAL_TOK, Type::BOOL_TOK},// 'id = true'
-          
-          {Type::SCOPE_END_TOK}, // end
-          {Type::NOTE_TOK} // end
-      };
   
   std::string get_string_from_file(const std::string &path)
   {
@@ -537,7 +517,207 @@ namespace czh::lexer
     ss << file.rdbuf();
     return ss.str();
   }
-  
+  class NumberMatch
+  {
+  private:
+    enum class State
+    {
+      INIT, INT, INT_DOT, SIGN, DOT, DOT_NO_INT, EXP, EXP_SIGN, EXP_INT, END, UNEXPECTED
+    };
+    enum class Token
+    {
+      INT, DOT, SIGN, EXP, UNEXPECTED, END
+    };
+    State state;
+    bool _is_double;
+  public:
+    NumberMatch() : state(State::INIT), _is_double(false) {}
+    bool match(const std::string& s)
+    {
+      for(auto& ch : s)
+      {
+        auto token = get_token(ch);
+        if(token == Token::UNEXPECTED) return false;
+        next(token);
+        if(state == State::UNEXPECTED) return false;
+      }
+      next(get_token());
+      if(state != State::END) return false;
+      return true;
+    }
+    bool is_double() const
+    {
+      return _is_double;
+    }
+  void reset()
+  {
+    state = State::INIT;
+    _is_double = false;
+  }
+  private:
+    Token get_token(char ch = -1)
+    {
+      if(std::isdigit(ch))
+        return Token::INT;
+      else if(ch == '.')
+      {
+        _is_double = true;
+        return Token::DOT;
+      }
+      else if(ch == 'e' || ch == 'E')
+        return Token::EXP;
+      else if(ch == '+' || ch == '-')
+        return Token::SIGN;
+      else if(ch == -1)
+        return Token::END;
+      return Token::UNEXPECTED;
+    }
+    void next(const Token& token)
+    {
+      switch (state)
+      {
+        case State::INIT:
+          switch (token)
+          {
+            case Token::INT:
+              state = State::INT;
+              break;
+            case Token::DOT:
+              state = State::DOT_NO_INT;
+              break;
+            case Token::SIGN:
+              state = State::SIGN;
+              break;
+            default:
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::SIGN:
+          switch (token)
+          {
+            case Token::INT:
+              state = State::INT;
+              break;
+            case Token::DOT:
+              state = State::DOT_NO_INT;
+              break;
+            default:
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::INT:
+          switch (token)
+          {
+            case Token::INT:
+              break;
+            case Token::DOT:
+              state = State::DOT;
+              break;
+            case Token::EXP:
+              state = State::EXP;
+              break;
+            case Token::END:
+              state = State::END;
+              break;
+            default:
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::INT_DOT:
+          switch (token)
+          {
+            case Token::INT:
+              break;
+            case Token::EXP:
+              state = State::EXP;
+              break;
+            case Token::END:
+              state = State::END;
+              break;
+            default:
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::DOT_NO_INT:
+          switch (token)
+          {
+            case Token::INT:
+              state = State::INT_DOT;
+              break;
+            default:
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::DOT:
+          switch (token)
+          {
+            case Token::INT:
+              state = State::INT_DOT;
+              break;
+            case Token::EXP:
+              state = State::EXP;
+              break;
+            case Token::END:
+              state = State::END;
+              break;
+            default:
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::EXP:
+          switch (token)
+          {
+            case Token::INT:
+              state = State::EXP_INT;
+              break;
+            case Token::SIGN:
+              state = State::EXP_SIGN;
+              break;
+            default:
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::EXP_SIGN:
+          switch (token)
+          {
+            case Token::INT:
+              state = State::EXP_INT;
+              break;
+            default:
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::EXP_INT:
+          switch (token)
+          {
+            case Token::INT:
+              break;
+            case Token::END:
+              state = State::END;
+              break;
+            default:
+              state = State::UNEXPECTED;
+              break;
+          }
+          break;
+        case State::END:
+          state = State::UNEXPECTED;
+          break;
+      }
+    }
+  };
+  inline bool isnumber(const char& ch)
+  {
+    return std::isdigit(ch) || ch == '.' || ch == 'e' || ch == 'E' || ch == '+' || ch == '-';
+  }
   class Lexer
   {
   private:
@@ -545,8 +725,7 @@ namespace czh::lexer
     std::size_t code_size;
     std::shared_ptr<std::vector<Token>> tokens;
     Match match;
-    Match *match_ptr;
-    Match *last_match_ptr;
+    NumberMatch nmatch;
     Pos codepos;
     bool parsing_path;
   public:
@@ -554,9 +733,6 @@ namespace czh::lexer
         : code(std::make_shared<File>(_filename, get_string_from_file(path))),
           code_size(code->size()),
           tokens(std::make_shared<std::vector<Token>>(std::vector<Token>())),
-          match(make_match(all_rules)),
-          match_ptr(&match),
-          last_match_ptr(match_ptr),
           codepos(code),
           parsing_path(false) {}
     
@@ -564,66 +740,83 @@ namespace czh::lexer
         : code(std::make_shared<File>("temp", std::move(code_str))),
           code_size(code->size()),
           tokens(std::make_shared<std::vector<Token>>(std::vector<Token>())),
-          match(make_match(all_rules)),
-          match_ptr(&match),
-          last_match_ptr(match_ptr),
           codepos(code),
           parsing_path(false) {}
     
     std::shared_ptr<std::vector<Token>> get_all_token()
     {
-      Token t(Type::UNEXPECTED, 0, get_pos().set_size(0));
+      Token t(TokenType::UNEXPECTED, 0, get_pos().set_size(0));
       do
       {
         t = get_tok();
+        if(t.type == TokenType::SEND || t.type == TokenType::FEND) continue;
         check(t);
-      } while (t.type != Type::FILE_END_TOK);
+      } while (t.type != TokenType::FEND);
       return tokens;
     }
   
   private:
     void check(const Token &token)
     {
-      if (token.type == Type::FILE_END_TOK || token.type == Type::SENTENCE_END_TOK) return;
-      last_match_ptr = match_ptr;
-      match_ptr = match_ptr->match(token.type);
-      if (match_ptr)
-        tokens->emplace_back(token);
-      else
+      match.match(token);
+      if(!match.good())
       {
-        auto t = last_match_ptr->guess_if_forget(token.type);
-        if (t != Type::UNEXPECTED)
-          token.error("Unexpected " + get_mean(token.type) + "'" + token.get_string() + "'.Did you forget '"
-                      + get_mean(t) + "'?");
-        else
-          token.error("Unexpected " + get_mean(token.type) + "'" + token.get_string() + "'.Did you mean '"
-                      + get_mean(last_match_ptr->guess_one()) + "'?");
+        token.error("Unexpected token '" + token.get_string()+ "'.Do you mean '"
+                    + match.error_correct() + "'?");
+        return;
       }
-      if (match_ptr && match_ptr->has_completed())
-        match_ptr = &match;
+      tokens->emplace_back(token);
     }
-    
-    
     Token get_tok()
     {
       while (check() && isspace(get()))
         next();
       
-      if (check() && isdigit(get()))//num
+      bool is_num = false;
+      if (!parsing_path && check() && (std::isdigit(get()) || get() == '.' || get() == '+' || get() == '-'))
       {
-        bool has_dot = false;
+        is_num = true;
+        if(get() == '-')
+        {
+          if (check(1) && !(std::isdigit(get(1)) || get(1) == '.'))
+            is_num = false; //-id
+          if (check(2) && get(1) == '.' && get(2) == '.')
+            is_num = false; //-..
+          if (check(2) && get(1) == '.' && get(2) == '-')
+            is_num = false;//-.-
+          if (check(2) && get(1) == '.' && get(2) == ':')
+            is_num = false;//-.:
+        }
+      }
+      
+      if(is_num)
+      {
         std::string temp;
         do
         {
-          if (get() == '.') has_dot = true;
           temp += get();
           next();
-        } while (check() && (isdigit(get()) || get() == '.'));
-        
-        if (has_dot)
-          return {Type::DOUBLE_TOK, std::stod(temp), get_pos().set_size(temp.size())};
-        return {Type::INT_TOK, std::stoi(temp), get_pos().set_size(temp.size())};
-      } else if (check() && get() == '"')//str
+        } while (check() && isnumber(get()));
+        if(nmatch.match(temp))
+        {
+          if (nmatch.is_double())
+          {
+            nmatch.reset();
+            return {TokenType::DOUBLE, std::stod(temp), get_pos().set_size(temp.size())};
+          }
+          else
+          {
+            nmatch.reset();
+            return {TokenType::INT, std::stoi(temp), get_pos().set_size(temp.size())};
+          }
+        }
+        else
+        {
+          Token tmp(TokenType::UNEXPECTED, 0, get_pos().set_size(temp.size()));
+          tmp.error("Unexpected token '" + temp + "'.Is this a number?");
+        }
+      }
+      else if (check() && get() == '"')//str
       {
         std::string temp;
         next();//eat '"'.
@@ -633,8 +826,8 @@ namespace czh::lexer
           next();
         }
         next();//eat '"'
-        return {Type::STRING_TOK, temp, get_pos().set_size(temp.size())};
-      } else if ((check() && (isalpha(get()) || get() == '_')) || (parsing_path && get() == '.'))//id
+        return {TokenType::STRING, temp, get_pos().set_size(temp.size())};
+      } else if ((check() && (isalpha(get()) || get() == '_')) || (check() && parsing_path && get() == '.'))//id
         //pathʱ'.''..'Ϊid
       {
         std::string temp = "";
@@ -655,18 +848,18 @@ namespace czh::lexer
         }
         
         if (temp == "end")
-          return {Type::SCOPE_END_TOK, temp, get_pos().set_size(3)};
+          return {TokenType::SCEND, temp, get_pos().set_size(3)};
         else if (temp == "true")
-          return {Type::BOOL_TOK, true, get_pos().set_size(4)};
+          return {TokenType::BOOL, true, get_pos().set_size(4)};
         else if (temp == "false")
-          return {Type::BOOL_TOK, false, get_pos().set_size(5)};
+          return {TokenType::BOOL, false, get_pos().set_size(5)};
         else
-          return {Type::ID_TOK, temp, get_pos().set_size(temp.size())};
+          return {TokenType::ID, temp, get_pos().set_size(temp.size())};
       } else if (check() && marks.find(get()) != marks.end())//mark
       {
         next();
-        if (marks.at(get(-1)) == Type::BPATH_TOK) parsing_path = true;
-        if (parsing_path && marks.at(get(-1)) == Type::SENTENCE_END_TOK) parsing_path = false;
+        if (marks.at(get(-1)) == TokenType::BPATH) parsing_path = true;
+        if (parsing_path && marks.at(get(-1)) == TokenType::COLON) parsing_path = false;
         return Token(marks.at(get(-1)), get(-1), get_pos().set_size(1));
       } else if (check(2) && get() == '/' && get(1) == 'b' && get(2) == '/')//note
       {
@@ -678,11 +871,14 @@ namespace czh::lexer
           next();
         }
         next(3);//eat '/e/'
-        return Token(Type::NOTE_TOK, value::Note(temp), get_pos().set_size(temp.size()));
-      } else if (codepos.get() == code->size()) return Token(Type::FILE_END_TOK, 0, get_pos().set_size(0));
+        return Token(TokenType::NOTE, value::Note(temp), get_pos().set_size(temp.size()));
+      } else if (codepos.get() == code->size()) return Token(TokenType::FEND, 0, get_pos().set_size(0));
       else
-        Token(Type::UNEXPECTED, 0, get_pos().set_size(0)).error(std::string("Unexpected token'"));
-      return {Type::UNEXPECTED, 0, get_pos().set_size(0)};
+      {
+        Token(TokenType::UNEXPECTED, 0, get_pos().set_size(0))
+            .error(std::string("Unexpected token '" + std::string(1, get()) + "'."));
+      }
+      return {TokenType::UNEXPECTED, 0, get_pos().set_size(0)};
     }
     
     Pos get_pos()
@@ -698,7 +894,7 @@ namespace czh::lexer
     char &get(const std::size_t &s = 0)
     {
       if (!check(s))
-        Token(Type::UNEXPECTED, 0, get_pos().set_size(0)).error(std::string("Unexpected end of tokens.'"));
+        Token(TokenType::UNEXPECTED, 0, get_pos().set_size(0)).error(std::string("Unexpected end of tokens.'"));
       return (*code)[codepos.get() + s];
     }
     

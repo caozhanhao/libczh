@@ -7,7 +7,7 @@ using namespace std;
 
 void test()
 {
-  czh::Czh e("../czh/example.czh", czh::Czh::file);
+  czh::Czh e("example.czh", czh::Czh::file);
   auto example = *e.parse();
 
   //get value
@@ -46,16 +46,16 @@ void test()
   std::cout << "\n" << example.to_string(czh::node::Node::color) << std::endl;
   
   //output to file
-  std::ofstream out("../czh/output.czh");
+  std::ofstream out("output.czh");
   out << example;
   out.close();
 
   //test
-  czh::Czh e1("../czh/output.czh", czh::Czh::file);
+  czh::Czh e1("output.czh", czh::Czh::file);
   auto example1 = *e1.parse();
-  czh::Czh e2("../czh/onelinetest.czh", czh::Czh::file);
+  czh::Czh e2("onelinetest.czh", czh::Czh::file);
   auto example2 = *e2.parse();
-  czh::Czh e3("../czh/czh.czh", czh::Czh::file);
+  czh::Czh e3("czh.czh", czh::Czh::file);
   auto example3 = *e3.parse();
 }
 int main()
