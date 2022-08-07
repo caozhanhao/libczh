@@ -40,7 +40,7 @@ namespace czh::parser
             parse_end();
             break;
           case TokenType::NOTE:
-            curr_node->add(std::to_string(note), get().what);
+            curr_node->add(utils::to_str(note), get().what);
             note++;
             next();
             break;

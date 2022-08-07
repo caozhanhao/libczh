@@ -2,8 +2,10 @@
 
 #include "value.h"
 #include "err.h"
+#include "utils.h"
 #include <iostream>
 #include <algorithm>
+#include <charconv>
 #include <string>
 #include <vector>
 #include <map>
@@ -63,7 +65,7 @@ namespace czh::node
   template <typename T>
   std::string to_czhstr(const T& val, bool color)
   {
-    return colorify(std::to_string(val), color, Type::NUM);
+    return colorify(utils::to_str(val), color, Type::NUM);
   }
   template <>
   std::string to_czhstr(const bool& val, bool color)

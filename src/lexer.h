@@ -2,9 +2,11 @@
 
 #include "value.h"
 #include "err.h"
+#include "utils.h"
 
 #include <memory>
 #include <fstream>
+#include <charconv>
 #include <vector>
 #include <sstream>
 #include <string>
@@ -100,12 +102,12 @@ namespace czh::lexer
     {
       std::string ret;
       if (linenosize == 0)
-        linenosize = std::to_string(end).size();
+        linenosize = utils::to_str(end).size();
       std::size_t lineno = 1;
       bool first_line_flag = false;
       auto add = [&]()
       {
-        std::string addition = std::to_string(lineno);
+        std::string addition = utils::to_str(lineno);
         if (addition.size() < linenosize)
           ret += std::string(linenosize - addition.size(), '0');
         ret += addition + " ";
@@ -215,7 +217,7 @@ namespace czh::lexer
     
     [[nodiscard]] std::string location() const
     {
-      return (code->get_name() + ":line " + std::to_string(code->get_lineno(pos)));
+      return (code->get_name() + ":line " + utils::to_str(code->get_lineno(pos)));
     }
   
     [[nodiscard]] std::size_t get() const
@@ -234,7 +236,7 @@ namespace czh::lexer
       const std::size_t last = 3;
       const std::size_t next = 3;
       std::size_t lineno = code->get_lineno(pos);
-      std::size_t linenosize = std::to_string(lineno + next).size();
+      std::size_t linenosize = utils::to_str(lineno + next).size();
       std::size_t actual_last = last;
       std::size_t actual_next = next;
       if (lineno - 1 < last)
@@ -802,12 +804,12 @@ namespace czh::lexer
           if (nmatch.is_double())
           {
             nmatch.reset();
-            return {TokenType::DOUBLE, std::stod(temp), get_pos().set_size(temp.size())};
+            return {TokenType::DOUBLE, utils::str_to<double>(temp), get_pos().set_size(temp.size())};
           }
           else
           {
             nmatch.reset();
-            return {TokenType::INT, std::stoi(temp), get_pos().set_size(temp.size())};
+            return {TokenType::INT, (int)utils::str_to<double>(temp), get_pos().set_size(temp.size())};
           }
         }
         else

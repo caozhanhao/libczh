@@ -6,7 +6,7 @@ example:
     string_example = "string test";
     double_example = -123.456e9;/b/double/e/
     bool_example = true;/b/bool/e/
-    int_example = +6e-1;
+    int_example = +6e2;
     block_example:
         ref_example0 = -example:int_example;
         test:
