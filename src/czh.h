@@ -21,13 +21,14 @@ namespace czh
 		Parser parser;
 	public:
     explicit Czh(std::string code)
-    : lexer(std::move(code))
+    : lexer(std::move(code)), parser(&lexer)
     {}
 	  explicit Czh(const std::string& czh_, bool is_file = file)
-    : lexer(czh_, czh_) {}
+    : lexer(czh_, czh_), parser(&lexer) {}
+    explicit Czh(std::unique_ptr<std::ifstream> czh_)
+        : lexer(std::move(czh_)), parser(&lexer) {}
 		std::shared_ptr<Node> parse()
 		{
-			parser.set_tokens(lexer.get_all_token());
 			return  parser.parse();
 		}
 	};

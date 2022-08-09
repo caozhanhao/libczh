@@ -7,11 +7,12 @@ using namespace std;
 
 void test()
 {
-  czh::Czh e("example.czh", czh::Czh::file);
+  czh::Czh e(std::make_unique<std::ifstream>("example.czh"));
   auto example = *e.parse();
 
-  //get value
+  //view_char value
   cout << "example int: " << example["example"]["int_example"].get<int>() << endl;
+  cout << "example long: " << example["example"]["long_long_example"].get<long long>() << endl;
   cout << "example double: " << example["example"]["double_example"].get<double>() << endl;
   cout << "example string: " << example["example"]["string_example"].get<std::string>() << endl;
   cout << "example ref: " << example["example"]["block_example"]["ref_example0"].get<int>() << endl;

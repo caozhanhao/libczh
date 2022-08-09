@@ -22,8 +22,8 @@ namespace czh
 		class Value
 		{
 		private:
-			std::variant<int, double, std::string, Note, bool,
-				std::vector<int>, std::vector<double>, std::vector<std::string>,std::vector<bool>,
+			std::variant<int, long long, double, std::string, Note, bool,
+				std::vector<int>, std::vector<long long>, std::vector<double>, std::vector<std::string>,std::vector<bool>,
 				node::Node*> value;
 			std::type_index value_type;
 		public:

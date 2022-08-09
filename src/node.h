@@ -65,7 +65,7 @@ namespace czh::node
   template <typename T>
   std::string to_czhstr(const T& val, bool color)
   {
-    return colorify(utils::to_str(val), color, Type::NUM);
+    return colorify(utils::value_to_str(val), color, Type::NUM);
   }
   template <>
   std::string to_czhstr(const bool& val, bool color)
@@ -242,7 +242,7 @@ namespace czh::node
     std::unique_ptr<std::map<std::string, T>> value_map()
     {
       if (!is_node)
-        throw Error(CZH_ERROR_LOCATION, __func__, "Can not get a map from a Value.");
+        throw Error(CZH_ERROR_LOCATION, __func__, "Can not view_char a map from a Value.");
       std::unique_ptr<std::map<std::string, T>> result =
           std::make_unique<std::map<std::string, T>>();
       
@@ -296,7 +296,7 @@ namespace czh::node
     [[nodiscard]] auto type() const
     {
       if (is_node)
-        throw Error(CZH_ERROR_LOCATION, __func__, "Node not get type.", Error::internal);
+        throw Error(CZH_ERROR_LOCATION, __func__, "Node not view_char type.", Error::internal);
       return value.type();
     }
     
@@ -304,7 +304,7 @@ namespace czh::node
     T get() const
     {
       if (is_node)
-        throw Error(CZH_ERROR_LOCATION, __func__, "Can not get value from a Node.", Error::internal);
+        throw Error(CZH_ERROR_LOCATION, __func__, "Can not view_char value from a Node.", Error::internal);
       if (type() == typeid(Node *))
       {
         return value.get<Node *>()->get<T>();
@@ -384,6 +384,8 @@ namespace czh::node
       auto t = val.type();
       if (t == typeid(int))
         return to_czhstr(val.get<int>(), with_color);
+      if (t == typeid(long long))
+        return to_czhstr(val.get<long long>(), with_color);
       else if (t == typeid(std::string))
         return to_czhstr(val.get<std::string>(), with_color);
       else if (t == typeid(double))
@@ -392,6 +394,8 @@ namespace czh::node
         return to_czhstr(val.get<bool>(), with_color);
       else if (t == typeid(std::vector<int>))
         return vector_to_string(val.get<std::vector<int>>(), with_color);
+      else if (t == typeid(std::vector<long long>))
+        return vector_to_string(val.get<std::vector<long long>>(), with_color);
       else if (t == typeid(std::vector<std::string>))
         return vector_to_string(val.get<std::vector<std::string>>(), with_color);
       else if (t == typeid(std::vector<double>))

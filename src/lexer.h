@@ -5,10 +5,12 @@
 #include "utils.h"
 
 #include <memory>
+#include <limits>
 #include <fstream>
 #include <charconv>
 #include <vector>
 #include <sstream>
+#include <queue>
 #include <string>
 #include <set>
 #include <map>
@@ -21,7 +23,7 @@ namespace czh::lexer
   enum class TokenType
   {
     ID,
-    INT, DOUBLE, STRING, BOOL,
+    INT, LONGLONG, DOUBLE, STRING, BOOL,
     EQUAL,//=
     ARR_LP, ARR_RP,//[]
     COMMA, COLON,
@@ -42,35 +44,7 @@ namespace czh::lexer
           {',', TokenType::COMMA}
       };
   
-  const std::map<TokenType, std::string> means =
-      {
-          {TokenType::ID,               "identifier"},
-          {TokenType::INT,           "int"},
-          {TokenType::DOUBLE,        "double"},
-          {TokenType::STRING,        "string"},
-          {TokenType::BOOL,          "bool"},
-          {TokenType::EQUAL,         "="},
-          {TokenType::ARR_LP,        "["},
-          {TokenType::ARR_RP,        "]"},
-          {TokenType::ARR_RP,        "]"},
-          {TokenType::FEND,       "end of file"},
-          {TokenType::SEND,       ";"},
-          {TokenType::COMMA,      ","},
-          {TokenType::COLON,      ":"},
-          {TokenType::BPATH,      "-"},
-          
-          {TokenType::UNEXPECTED, "unexpected token"},
-          {TokenType::SEND,       "sentence end"},
-          {TokenType::SCEND,      "scope end"},
-          {TokenType::NOTE, "note"}
-      };
-  inline std::string get_mean(const TokenType &t)
-  {
-    if (means.find(t) == means.end())
-      throw Error(CZH_ERROR_LOCATION, __func__, "unexpected error mean", Error::internal);
-    return means.at(t);
-  }
-  inline bool is_newline_and_next(const std::string &str, std::size_t &pos, int delta = 1)
+  bool is_newline_and_next(const std::string &str, std::size_t &pos, int delta = 1)
   {
     if (str[pos] == '\r')
     {
@@ -78,10 +52,12 @@ namespace czh::lexer
       {
         pos += 2 * delta;
         return true;
-      } else
+      }
+      else
         pos += 1 * delta;
       return true;
-    } else if (str[pos] == '\n')
+    }
+    else if (str[pos] == '\n')
     {
       pos += 1 * delta;
       return true;
@@ -93,12 +69,147 @@ namespace czh::lexer
   {
   public:
     std::string filename;
-    std::string code;
-  public:
-    File(std::string name, std::string code_)
-        : filename(std::move(name)), code(std::move(code_)) {}
     
-    [[nodiscard]] std::string getline(std::size_t beg, std::size_t end, std::size_t linenosize = 0) const
+    File(std::string name)
+        : filename(std::move(name))
+    {}
+    
+    [[nodiscard]] virtual std::string
+    get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize = 0) const = 0;
+    
+    [[nodiscard]] virtual std::size_t get_lineno(std::size_t pos) const = 0;
+    
+    [[nodiscard]] virtual std::size_t get_errorline_size(std::size_t pos) const = 0;
+    
+    [[nodiscard]] virtual std::string get_name() const = 0;
+    
+    [[nodiscard]] virtual std::size_t size() const = 0;
+    
+    [[nodiscard]] virtual std::string substring(std::size_t beg, std::size_t n) const = 0;
+    
+    [[nodiscard]] virtual char view(std::size_t s) = 0;
+    
+    virtual void ignore(std::size_t s) = 0;
+    
+    [[nodiscard]] virtual char check(std::size_t s) = 0;
+  };
+  
+  class StreamFile : public File
+  {
+  public:
+    std::unique_ptr<std::ifstream> file;
+    std::size_t file_size;
+  public:
+    StreamFile(std::string name_, std::unique_ptr<std::ifstream> fs_)
+        : File(std::move(name_)), file(std::move(fs_))
+    {
+      file->ignore(std::numeric_limits<std::streamsize>::max());
+      file_size = file->gcount();
+      file->clear();
+      file->seekg(std::ios_base::beg);
+    }
+    
+    [[nodiscard]] std::string get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize = 0) const override
+    {
+      std::string tmp;
+      std::string buffer;
+      file->clear();
+      file->seekg(std::ios::beg);
+      for (int a = 1; std::getline(*file, tmp); a++)
+      {
+        if (beg <= a && a < end)
+        {
+          buffer += tmp;
+          buffer += "\n";
+        }
+      }
+      buffer.pop_back();
+      return buffer;
+    }
+    
+    [[nodiscard]] std::size_t get_lineno(std::size_t pos) const override
+    {
+      std::size_t lineno = 1;
+      std::size_t postmp = 0;
+      std::string tmp;
+      file->clear();
+      file->seekg(std::ios::beg);
+      for (;std::getline(*file, tmp); lineno++)
+      {
+        postmp += tmp.size() + 1;
+        if (postmp >= pos) break;
+      }
+      return lineno;
+    }
+    
+    [[nodiscard]] std::size_t get_errorline_size(std::size_t pos) const override
+    {
+      std::size_t postmp = 0;
+      std::size_t sz = 0;
+      std::string tmp;
+      file->clear();
+      file->seekg(std::ios::beg);
+      while(std::getline(*file, tmp))
+      {
+        sz = tmp.size();
+        postmp += tmp.size() + 1;
+        if (postmp >= pos) return sz;
+      }
+      return 0;
+    }
+    
+    [[nodiscard]] std::string get_name() const override
+    {
+      return filename;
+    }
+    
+    [[nodiscard]] std::size_t size() const override
+    {
+      return file_size;
+    }
+    
+    [[nodiscard]] std::string substring(std::size_t beg, std::size_t n) const override
+    {
+      file->clear();
+      file->seekg(std::ios::beg);
+      std::string tmp;
+      for (std::size_t i = 0; !file->eof() && i < n; ++i)
+        tmp += file->get();
+      return tmp;
+    }
+    
+    void ignore(std::size_t s) override
+    {
+      file->ignore(s);
+    }
+    
+    [[nodiscard]] char view(std::size_t s) override
+    {
+      char ch;
+      auto i = file->tellg();
+      file->seekg(s, std::ios::cur);
+      ch = file->get();
+      file->seekg(i);
+      return ch;
+    }
+    
+    [[nodiscard]] char check(std::size_t s) override
+    {
+      return !file->eof();
+    }
+  };
+  
+  class NonStreamFile : public File
+  {
+  public:
+    std::string code;
+    std::size_t codepos;
+  public:
+    NonStreamFile(std::string name, std::string code_)
+        : File(std::move(name)), code(std::move(code_)), codepos(0)
+    {}
+    
+    [[nodiscard]] std::string get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize = 0) const override
     {
       std::string ret;
       if (linenosize == 0)
@@ -132,13 +243,14 @@ namespace czh::lexer
             ret += '\n';
             add();
           }
-        } else
+        }
+        else
           i++;
       }
       return ret;
     }
-  
-    [[nodiscard]] std::size_t get_lineno(std::size_t pos) const
+    
+    [[nodiscard]] std::size_t get_lineno(std::size_t pos) const override
     {
       std::size_t lineno = 1;
       for (std::size_t i = 0; i < pos;)
@@ -150,8 +262,8 @@ namespace czh::lexer
       }
       return lineno;
     }
-  
-    [[nodiscard]] std::size_t get_error_size(std::size_t pos) const
+    
+    [[nodiscard]] std::size_t get_errorline_size(std::size_t pos) const override
     {
       std::size_t i = pos;
       while (i > 0)
@@ -164,32 +276,35 @@ namespace czh::lexer
         return pos - i - 2;
       return pos - i - 1;
     }
-  
-    [[nodiscard]] std::string get_name() const
+    
+    [[nodiscard]] std::string get_name() const override
     {
       return filename;
     }
     
-    void set_code(const std::string &name, const std::string &code_)
-    {
-      filename = name;
-      code = code_;
-    }
-    
-    void reset()
-    {
-      filename = "";
-      code = "";
-    }
-  
-    [[nodiscard]] std::size_t size() const
+    [[nodiscard]] std::size_t size() const override
     {
       return code.size();
     }
     
-    char &operator[](std::size_t pos)
+    [[nodiscard]] std::string substring(std::size_t beg, std::size_t n) const override
     {
-      return code[pos];
+      return code.substr(beg, n);
+    }
+    
+    void ignore(std::size_t s) override
+    {
+      codepos += s;
+    }
+    
+    [[nodiscard]] char view(std::size_t s) override
+    {
+      return code[codepos + s];
+    }
+    
+    [[nodiscard]] char check(std::size_t s) override
+    {
+      return (codepos + s) < code.size();
     }
   };
   
@@ -201,7 +316,8 @@ namespace czh::lexer
     std::shared_ptr<File> code;
   public:
     explicit Pos(std::shared_ptr<File> code_)
-        : pos(0), size(0), code(std::move(code_)) {}
+        : pos(0), size(0), code(std::move(code_))
+    {}
     
     Pos &operator+=(const std::size_t &p)
     {
@@ -219,18 +335,19 @@ namespace czh::lexer
     {
       return (code->get_name() + ":line " + utils::to_str(code->get_lineno(pos)));
     }
-  
+    
     [[nodiscard]] std::size_t get() const
     {
       return pos;
     }
+  
   public:
     Pos &set_size(std::size_t s)
     {
       size = s;
       return *this;
     }
-  
+    
     [[nodiscard]] std::unique_ptr<std::string> get_details_from_code() const
     {
       const std::size_t last = 3;
@@ -243,12 +360,15 @@ namespace czh::lexer
         actual_last = lineno - 1;
       if (code->get_lineno(code->size() - 1) < lineno + next - 1)
         actual_next = lineno - 1;
-      std::string temp1 = code->getline(lineno - actual_last, lineno + 1, linenosize);//[beg, end)
-      std::string arrow = "\n" + std::string(code->get_error_size(pos) - size + linenosize + 1, ' ') + "\033[0;32;32m";
-      for (std::size_t i = 0; i < size; i++)
-        arrow += "^";
-      arrow += "\033[m";
-      std::string temp2 = code->getline(lineno + 1, lineno + actual_next + 1, linenosize);
+      std::string temp1 = code->get_spec_line(lineno - actual_last, lineno + 1, linenosize);//[beg, end)
+      
+      std::string arrow("\n");
+      arrow += std::string(code->get_errorline_size(pos) - size + linenosize + 1, ' ');
+      arrow += "\033[0;32;32m";
+      arrow.insert(arrow.end(), size, '^');
+      arrow += "\033[m\n";
+      
+      std::string temp2 = code->get_spec_line(lineno + 1, lineno + actual_next + 1, linenosize);
       std::string errorstring = temp1 + arrow + temp2;
       return std::move(std::make_unique<std::string>(errorstring));
     }
@@ -270,7 +390,7 @@ namespace czh::lexer
     template<typename T>
     Token(TokenType type_, T what_, Pos pos_)
         :type(type_), what(std::move(what_)), pos(std::move(pos_))
-        {}
+    {}
     
     void error(const std::string &details) const
     {
@@ -280,48 +400,28 @@ namespace czh::lexer
     
     [[nodiscard]] std::string get_string() const
     {
-      return pos.code->code.substr(pos.pos - pos.size, pos.size);
+      return pos.code->substring(pos.pos - pos.size, pos.size);
     }
   };
-//  enum class TokenType
-//  {
-//    ID,
-//    INT, DOUBLE, STRING, BOOL,
-//    EQUAL,//=
-//    LP, RP, //()
-//    ARR_LP, ARR_RP,//[]
-//    COMMA, SC_COLON,
-//    BPATH,//-
-//    
-//    FEND, SEND, SCEND,
-//    
-//    NOTE,
-//    //The following is not token
-//    UNEXPECTED, ME, MB//many begin
-//  };
-//  
-//  enum class State
-//  {
-//    ID, VALUE, EQUAL, LP, RP, ARR_LP, ARR_RP,
-//    COMMA, SC_COLON, BPATH, FEND, SEND, SCEND,
-//    UNEXPECTED, END
-//  };
   
   enum class State
   {
     INIT,
     ID, VALUE,
-    ARR_VALUE,EQUAL, ARR_LP, ARR_RP,
+    ARR_VALUE, EQUAL, ARR_LP, ARR_RP,
     COMMA, SC_COLON, PATH_COLON, BPATH, PATH_ID_TARGET, PATH_ID,
     UNEXPECTED
   };
+  
   class Match
   {
   private:
     State state;
     State last_state;
   public:
-    Match(): state(State::INIT), last_state(State::UNEXPECTED) {}
+    Match() : state(State::INIT), last_state(State::UNEXPECTED)
+    {}
+    
     std::string error_correct()
     {
       switch (last_state)
@@ -346,9 +446,10 @@ namespace czh::lexer
           throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected state.");
       }
     }
-    void match(const Token& token)
+    
+    void match(const Token &token)
     {
-      if(token.type == TokenType::NOTE) return;
+      if (token.type == TokenType::NOTE) return;
       switch (state)
       {
         case State::INIT:
@@ -385,6 +486,7 @@ namespace czh::lexer
           switch (token.type)
           {
             case TokenType::INT:
+            case TokenType::LONGLONG:
             case TokenType::DOUBLE:
             case TokenType::STRING:
             case TokenType::BOOL:
@@ -406,6 +508,7 @@ namespace czh::lexer
           switch (token.type)
           {
             case TokenType::INT:
+            case TokenType::LONGLONG:
             case TokenType::DOUBLE:
             case TokenType::STRING:
             case TokenType::BOOL:
@@ -439,6 +542,7 @@ namespace czh::lexer
           switch (token.type)
           {
             case TokenType::INT:
+            case TokenType::LONGLONG:
             case TokenType::DOUBLE:
             case TokenType::STRING:
             case TokenType::BOOL:
@@ -501,10 +605,12 @@ namespace czh::lexer
           throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected state.");
       }
     }
+    
     bool good()
     {
       return state != State::UNEXPECTED;
     }
+    
     void reset()
     {
       state = State::INIT;
@@ -519,6 +625,7 @@ namespace czh::lexer
     ss << file.rdbuf();
     return ss.str();
   }
+  
   class NumberMatch
   {
   private:
@@ -533,48 +640,54 @@ namespace czh::lexer
     State state;
     bool _is_double;
   public:
-    NumberMatch() : state(State::INIT), _is_double(false) {}
-    bool match(const std::string& s)
+    NumberMatch() : state(State::INIT), _is_double(false)
+    {}
+    
+    bool match(const std::string &s)
     {
-      for(auto& ch : s)
+      for (auto &ch: s)
       {
         auto token = get_token(ch);
-        if(token == Token::UNEXPECTED) return false;
+        if (token == Token::UNEXPECTED) return false;
         next(token);
-        if(state == State::UNEXPECTED) return false;
+        if (state == State::UNEXPECTED) return false;
       }
       next(get_token());
-      if(state != State::END) return false;
+      if (state != State::END) return false;
       return true;
     }
+    
     bool is_double() const
     {
       return _is_double;
     }
-  void reset()
-  {
-    state = State::INIT;
-    _is_double = false;
-  }
+    
+    void reset()
+    {
+      state = State::INIT;
+      _is_double = false;
+    }
+  
   private:
     Token get_token(char ch = -1)
     {
-      if(std::isdigit(ch))
+      if (std::isdigit(ch))
         return Token::INT;
-      else if(ch == '.')
+      else if (ch == '.')
       {
         _is_double = true;
         return Token::DOT;
       }
-      else if(ch == 'e' || ch == 'E')
+      else if (ch == 'e' || ch == 'E')
         return Token::EXP;
-      else if(ch == '+' || ch == '-')
+      else if (ch == '+' || ch == '-')
         return Token::SIGN;
-      else if(ch == -1)
+      else if (ch == -1)
         return Token::END;
       return Token::UNEXPECTED;
     }
-    void next(const Token& token)
+    
+    void next(const Token &token)
     {
       switch (state)
       {
@@ -716,77 +829,91 @@ namespace czh::lexer
       }
     }
   };
-  inline bool isnumber(const char& ch)
+  
+  inline bool isnumber(const char &ch)
   {
     return std::isdigit(ch) || ch == '.' || ch == 'e' || ch == 'E' || ch == '+' || ch == '-';
   }
+  
   class Lexer
   {
   private:
     std::shared_ptr<File> code;
-    std::size_t code_size;
-    std::shared_ptr<std::vector<Token>> tokens;
+    std::deque<Token> tokenstream;
     Match match;
     NumberMatch nmatch;
     Pos codepos;
     bool parsing_path;
+    bool is_eof;
+    
   public:
     Lexer(const std::string &path, const std::string &_filename)
-        : code(std::make_shared<File>(_filename, get_string_from_file(path))),
-          code_size(code->size()),
-          tokens(std::make_shared<std::vector<Token>>(std::vector<Token>())),
+        : code(std::make_shared<NonStreamFile>(_filename, get_string_from_file(path))),
           codepos(code),
-          parsing_path(false) {}
+          parsing_path(false),
+          is_eof(false){}
     
     explicit Lexer(std::string code_str)
-        : code(std::make_shared<File>("temp", std::move(code_str))),
-          code_size(code->size()),
-          tokens(std::make_shared<std::vector<Token>>(std::vector<Token>())),
+        : code(std::make_shared<NonStreamFile>("nonstream_temp", std::move(code_str))),
           codepos(code),
-          parsing_path(false) {}
-    
-    std::shared_ptr<std::vector<Token>> get_all_token()
+          parsing_path(false) ,
+          is_eof(false){}
+    explicit Lexer(std::unique_ptr<std::ifstream> fs)
+        : code(std::make_shared<StreamFile>("stream_temp", std::move(fs))),
+          codepos(code),
+          parsing_path(false) ,
+          is_eof(false){}
+    Token view(std::size_t s)
     {
-      Token t(TokenType::UNEXPECTED, 0, get_pos().set_size(0));
-      do
+      if (tokenstream.size() <= s)
       {
-        t = get_tok();
-        if(t.type == TokenType::SEND || t.type == TokenType::FEND) continue;
-        check(t);
-      } while (t.type != TokenType::FEND);
-      return tokens;
+        auto t = get_tok();
+        if (t.type == TokenType::FEND)
+          is_eof = true;
+        else
+          check_token(t);
+        tokenstream.emplace_back(t);
+      }
+      return tokenstream[s];
     }
-  
-  private:
-    void check(const Token &token)
+    void next(const std::size_t &s = 1)
     {
+      tokenstream.pop_front();
+    }
+    bool eof() const
+    {
+      return is_eof && tokenstream.empty();
+    }
+  private:
+    void check_token(const Token &token)
+    {
+      if(token.type == TokenType::SEND) return;
       match.match(token);
       if(!match.good())
       {
         token.error("Unexpected token '" + token.get_string()+ "'.Do you mean '"
                     + match.error_correct() + "'?");
-        return;
       }
-      tokens->emplace_back(token);
     }
     Token get_tok()
     {
-      while (check() && isspace(get()))
-        next();
+      while (check_char() && isspace(view_char()))
+        next_char();
       
       bool is_num = false;
-      if (!parsing_path && check() && (std::isdigit(get()) || get() == '.' || get() == '+' || get() == '-'))
+      if (!parsing_path && check_char() && (std::isdigit(view_char()) || view_char() == '.' || view_char() == '+' ||
+          view_char() == '-'))
       {
         is_num = true;
-        if(get() == '-')
+        if(view_char() == '-')
         {
-          if (check(1) && !(std::isdigit(get(1)) || get(1) == '.'))
+          if (check_char(1) && !(std::isdigit(view_char(1)) || view_char(1) == '.'))
             is_num = false; //-id
-          if (check(2) && get(1) == '.' && get(2) == '.')
+          if (check_char(2) && view_char(1) == '.' && view_char(2) == '.')
             is_num = false; //-..
-          if (check(2) && get(1) == '.' && get(2) == '-')
+          if (check_char(2) && view_char(1) == '.' && view_char(2) == '-')
             is_num = false;//-.-
-          if (check(2) && get(1) == '.' && get(2) == ':')
+          if (check_char(2) && view_char(1) == '.' && view_char(2) == ':')
             is_num = false;//-.:
         }
       }
@@ -796,9 +923,9 @@ namespace czh::lexer
         std::string temp;
         do
         {
-          temp += get();
-          next();
-        } while (check() && isnumber(get()));
+          temp += view_char();
+          next_char();
+        } while (check_char() && isnumber(view_char()));
         if(nmatch.match(temp))
         {
           if (nmatch.is_double())
@@ -809,7 +936,11 @@ namespace czh::lexer
           else
           {
             nmatch.reset();
-            return {TokenType::INT, (int)utils::str_to<double>(temp), get_pos().set_size(temp.size())};
+            auto t = utils::str_to<double>(temp);
+            if(t < std::numeric_limits<int>().max())
+              return {TokenType::INT, (int)t, get_pos().set_size(temp.size())};
+            else
+              return {TokenType::LONGLONG, (long long)t, get_pos().set_size(temp.size())};
           }
         }
         else
@@ -818,35 +949,36 @@ namespace czh::lexer
           tmp.error("Unexpected token '" + temp + "'.Is this a number?");
         }
       }
-      else if (check() && get() == '"')//str
+      else if (check_char() && view_char() == '"')//str
       {
         std::string temp;
-        next();//eat '"'.
-        while (check() && get() != '"')
+        next_char();//eat '"'.
+        while (check_char() && view_char() != '"')
         {
-          temp += get();
-          next();
+          temp += view_char();
+          next_char();
         }
-        next();//eat '"'
+        next_char();//eat '"'
         return {TokenType::STRING, temp, get_pos().set_size(temp.size())};
-      } else if ((check() && (isalpha(get()) || get() == '_')) || (check() && parsing_path && get() == '.'))//id
+      } else if ((check_char() && (isalpha(view_char()) || view_char() == '_')) || (check_char() && parsing_path &&
+          view_char() == '.'))//id
         //pathʱ'.''..'Ϊid
       {
         std::string temp = "";
-        if (parsing_path && get() == '.')
+        if (parsing_path && view_char() == '.')
         {
           temp = ".";
-          next();
-          if (check() && get() == '.')
+          next_char();
+          if (check_char() && view_char() == '.')
           {
             temp += ".";
-            next();
+            next_char();
           }
         }
-        while (check() && (isalnum(get()) || get() == '_') && get() != '-')
+        while (check_char() && (isalnum(view_char()) || view_char() == '_') && view_char() != '-')
         {
-          temp += get();
-          next();
+          temp += view_char();
+          next_char();
         }
         
         if (temp == "end")
@@ -857,28 +989,28 @@ namespace czh::lexer
           return {TokenType::BOOL, false, get_pos().set_size(5)};
         else
           return {TokenType::ID, temp, get_pos().set_size(temp.size())};
-      } else if (check() && marks.find(get()) != marks.end())//mark
+      } else if (check_char() && marks.find(view_char()) != marks.end())//mark
       {
-        next();
-        if (marks.at(get(-1)) == TokenType::BPATH) parsing_path = true;
-        if (parsing_path && marks.at(get(-1)) == TokenType::COLON) parsing_path = false;
-        return Token(marks.at(get(-1)), get(-1), get_pos().set_size(1));
-      } else if (check(2) && get() == '/' && get(1) == 'b' && get(2) == '/')//note
+        next_char();
+        if (marks.at(view_char(-1)) == TokenType::BPATH) parsing_path = true;
+        if (parsing_path && marks.at(view_char(-1)) == TokenType::COLON) parsing_path = false;
+        return Token(marks.at(view_char(-1)), view_char(-1), get_pos().set_size(1));
+      } else if (check_char(2) && view_char() == '/' && view_char(1) == 'b' && view_char(2) == '/')//note
       {
         std::string temp;
-        next(3);//eat '/b/'
-        while (!(check(2) && get() == '/' && get(1) == 'e' && get(2) == '/'))
+        next_char(3);//eat '/b/'
+        while (!(check_char(2) && view_char() == '/' && view_char(1) == 'e' && view_char(2) == '/'))
         {
-          temp += get();
-          next();
+          temp += view_char();
+          next_char();
         }
-        next(3);//eat '/e/'
+        next_char(3);//eat '/e/'
         return Token(TokenType::NOTE, value::Note(temp), get_pos().set_size(temp.size()));
       } else if (codepos.get() == code->size()) return Token(TokenType::FEND, 0, get_pos().set_size(0));
       else
       {
         Token(TokenType::UNEXPECTED, 0, get_pos().set_size(0))
-            .error(std::string("Unexpected token '" + std::string(1, get()) + "'."));
+            .error(std::string("Unexpected token '" + std::string(1, view_char()) + "'."));
       }
       return {TokenType::UNEXPECTED, 0, get_pos().set_size(0)};
     }
@@ -888,21 +1020,19 @@ namespace czh::lexer
       return codepos;
     }
     
-    bool check(const std::size_t &s = 0)
+    char check_char(std::size_t s = 0)
     {
-      return (codepos.get() + s) < code_size;
+      return code->check(s);
+    }
+    char view_char(std::size_t s = 0)
+    {
+      return code->view(s);
     }
     
-    char &get(const std::size_t &s = 0)
+    void next_char(const std::size_t &s = 1)
     {
-      if (!check(s))
-        Token(TokenType::UNEXPECTED, 0, get_pos().set_size(0)).error(std::string("Unexpected end of tokens.'"));
-      return (*code)[codepos.get() + s];
-    }
-    
-    void next(const std::size_t &s = 1)
-    {
-      codepos += s;
+      code->ignore(s);
+      codepos.pos += s;
     }
   };
 }
