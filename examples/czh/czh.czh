@@ -1,14 +1,14 @@
 /b/ note /e/
 czh:
-    array = [6, 6, 6];
-    int = +6e+2;
-    longlong = +6e+12;
-    string = "This is a string";
-    double = 1.0000000000000002;
-    ref = -.:int;
+    array = [6, 6, 6]
+    int = +6e+2
+    longlong = +6e+12
+    string = "This is a string"
+    double = 1.0000000000000002
+    ref = -.:int
     arrays:
-        k1 = [1,2,3];
-        k2 = [4,5,6];
-        k3 = [7,8,9];
-    end;
-end;
+        k1 = [1,2,3]
+        k2 = [4,5,6]
+        k3 = [7,8,9]
+    end
+end

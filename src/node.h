@@ -362,7 +362,7 @@ namespace czh::node
             ret += std::string((i + 1) * 2, ' ') +
                 colorify(node.at(r).name, with_color, Type::ID)// id name
                 + " = " + value_to_string(r, node.at(r).value, with_color)// value
-                + ";" + "\n";
+                + "\n";
           } else
           {
             if (!ret.empty() && *ret.crbegin() == '\n')
