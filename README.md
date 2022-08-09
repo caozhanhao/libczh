@@ -33,9 +33,9 @@
 ##### Node::get_value()
 - 返回Value&，可修改值
 - 仅存储值的Node可调用
-##### Node::view_char<T>()
+##### Node::get<T>()
 - 获取具体类型的值
-- 当值为array时，用Node::view_char<std::vector<T>>
+- 当值为array时，用Node::get<std::vector<T>>
 - 仅存储值的Node可调用
 ### value_map
 - 同一Node下的值的类型相同时时，可以使用value_map()获取所有key和value组成的map
