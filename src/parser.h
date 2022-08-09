@@ -18,14 +18,14 @@ namespace czh::parser
   class Parser
   {
   private:
-    lexer::Lexer* lex;
-    std::size_t pos;
+    lexer::Lexer *lex;
     std::shared_ptr<Node> node;
     Node *curr_node;
     int note;
   public:
-    explicit Parser(lexer::Lexer* lex_)
-        : lex(lex_), pos(0), note(0), node(std::make_shared<Node>(Node())), curr_node(node.get()) {}
+    explicit Parser(lexer::Lexer *lex_)
+        : lex(lex_), note(0), node(std::make_shared<Node>(Node())), curr_node(node.get())
+    {}
     
     std::shared_ptr<Node> parse()
     {
@@ -57,7 +57,7 @@ namespace czh::parser
       }
       return node;
     }
-    
+  
   private:
     void parse_end()
     {
@@ -168,6 +168,7 @@ namespace czh::parser
     {
       return !lex->eof();
     }
+    
     Token view(std::size_t s = 0)
     {
       return lex->view(s);

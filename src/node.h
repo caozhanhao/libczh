@@ -36,11 +36,12 @@ namespace czh::node
           {Type::REF_BLOCK_ID, Color::LIGHT_BLUE},
           {Type::NOTE,         Color::YELLOW}
       };
-  std::string colorify(const std::string& str, bool with_color, Type type)
+  
+  std::string colorify(const std::string &str, bool with_color, Type type)
   {
-    if(!with_color)
+    if (!with_color)
       return str;
-    if(colors.find(type) == colors.end())
+    if (colors.find(type) == colors.end())
       throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected type");
     switch (colors.at(type))
     {
@@ -50,38 +51,43 @@ namespace czh::node
         return "\033[36m" + str + "\033[0m";
       case Color::BLUE:
         return "\033[34m" + str + "\033[0m";
-      case  Color::GREEN:
+      case Color::GREEN:
         return "\033[32m" + str + "\033[0m";
       case Color::YELLOW:
-        return  "\033[33m" + str + "\033[0m";
+        return "\033[33m" + str + "\033[0m";
       case Color::WHITE:
-        return  "\033[37m" + str + "\033[0m";
+        return "\033[37m" + str + "\033[0m";
       case Color::RED:
-        return  "\033[31m" + str + "\033[0m";
+        return "\033[31m" + str + "\033[0m";
       default:
         throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected color");
     }
   }
-  template <typename T>
-  std::string to_czhstr(const T& val, bool color)
+  
+  template<typename T>
+  std::string to_czhstr(const T &val, bool color)
   {
     return colorify(utils::value_to_str(val), color, Type::NUM);
   }
-  template <>
-  std::string to_czhstr(const bool& val, bool color)
+  
+  template<>
+  std::string to_czhstr(const bool &val, bool color)
   {
     return colorify((val ? "true" : "false"), color, Type::BOOL);
   }
-  template <>
-  std::string to_czhstr(const std::string& val, bool color)
+  
+  template<>
+  std::string to_czhstr(const std::string &val, bool color)
   {
     return colorify(("\"" + val + "\""), color, Type::STR);
   }
-  template <>
-  std::string to_czhstr(const value::Note& val, bool color)
+  
+  template<>
+  std::string to_czhstr(const value::Note &val, bool color)
   {
     return colorify(("/b/" + val.note + "/e/"), color, Type::NOTE);
   }
+  
   template<typename VT>
   std::string vector_to_string(const VT &v, bool color)
   {
@@ -134,9 +140,7 @@ namespace czh::node
         output_list = std::make_shared<std::vector<std::string>>();
     }
     
-    [[nodiscard]] std::string get_name() const { return name; }
-    
-    Node& remove(const std::string &item)
+    Node &remove(const std::string &item)
     {
       if (outputable)
       {
@@ -152,14 +156,14 @@ namespace czh::node
       return *this;
     }
     
-    Node& clear()
+    Node &clear()
     {
       node.clear();
       output_list->clear();
       return *this;
     }
-  
-    Node& rename(const std::string& item, const std::string& newname)
+    
+    Node &rename(const std::string &item, const std::string &newname)
     {
       if (outputable)
       {
@@ -196,8 +200,9 @@ namespace czh::node
         throw Error(CZH_ERROR_LOCATION, __func__, "Can not make a reference to a Node.");
       return value::Value(this);
     }
+    
     template<typename T>
-    Node& add(const std::string &add_name, const T &_value, const std::string &before = "")
+    Node &add(const std::string &add_name, const T &_value, const std::string &before = "")
     {
       if (!is_node)
         throw Error(CZH_ERROR_LOCATION, __func__, "Can not add Value to Value");
@@ -238,6 +243,14 @@ namespace czh::node
       return &node[add_name];
     }
     
+    [[nodiscard]] auto type() const
+    {
+      if (is_node)
+        throw Error(CZH_ERROR_LOCATION, __func__, "Node not view_char type.", Error::internal);
+      return value.type();
+      
+    }
+    
     template<typename T>
     std::unique_ptr<std::map<std::string, T>> value_map()
     {
@@ -249,7 +262,7 @@ namespace czh::node
       std::type_index value_type(typeid(T));
       std::type_index node_type(typeid(Node));
       std::type_index note_type(typeid(value::Note));
-      for (auto &r:node)
+      for (auto &r: node)
       {
         if (r.second.type() == note_type)
           continue;
@@ -262,17 +275,10 @@ namespace czh::node
       }
       return result;
     }
-  
+    
     [[nodiscard]] Node *to_last_node() const
     {
       return last_node;
-    }
-  
-    [[nodiscard]] Node *get_root() const
-    {
-      auto last = to_last_node();
-      for (; last->name != "/"; last = last->to_last_node());
-      return last;
     }
     
     Node &operator[](const std::string &s)
@@ -292,13 +298,7 @@ namespace czh::node
         throw Error(CZH_ERROR_LOCATION, __func__, "There is no node named '" + s + "'.");
       return node.at(s);
     }
-  
-    [[nodiscard]] auto type() const
-    {
-      if (is_node)
-        throw Error(CZH_ERROR_LOCATION, __func__, "Node not view_char type.", Error::internal);
-      return value.type();
-    }
+    
     
     template<typename T>
     T get() const
@@ -311,7 +311,7 @@ namespace czh::node
       }
       return value.get<T>();
     }
-  
+    
     [[nodiscard]] std::unique_ptr<std::vector<std::string>> get_path() const
     {
       auto n_ptr = to_last_node();
@@ -325,16 +325,17 @@ namespace czh::node
       }
       return std::move(std::make_unique<decltype(res)>(res));
     }
-  
-    [[nodiscard]] auto get_outputlist() const { return output_list; }
-  
+    
+    [[nodiscard]] auto get_outputlist() const
+    { return output_list; }
+    
     [[nodiscard]] bool has_node(const std::string &tag) const
     {
       if (!is_node)
         throw Error(CZH_ERROR_LOCATION, __func__, "Value has no node.", Error::internal);
       return (node.find(tag) != node.end());
     }
-  
+    
     [[nodiscard]] std::string to_string(bool with_color = !color, std::size_t i = 0) const
     {
       if (!outputable)
@@ -345,25 +346,27 @@ namespace czh::node
       std::string ret;
       if (is_node && name != "/")
         ret += std::string(i * 2, ' ')
-            + colorify(name, with_color, Type::BLOCK_BEG) //node name
-            + ":" + "\n";
-      for (auto &r:*output_list)
+               + colorify(name, with_color, Type::BLOCK_BEG) //node name
+               + ":" + "\n";
+      for (auto &r: *output_list)
       {
         if (node.at(r).is_node)
         {
           if (name != "/")
-            ret += node.at(r).to_string(with_color,i + 1);
+            ret += node.at(r).to_string(with_color, i + 1);
           else
-            ret += node.at(r).to_string(with_color,i);
-        } else
+            ret += node.at(r).to_string(with_color, i);
+        }
+        else
         {
           if (node.at(r).type() != typeid(value::Note))
           {
             ret += std::string((i + 1) * 2, ' ') +
-                colorify(node.at(r).name, with_color, Type::ID)// id name
-                + " = " + value_to_string(r, node.at(r).value, with_color)// value
-                + "\n";
-          } else
+                   colorify(node.at(r).name, with_color, Type::ID)// id name
+                   + " = " + value_to_string(r, node.at(r).value, with_color)// value
+                   + "\n";
+          }
+          else
           {
             if (!ret.empty() && *ret.crbegin() == '\n')
               ret.pop_back();//eat '\n'
@@ -373,8 +376,8 @@ namespace czh::node
       }
       if (is_node && name != "/")
         ret += std::string(i * 2, ' ') +
-            colorify("end", with_color, Type::BLOCK_END)
-            + "\n";
+               colorify("end", with_color, Type::BLOCK_END)
+               + "\n";
       return ret;
     }
   
@@ -423,7 +426,8 @@ namespace czh::node
             res += "-.";
             break;
           }
-        } else
+        }
+        else
         {
           if (i == this_path.size() - 1)
           {
@@ -435,7 +439,7 @@ namespace czh::node
         }
       }
       
-      for (auto it = path.cbegin() + samepos; it < path.cend() - 1; it++)
+      for (auto it = path.cbegin() + (int) samepos; it < path.cend() - 1; it++)
       {
         res += "-";
         res += colorify(*it, with_color, Type::REF_BLOCK_ID);

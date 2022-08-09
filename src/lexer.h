@@ -70,12 +70,12 @@ namespace czh::lexer
   public:
     std::string filename;
     
-    File(std::string name)
+    explicit File(std::string name)
         : filename(std::move(name))
     {}
     
     [[nodiscard]] virtual std::string
-    get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize = 0) const = 0;
+    get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize) const = 0;
     
     [[nodiscard]] virtual std::size_t get_lineno(std::size_t pos) const = 0;
     
@@ -91,7 +91,7 @@ namespace czh::lexer
     
     virtual void ignore(std::size_t s) = 0;
     
-    [[nodiscard]] virtual char check(std::size_t s) = 0;
+    [[nodiscard]] virtual bool check(std::size_t s) = 0;
   };
   
   class StreamFile : public File
@@ -109,7 +109,7 @@ namespace czh::lexer
       file->seekg(std::ios_base::beg);
     }
     
-    [[nodiscard]] std::string get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize = 0) const override
+    [[nodiscard]] std::string get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize) const override
     {
       std::string tmp;
       std::string buffer;
@@ -134,7 +134,7 @@ namespace czh::lexer
       std::string tmp;
       file->clear();
       file->seekg(std::ios::beg);
-      for (;std::getline(*file, tmp); lineno++)
+      for (; std::getline(*file, tmp); lineno++)
       {
         postmp += tmp.size() + 1;
         if (postmp >= pos) break;
@@ -149,7 +149,7 @@ namespace czh::lexer
       std::string tmp;
       file->clear();
       file->seekg(std::ios::beg);
-      while(std::getline(*file, tmp))
+      while (std::getline(*file, tmp))
       {
         sz = tmp.size();
         postmp += tmp.size() + 1;
@@ -174,26 +174,26 @@ namespace czh::lexer
       file->seekg(std::ios::beg);
       std::string tmp;
       for (std::size_t i = 0; !file->eof() && i < n; ++i)
-        tmp += file->get();
+        tmp += (char) file->get();
       return tmp;
     }
     
     void ignore(std::size_t s) override
     {
-      file->ignore(s);
+      file->ignore((int) s);
     }
     
     [[nodiscard]] char view(std::size_t s) override
     {
       char ch;
       auto i = file->tellg();
-      file->seekg(s, std::ios::cur);
-      ch = file->get();
+      file->seekg((int) s, std::ios::cur);
+      ch = (char) file->get();
       file->seekg(i);
       return ch;
     }
     
-    [[nodiscard]] char check(std::size_t s) override
+    [[nodiscard]] bool check(std::size_t s) override
     {
       return !file->eof();
     }
@@ -209,7 +209,7 @@ namespace czh::lexer
         : File(std::move(name)), code(std::move(code_)), codepos(0)
     {}
     
-    [[nodiscard]] std::string get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize = 0) const override
+    [[nodiscard]] std::string get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize) const override
     {
       std::string ret;
       if (linenosize == 0)
@@ -302,7 +302,7 @@ namespace czh::lexer
       return code[codepos + s];
     }
     
-    [[nodiscard]] char check(std::size_t s) override
+    [[nodiscard]] bool check(std::size_t s) override
     {
       return (codepos + s) < code.size();
     }
@@ -371,12 +371,6 @@ namespace czh::lexer
       std::string temp2 = code->get_spec_line(lineno + 1, lineno + actual_next + 1, linenosize);
       std::string errorstring = temp1 + arrow + temp2;
       return std::move(std::make_unique<std::string>(errorstring));
-    }
-    
-    void reset()
-    {
-      pos = 0;
-      size = 0;
     }
   };
   
@@ -657,7 +651,7 @@ namespace czh::lexer
       return true;
     }
     
-    bool is_double() const
+    [[nodiscard]]bool is_double() const
     {
       return _is_double;
     }
@@ -823,7 +817,7 @@ namespace czh::lexer
               break;
           }
           break;
-        case State::END:
+        default:
           state = State::UNEXPECTED;
           break;
       }
@@ -845,24 +839,29 @@ namespace czh::lexer
     Pos codepos;
     bool parsing_path;
     bool is_eof;
-    
+  
   public:
     Lexer(const std::string &path, const std::string &_filename)
         : code(std::make_shared<NonStreamFile>(_filename, get_string_from_file(path))),
           codepos(code),
           parsing_path(false),
-          is_eof(false){}
+          is_eof(false)
+    {}
     
     explicit Lexer(std::string code_str)
         : code(std::make_shared<NonStreamFile>("nonstream_temp", std::move(code_str))),
           codepos(code),
-          parsing_path(false) ,
-          is_eof(false){}
+          parsing_path(false),
+          is_eof(false)
+    {}
+    
     explicit Lexer(std::unique_ptr<std::ifstream> fs)
         : code(std::make_shared<StreamFile>("stream_temp", std::move(fs))),
           codepos(code),
-          parsing_path(false) ,
-          is_eof(false){}
+          parsing_path(false),
+          is_eof(false)
+    {}
+    
     Token view(std::size_t s)
     {
       if (tokenstream.size() <= s)
@@ -876,25 +875,34 @@ namespace czh::lexer
       }
       return tokenstream[s];
     }
+    
     void next(const std::size_t &s = 1)
     {
       tokenstream.pop_front();
     }
-    bool eof() const
+    
+    [[nodiscard]]bool eof() const
     {
       return is_eof && tokenstream.empty();
     }
+  
   private:
     void check_token(const Token &token)
     {
-      if(token.type == TokenType::SEND) return;
+      if (token.type == TokenType::SEND) return;
       match.match(token);
-      if(!match.good())
+      if (!match.good())
       {
-        token.error("Unexpected token '" + token.get_string()+ "'.Do you mean '"
+        token.error("Unexpected token '" + token.get_string() + "'.Do you mean '"
                     + match.error_correct() + "'?");
       }
     }
+    
+    Pos get_pos()
+    {
+      return codepos;
+    }
+    
     Token get_tok()
     {
       while (check_char() && isspace(view_char()))
@@ -902,10 +910,10 @@ namespace czh::lexer
       
       bool is_num = false;
       if (!parsing_path && check_char() && (std::isdigit(view_char()) || view_char() == '.' || view_char() == '+' ||
-          view_char() == '-'))
+                                            view_char() == '-'))
       {
         is_num = true;
-        if(view_char() == '-')
+        if (view_char() == '-')
         {
           if (check_char(1) && !(std::isdigit(view_char(1)) || view_char(1) == '.'))
             is_num = false; //-id
@@ -918,7 +926,7 @@ namespace czh::lexer
         }
       }
       
-      if(is_num)
+      if (is_num)
       {
         std::string temp;
         do
@@ -926,7 +934,7 @@ namespace czh::lexer
           temp += view_char();
           next_char();
         } while (check_char() && isnumber(view_char()));
-        if(nmatch.match(temp))
+        if (nmatch.match(temp))
         {
           if (nmatch.is_double())
           {
@@ -937,10 +945,10 @@ namespace czh::lexer
           {
             nmatch.reset();
             auto t = utils::str_to<double>(temp);
-            if(t < std::numeric_limits<int>().max())
-              return {TokenType::INT, (int)t, get_pos().set_size(temp.size())};
+            if (t < std::numeric_limits<int>().max())
+              return {TokenType::INT, (int) t, get_pos().set_size(temp.size())};
             else
-              return {TokenType::LONGLONG, (long long)t, get_pos().set_size(temp.size())};
+              return {TokenType::LONGLONG, (long long) t, get_pos().set_size(temp.size())};
           }
         }
         else
@@ -960,11 +968,11 @@ namespace czh::lexer
         }
         next_char();//eat '"'
         return {TokenType::STRING, temp, get_pos().set_size(temp.size())};
-      } else if ((check_char() && (isalpha(view_char()) || view_char() == '_')) || (check_char() && parsing_path &&
-          view_char() == '.'))//id
-        //pathʱ'.''..'Ϊid
+      }
+      else if ((check_char() && (isalpha(view_char()) || view_char() == '_')) || (check_char() && parsing_path &&
+                                                                                  view_char() == '.'))//id
       {
-        std::string temp = "";
+        std::string temp;
         if (parsing_path && view_char() == '.')
         {
           temp = ".";
@@ -989,13 +997,15 @@ namespace czh::lexer
           return {TokenType::BOOL, false, get_pos().set_size(5)};
         else
           return {TokenType::ID, temp, get_pos().set_size(temp.size())};
-      } else if (check_char() && marks.find(view_char()) != marks.end())//mark
+      }
+      else if (check_char() && marks.find(view_char()) != marks.end())//mark
       {
         next_char();
         if (marks.at(view_char(-1)) == TokenType::BPATH) parsing_path = true;
         if (parsing_path && marks.at(view_char(-1)) == TokenType::COLON) parsing_path = false;
-        return Token(marks.at(view_char(-1)), view_char(-1), get_pos().set_size(1));
-      } else if (check_char(2) && view_char() == '/' && view_char(1) == 'b' && view_char(2) == '/')//note
+        return {marks.at(view_char(-1)), view_char(-1), get_pos().set_size(1)};
+      }
+      else if (check_char(2) && view_char() == '/' && view_char(1) == 'b' && view_char(2) == '/')//note
       {
         std::string temp;
         next_char(3);//eat '/b/'
@@ -1005,8 +1015,9 @@ namespace czh::lexer
           next_char();
         }
         next_char(3);//eat '/e/'
-        return Token(TokenType::NOTE, value::Note(temp), get_pos().set_size(temp.size()));
-      } else if (codepos.get() == code->size()) return Token(TokenType::FEND, 0, get_pos().set_size(0));
+        return {TokenType::NOTE, value::Note(temp), get_pos().set_size(temp.size())};
+      }
+      else if (codepos.get() == code->size()) return {TokenType::FEND, 0, get_pos().set_size(0)};
       else
       {
         Token(TokenType::UNEXPECTED, 0, get_pos().set_size(0))
@@ -1015,15 +1026,11 @@ namespace czh::lexer
       return {TokenType::UNEXPECTED, 0, get_pos().set_size(0)};
     }
     
-    Pos get_pos()
-    {
-      return codepos;
-    }
-    
-    char check_char(std::size_t s = 0)
+    bool check_char(std::size_t s = 0)
     {
       return code->check(s);
     }
+    
     char view_char(std::size_t s = 0)
     {
       return code->view(s);

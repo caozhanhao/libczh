@@ -18,10 +18,11 @@ namespace czh::error
     std::string details;
     bool is_internal_;
   public:
-    Error(std::string location_, std::string func_name_, const std::string& details_, bool internal_ = false)
+    Error(std::string location_, std::string func_name_, const std::string &details_, bool internal_ = false)
         : logic_error(details_), location(std::move(location_)),
-        func_name(std::move(func_name_)), details(details_),
-          is_internal_(internal_) {}
+          func_name(std::move(func_name_)), details(details_),
+          is_internal_(internal_)
+    {}
     
     [[nodiscard]] std::string get(const bool &add_location = true) const
     {
@@ -32,12 +33,12 @@ namespace czh::error
         ret += "\033[0;32;31m error : \033[m" + details;
       return ret;
     }
-  
+    
     [[nodiscard]] std::string get_detail() const
     {
       return details;
     }
-  
+    
     [[nodiscard]] bool is_internal() const
     {
       return is_internal_;
