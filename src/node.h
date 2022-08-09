@@ -374,7 +374,7 @@ namespace czh::node
       if (is_node && name != "/")
         ret += std::string(i * 2, ' ') +
             colorify("end", with_color, Type::BLOCK_END)
-            + ";\n";
+            + "\n";
       return ret;
     }
   

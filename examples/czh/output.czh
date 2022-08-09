@@ -12,11 +12,11 @@ example:
     ref_example0 = -..:int_example
     test:
       ref_example1 = -..:ref_example0/b/ref/e/
-    end;
+    end
     ref_example2 = -test:ref_example1
-  end;
+  end
   value_array_map_example:
-  end;
+  end
   dt1 = 1.0000000000000002
   dt2 = 4.9406564584124654e-324
   dt3 = -4.9406564584124654e-324
@@ -26,7 +26,7 @@ example:
   dt7 = -2.2250738585072014e-308
   dt8 = 1.7976931348623157e+308
   dt9 = -1.7976931348623157e+308
-end;
+end
 ref:
   ref = -..-example:edit_example
-end;
+end
