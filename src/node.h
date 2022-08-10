@@ -102,6 +102,22 @@ namespace czh::node
     return result;
   }
   
+  template<>
+  std::string to_czhstr(const value::Value::AnyArray &v, bool color)
+  {
+    auto visitor = [&color](auto&& v)->std::string{return to_czhstr(v, color);};
+    std::string result = "[";
+    for (auto it = v.cbegin(); it != (v.cend() - 1); ++it)
+    {
+      result += std::visit(visitor, *it);
+      result += ", ";
+    }
+    result += std::visit(visitor, *(v.cend() - 1));
+    result += "]";
+    return result;
+  }
+  
+  
   template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
   template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
   class Node
@@ -235,20 +251,42 @@ namespace czh::node
       return *this;
     }
     
-    Node *add_node(const std::string &add_name)
+    Node *add_node(const std::string &add_name, const std::string &before = "")
     {
       if (!is_node)
         throw Error(CZH_ERROR_LOCATION, __func__, "Can not add a Node to Value");
       node[add_name] = Node(this, add_name);
+  
       if (outputable)
-        output_list->emplace_back(add_name);
+      {
+        if (before.empty())
+          output_list->emplace_back(add_name);
+        else
+        {
+          bool added = false;
+          for (auto it = output_list->begin(); it < output_list->end(); it++)
+          {
+            if (*it == before)
+            {
+              output_list->insert(it, add_name);
+              added = true;
+              break;
+            }
+          }
+          if (!added)
+          {
+            throw Error(CZH_ERROR_LOCATION, __func__, "There is no Node named '"
+                                                      + before + "'.");
+          }
+        }
+      }
       return &node[add_name];
     }
     
     [[nodiscard]] auto type() const
     {
       if (is_node)
-        throw Error(CZH_ERROR_LOCATION, __func__, "Node not view_char type.", Error::internal);
+        throw Error(CZH_ERROR_LOCATION, __func__, "Node not get type.", Error::internal);
       return value.type();
       
     }
@@ -257,7 +295,7 @@ namespace czh::node
     std::unique_ptr<std::map<std::string, T>> value_map()
     {
       if (!is_node)
-        throw Error(CZH_ERROR_LOCATION, __func__, "Can not view_char a map from a Value.");
+        throw Error(CZH_ERROR_LOCATION, __func__, "Can not get a map from a Value.");
       std::unique_ptr<std::map<std::string, T>> result =
           std::make_unique<std::map<std::string, T>>();
       
@@ -306,7 +344,7 @@ namespace czh::node
     T get() const
     {
       if (is_node)
-        throw Error(CZH_ERROR_LOCATION, __func__, "Can not view_char value from a Node.", Error::internal);
+        throw Error(CZH_ERROR_LOCATION, __func__, "Can not get value from a Node.", Error::internal);
       if (type() == typeid(Node *))
       {
         return value.get<Node *>()->get<T>();

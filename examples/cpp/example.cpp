@@ -17,6 +17,12 @@ void test()
   cout << "example string: " << example["example"]["string_example"].get<std::string>() << endl;
   cout << "example ref: " << example["example"]["block_example"]["ref_example0"].get<int>() << endl;
   
+  
+  cout << "example any array: ";
+  auto arr = example["example"]["any_array_example"].get<czh::value::Value::AnyArray>();
+  for(auto& r : arr)
+    visit([](auto&& i){cout << czh::node::to_czhstr(i, false) << ", ";}, r);
+  
   //value_map
   cout << "\nvalue_map(map<string, int>): ";
   auto m1 = *example["example"]["value_map_example"].value_map<int>();
@@ -39,7 +45,8 @@ void test()
   //clear Node
   example["example"]["value_array_map_example"].clear();
   //add Node
-  example.add_node("ref")->add("ref", example["example"]["edit_example"].get_ref());
+  example["example"].add_node("ref", "block_example")
+  ->add("ref", example["example"]["edit_example"].get_ref());
   //remove Node
   example["example"].remove("value_map_example");
   
@@ -58,7 +65,7 @@ void test()
   auto example2 = *e2.parse();
   czh::Czh e3("czh.czh", czh::Czh::file);
   auto example3 = *e3.parse();
-  //std::cout << "\n" << example3.to_string(czh::node::Node::color) << std::endl;
+  std::cout << "\n" << example3.to_string(czh::node::Node::color) << std::endl;
 }
 int main()
 {

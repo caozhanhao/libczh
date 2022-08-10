@@ -7,6 +7,7 @@
 #include <memory>
 #include <typeinfo>
 #include <typeindex>
+#include <any>
 
 namespace czh
 {
@@ -27,9 +28,14 @@ namespace czh
     
     class Value
     {
+    public:
+      using AnyArray = std::vector<std::variant<int, long long, double, std::string, bool>>;
+      using AnyArrayValueType = std::variant<int, long long, double, std::string, bool>;
     private:
       std::variant<int, long long, double, std::string, Note, bool,
-          std::vector<int>, std::vector<long long>, std::vector<double>, std::vector<std::string>, std::vector<bool>,
+          std::vector<int>, std::vector<long long>, std::vector<double>,
+          std::vector<std::string>, std::vector<bool>,
+          AnyArray,
           node::Node *> value;
       std::type_index value_type;
     public:

@@ -87,17 +87,30 @@ namespace czh::parser
       }
       if (view().type == TokenType::ARR_LP)// array id = [1,2,3]
       {
-        if (view(1).type == TokenType::INT)
-          curr_node->add(id_name, *parse_array<int>());
-        else if (view(1).type == TokenType::LONGLONG)
-          curr_node->add(id_name, *parse_array<long long>());
-        else if (view(1).type == TokenType::DOUBLE)
-          curr_node->add(id_name, *parse_array<double>());
-        else if (view(1).type == TokenType::STRING)
-          curr_node->add(id_name, *parse_array<std::string>());
-        else if (view(1).type == TokenType::BOOL)
-          curr_node->add(id_name, *parse_array<bool>());
-        return;
+        if(view(1).type == TokenType::ARR_RP)
+        {
+          curr_node->add(id_name, std::vector<int>());
+        }
+        else if(is_any_array())
+        {
+          curr_node->add(id_name,
+                         *parse_any_array());
+          return;
+        }
+        else
+        {
+          if (view(1).type == TokenType::INT)
+            curr_node->add(id_name, *parse_array<int>());
+          else if (view(1).type == TokenType::LONGLONG)
+            curr_node->add(id_name, *parse_array<long long>());
+          else if (view(1).type == TokenType::DOUBLE)
+            curr_node->add(id_name, *parse_array<double>());
+          else if (view(1).type == TokenType::STRING)
+            curr_node->add(id_name, *parse_array<std::string>());
+          else if (view(1).type == TokenType::BOOL)
+            curr_node->add(id_name, *parse_array<bool>());
+          return;
+        }
       }
       curr_node->add(id_name, view().what);
       next();//eat value
@@ -153,15 +166,56 @@ namespace czh::parser
     template<typename T>
     std::unique_ptr<std::vector<T>> parse_array()
     {
-      std::unique_ptr<std::vector<T>> ret = std::make_unique<std::vector<T>>(std::vector<T>());
+      std::unique_ptr<std::vector<T>> ret = std::make_unique<std::vector<T>>();
       next();//eat [
       for (; view().type != TokenType::ARR_RP; next())
       {
         if (view().type == TokenType::COMMA) continue;
-        ret->push_back(view().what.get<T>());
+        ret->emplace_back(view().what.get<T>());
       }
       next();//eat ]
       return ret;
+    }
+    std::unique_ptr<value::Value::AnyArray> parse_any_array()
+    {
+      std::unique_ptr<value::Value::AnyArray> ret = std::make_unique<value::Value::AnyArray>();
+      next();//eat [
+      for (; view().type != TokenType::ARR_RP; next())
+      {
+        if (view().type == TokenType::COMMA) continue;
+  
+        if (view().type == TokenType::INT)
+          ret->emplace_back(view().what.get<int>());
+        else if (view().type == TokenType::LONGLONG)
+          ret->emplace_back(view().what.get<long long>());
+        else if (view().type == TokenType::DOUBLE)
+          ret->emplace_back(view().what.get<double>());
+        else if (view().type == TokenType::STRING)
+          ret->emplace_back(view().what.get<std::string>());
+        else if (view().type == TokenType::BOOL)
+          ret->emplace_back(view().what.get<bool>());
+      }
+      next();//eat ]
+      return ret;
+    }
+    bool is_any_array()
+    {
+      int v = 1;
+      TokenType arrtype(TokenType::UNEXPECTED);
+      while(view(v).type != TokenType::ARR_RP)
+      {
+        if(view(v).type == TokenType::COMMA)
+        {
+          ++v;
+          continue;
+        }
+        else if(arrtype == TokenType::UNEXPECTED)
+          arrtype = view(v).type;
+        else if(view(v).type != arrtype)
+          return true;
+        ++v;
+      }
+      return false;
     }
     
     bool check()

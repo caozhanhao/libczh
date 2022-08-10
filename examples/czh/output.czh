@@ -3,11 +3,15 @@ example:
   array_example = [0, 2, -9000]
   string_array_example = ["1", "2", "3"]
   bool_array_example = [true, true, false]
+  any_array_example = [false, 1.0000000000000002, "2", 3, 400000000000]
   add_test = "123"
   edit_example = "edit example"
   bool_example = true/b/bool/e/
   int_example = 200000000
   long_long_example = 200000000000
+  ref:
+    ref = -..:edit_example
+  end
   block_example:
     ref_example0 = -..:int_example
     test:
@@ -26,7 +30,4 @@ example:
   dt7 = -2.2250738585072014e-308
   dt8 = 1.7976931348623157e+308
   dt9 = -1.7976931348623157e+308
-end
-ref:
-  ref = -..-example:edit_example
 end
