@@ -65,7 +65,7 @@ void test()
   auto example2 = *e2.parse();
   czh::Czh e3("czh.czh", czh::Czh::file);
   auto example3 = *e3.parse();
-  std::cout << "\n" << example3.to_string(czh::node::Node::color) << std::endl;
+  //std::cout << "\n" << example3.to_string(czh::node::Node::color) << std::endl;
 }
 int main()
 {
