@@ -88,8 +88,8 @@ namespace czh::node
     return colorify(("/b/" + val.note + "/e/"), color, Type::NOTE);
   }
   
-  template<typename VT>
-  std::string vector_to_string(const VT &v, bool color)
+  template<typename Ty>
+  std::string to_czhstr(const std::vector<Ty> &v, bool color)
   {
     std::string result = "[";
     for (auto it = v.cbegin(); it != (v.cend() - 1); ++it)
@@ -102,6 +102,8 @@ namespace czh::node
     return result;
   }
   
+  template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+  template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
   class Node
   {
     friend std::ostream &operator<<(std::ostream &, const Node &);
@@ -384,69 +386,51 @@ namespace czh::node
   private:
     [[nodiscard]] std::string value_to_string(const std::string &value_name, const Value &val, bool with_color) const
     {
-      auto t = val.type();
-      if (t == typeid(int))
-        return to_czhstr(val.get<int>(), with_color);
-      if (t == typeid(long long))
-        return to_czhstr(val.get<long long>(), with_color);
-      else if (t == typeid(std::string))
-        return to_czhstr(val.get<std::string>(), with_color);
-      else if (t == typeid(double))
-        return to_czhstr(val.get<double>(), with_color);
-      else if (t == typeid(bool))
-        return to_czhstr(val.get<bool>(), with_color);
-      else if (t == typeid(std::vector<int>))
-        return vector_to_string(val.get<std::vector<int>>(), with_color);
-      else if (t == typeid(std::vector<long long>))
-        return vector_to_string(val.get<std::vector<long long>>(), with_color);
-      else if (t == typeid(std::vector<std::string>))
-        return vector_to_string(val.get<std::vector<std::string>>(), with_color);
-      else if (t == typeid(std::vector<double>))
-        return vector_to_string(val.get<std::vector<double>>(), with_color);
-      else if (t == typeid(std::vector<bool>))
-        return vector_to_string(val.get<std::vector<bool>>(), with_color);
-      
-      //Node*
-      if (t != typeid(Node *))
-        throw Error(CZH_ERROR_LOCATION, __func__, "Unexpected error", Error::internal);
-      
-      std::string res;
-      auto path = *val.get<Node *>()->get_path();
-      auto this_path = *get_path();
-      std::reverse(path.begin(), path.end());
-      std::reverse(this_path.begin(), this_path.end());
-      std::size_t samepos = 0;
-      for (auto i = 0; i < std::min(path.size(), this_path.size()); i++)
-      {
-        if (path[i] == this_path[i])
-        {
-          samepos++;
-          if (i == this_path.size())
-          {
-            res += "-.";
-            break;
-          }
-        }
-        else
-        {
-          if (i == this_path.size() - 1)
-          {
-            res += "-..";
-            break;
-          }
-          samepos = 0;
-          break;
-        }
-      }
-      
-      for (auto it = path.cbegin() + (int) samepos; it < path.cend() - 1; it++)
-      {
-        res += "-";
-        res += colorify(*it, with_color, Type::REF_BLOCK_ID);
-      }
-      res += ":";
-      res += colorify(*path.crbegin(), with_color, Type::REF_ID);
-      return res;
+        return std::visit(
+            overloaded{
+                [&with_color](auto &&i) -> std::string { return czh::node::to_czhstr(i, with_color); },
+                [&with_color, this](Node* i) -> std::string
+                {
+                  std::string res;
+                  auto path = *i->get_path();
+                  auto this_path = *get_path();
+                  std::reverse(path.begin(), path.end());
+                  std::reverse(this_path.begin(), this_path.end());
+                  std::size_t samepos = 0;
+                  for (auto i = 0; i < std::min(path.size(), this_path.size()); i++)
+                  {
+                    if (path[i] == this_path[i])
+                    {
+                      samepos++;
+                      if (i == this_path.size())
+                      {
+                        res += "-.";
+                        break;
+                      }
+                    }
+                    else
+                    {
+                      if (i == this_path.size() - 1)
+                      {
+                        res += "-..";
+                        break;
+                      }
+                      samepos = 0;
+                      break;
+                    }
+                  }
+  
+                  for (auto it = path.cbegin() + (int) samepos; it < path.cend() - 1; it++)
+                  {
+                    res += "-";
+                    res += colorify(*it, with_color, Type::REF_BLOCK_ID);
+                  }
+                  res += ":";
+                  res += colorify(*path.crbegin(), with_color, Type::REF_ID);
+                  return res;
+                }
+            },
+            val.get_variant());
     }
   };
   
