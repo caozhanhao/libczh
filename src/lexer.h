@@ -87,7 +87,7 @@ namespace czh::lexer
     
     [[nodiscard]] virtual std::string substring(std::size_t beg, std::size_t n) const = 0;
     
-    [[nodiscard]] virtual char view(std::size_t s) = 0;
+    [[nodiscard]] virtual char view(int s) = 0;
     
     virtual void ignore(std::size_t s) = 0;
     
@@ -99,9 +99,11 @@ namespace czh::lexer
   public:
     std::unique_ptr<std::ifstream> file;
     std::size_t file_size;
+    std::deque<char> buffer;
+    std::size_t bufferpos;
   public:
     StreamFile(std::string name_, std::unique_ptr<std::ifstream> fs_)
-        : File(std::move(name_)), file(std::move(fs_))
+        : File(std::move(name_)), file(std::move(fs_)), bufferpos(0)
     {
       file->ignore(std::numeric_limits<std::streamsize>::max());
       file_size = file->gcount();
@@ -180,22 +182,48 @@ namespace czh::lexer
     
     void ignore(std::size_t s) override
     {
-      file->ignore((int) s);
+      int ig = buffer.size()  - s;
+      if(ig <= 0)
+      {
+        buffer.clear();
+        file->ignore(-ig);
+        write_buffer();
+      }
+      else
+        buffer.erase(buffer.begin(), buffer.begin() + s);
     }
     
-    [[nodiscard]] char view(std::size_t s) override
+    [[nodiscard]] char view(int s) override
     {
-      char ch;
-      auto i = file->tellg();
-      file->seekg((int) s, std::ios::cur);
-      ch = (char) file->get();
-      file->seekg(i);
-      return ch;
+      if(buffer.size() <= s)
+        write_buffer();
+      return buffer[bufferpos + s];
     }
     
     [[nodiscard]] bool check(std::size_t s) override
     {
-      return !file->eof();
+      if(buffer.size() <= s)
+        write_buffer();
+      return !buffer.size() <= s;
+    }
+    
+  private:
+    void write_buffer()
+    {
+      while(bufferpos >= 10)
+      {
+        buffer.pop_front();
+        --bufferpos;
+      }
+      int i = 0;
+      while(i < 1024 && !file->eof())
+      {
+        buffer.emplace_back(file->get());
+        ++i;
+      }
+      
+      if(file->eof() && !buffer.empty())
+        buffer.pop_back();
     }
   };
   
@@ -297,7 +325,7 @@ namespace czh::lexer
       codepos += s;
     }
     
-    [[nodiscard]] char view(std::size_t s) override
+    [[nodiscard]] char view(int s) override
     {
       return code[codepos + s];
     }
@@ -866,12 +894,18 @@ namespace czh::lexer
     {
       if (tokenstream.size() <= s)
       {
-        auto t = get_tok();
-        if (t.type == TokenType::FEND)
-          is_eof = true;
-        else
-          check_token(t);
-        tokenstream.emplace_back(t);
+        while (tokenstream.size() < 1024)
+        {
+          auto t = get_tok();
+          if (t.type == TokenType::FEND)
+          {
+            is_eof = true;
+            break;
+          }
+          else
+            check_token(t);
+          tokenstream.emplace_back(t);
+        }
       }
       return tokenstream[s];
     }
@@ -1017,7 +1051,7 @@ namespace czh::lexer
         next_char(3);//eat '/e/'
         return {TokenType::NOTE, value::Note(temp), get_pos().set_size(temp.size())};
       }
-      else if (codepos.get() == code->size()) return {TokenType::FEND, 0, get_pos().set_size(0)};
+      else if (!check_char()) return {TokenType::FEND, 0, get_pos().set_size(0)};
       else
       {
         Token(TokenType::UNEXPECTED, 0, get_pos().set_size(0))
@@ -1031,7 +1065,7 @@ namespace czh::lexer
       return code->check(s);
     }
     
-    char view_char(std::size_t s = 0)
+    char view_char(int s = 0)
     {
       return code->view(s);
     }
