@@ -57,10 +57,11 @@ namespace czh
         return std::get<T>(value);
       }
       
-      const auto& get_variant()const
+      [[nodiscard]] const auto &get_variant() const
       {
         return value;
       }
+      
       [[nodiscard]] std::type_index type() const
       {
         return value_type;

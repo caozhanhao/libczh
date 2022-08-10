@@ -105,7 +105,8 @@ namespace czh::node
   template<>
   std::string to_czhstr(const value::Value::AnyArray &v, bool color)
   {
-    auto visitor = [&color](auto&& v)->std::string{return to_czhstr(v, color);};
+    auto visitor = [&color](auto &&v) -> std::string
+    { return to_czhstr(v, color); };
     std::string result = "[";
     for (auto it = v.cbegin(); it != (v.cend() - 1); ++it)
     {
@@ -118,8 +119,13 @@ namespace czh::node
   }
   
   
-  template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+  template<class... Ts>
+  struct overloaded : Ts ...
+  {
+    using Ts::operator()...;
+  };
   template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+  
   class Node
   {
     friend std::ostream &operator<<(std::ostream &, const Node &);
@@ -256,7 +262,7 @@ namespace czh::node
       if (!is_node)
         throw Error(CZH_ERROR_LOCATION, __func__, "Can not add a Node to Value");
       node[add_name] = Node(this, add_name);
-  
+      
       if (outputable)
       {
         if (before.empty())
@@ -424,51 +430,52 @@ namespace czh::node
   private:
     [[nodiscard]] std::string value_to_string(const std::string &value_name, const Value &val, bool with_color) const
     {
-        return std::visit(
-            overloaded{
-                [&with_color](auto &&i) -> std::string { return czh::node::to_czhstr(i, with_color); },
-                [&with_color, this](Node* i) -> std::string
+      return std::visit(
+          overloaded{
+              [&with_color](auto &&i) -> std::string
+              { return czh::node::to_czhstr(i, with_color); },
+              [&with_color, this](Node *n) -> std::string
+              {
+                std::string res;
+                auto path = *n->get_path();
+                auto this_path = *get_path();
+                std::reverse(path.begin(), path.end());
+                std::reverse(this_path.begin(), this_path.end());
+                std::size_t samepos = 0;
+                for (auto i = 0; i < std::min(path.size(), this_path.size()); i++)
                 {
-                  std::string res;
-                  auto path = *i->get_path();
-                  auto this_path = *get_path();
-                  std::reverse(path.begin(), path.end());
-                  std::reverse(this_path.begin(), this_path.end());
-                  std::size_t samepos = 0;
-                  for (auto i = 0; i < std::min(path.size(), this_path.size()); i++)
+                  if (path[i] == this_path[i])
                   {
-                    if (path[i] == this_path[i])
+                    samepos++;
+                    if (i == this_path.size())
                     {
-                      samepos++;
-                      if (i == this_path.size())
-                      {
-                        res += "-.";
-                        break;
-                      }
-                    }
-                    else
-                    {
-                      if (i == this_path.size() - 1)
-                      {
-                        res += "-..";
-                        break;
-                      }
-                      samepos = 0;
+                      res += "-.";
                       break;
                     }
                   }
-  
-                  for (auto it = path.cbegin() + (int) samepos; it < path.cend() - 1; it++)
+                  else
                   {
-                    res += "-";
-                    res += colorify(*it, with_color, Type::REF_BLOCK_ID);
+                    if (i == this_path.size() - 1)
+                    {
+                      res += "-..";
+                      break;
+                    }
+                    samepos = 0;
+                    break;
                   }
-                  res += ":";
-                  res += colorify(*path.crbegin(), with_color, Type::REF_ID);
-                  return res;
                 }
-            },
-            val.get_variant());
+                
+                for (auto it = path.cbegin() + (int) samepos; it < path.cend() - 1; it++)
+                {
+                  res += "-";
+                  res += colorify(*it, with_color, Type::REF_BLOCK_ID);
+                }
+                res += ":";
+                res += colorify(*path.crbegin(), with_color, Type::REF_ID);
+                return res;
+              }
+          },
+          val.get_variant());
     }
   };
   

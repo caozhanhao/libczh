@@ -663,7 +663,7 @@ namespace czh::lexer
     }
   
   private:
-    Token get_token(char ch = -1)
+    Token get_token(int ch = -1)
     {
       if (std::isdigit(ch))
         return Token::INT;
