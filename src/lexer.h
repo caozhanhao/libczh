@@ -199,6 +199,7 @@ namespace czh::lexer
   private:
     void write_buffer()
     {
+      if(buffer.size() > 1024) return;
       while(bufferpos >= 10)
       {
         buffer.pop_front();
