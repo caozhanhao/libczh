@@ -890,27 +890,28 @@ namespace czh::lexer
     bool is_eof;
   
   public:
-    Lexer(const std::string &path, const std::string &_filename)
-        : code(std::make_shared<NonStreamFile>(_filename, get_string_from_file(path))),
-          codepos(code),
+    Lexer()
+        : code(nullptr),
+          codepos(nullptr),
           parsing_path(false),
           is_eof(false)
     {}
     
-    explicit Lexer(std::string code_str)
-        : code(std::make_shared<NonStreamFile>("nonstream_temp", std::move(code_str))),
-          codepos(code),
-          parsing_path(false),
-          is_eof(false)
-    {}
-    
-    explicit Lexer(std::unique_ptr<std::ifstream> fs)
-        : code(std::make_shared<StreamFile>("stream_temp", std::move(fs))),
-          codepos(code),
-          parsing_path(false),
-          is_eof(false)
-    {}
-    
+    void set_czh(std::string filename, std::unique_ptr<std::ifstream> fs)
+    {
+      code = std::make_shared<StreamFile>(std::move(filename), std::move(fs));
+      codepos = Pos(code);
+    }
+    void set_czh(const std::string &path, const std::string &filename)
+    {
+      code = std::make_shared<NonStreamFile>(filename, get_string_from_file(path));
+      codepos = Pos(code);
+    }
+    void set_czh(const std::string &str)
+    {
+      code = std::make_shared<NonStreamFile>("czh from std::string", std::move(str));
+      codepos = Pos(code);
+    }
     Token view(std::size_t s)
     {
       if (tokenstream.size() <= s)

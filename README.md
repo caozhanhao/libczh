@@ -25,6 +25,15 @@
 ### 编译
 - `#include "czh.h"`即可
 - 需要C++17
+### Czh
+#### Czh::Czh(str, mode)
+##### mode
+- czh::InputMode::stream 第一个参数为文件名
+- czh::InputMode::nonstream 第一个参数为文件名
+- czh::InputMode::string 第一个参数为存储czh的std::string
+```c++
+  Czh("example: a = 1; end;",  czh::InputMode::string);
+```
 ### Node
 ##### Node::operator[]
 - 进入Node
@@ -117,5 +126,6 @@ example["example"].rename("a", "b");
 #### 示例
 - [czh-cpp示例](https://gitee.com/cmvy2020/czh-cpp/blob/master/examples/cpp/example.cpp)
 - [czh示例1](https://gitee.com/cmvy2020/czh-cpp/blob/master/examples/czh/example.czh)
-- [czh示例2](https://gitee.com/cmvy2020/czh-cpp/blob/master/examples/czh/onelinetest.czh)
+- [czh示例2](https://gitee.com/cmvy2020/czh-cpp/blob/master/examples/czh/czh.czh)
+- [czh示例3](https://gitee.com/cmvy2020/czh-cpp/blob/master/examples/czh/onelinetest.czh)
 - [czh示例](https://gitee.com/cmvy2020/wxserver/blob/main/config.czh)

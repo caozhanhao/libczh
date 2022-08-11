@@ -11,27 +11,26 @@ using czh::lexer::Lexer;
 using czh::error::Error;
 namespace czh
 {
-  
+  enum class InputMode
+  {
+    stream, nonstream, string
+  };
   class Czh
   {
-  public:
-    static const bool file = false;
   private:
     Lexer lexer;
     Parser parser;
   public:
-    explicit Czh(std::string code)
-        : lexer(std::move(code)), parser(&lexer)
-    {}
-    
-    explicit Czh(const std::string &czh_, bool is_file = file)
-        : lexer(czh_, czh_), parser(&lexer)
-    {}
-    
-    explicit Czh(std::unique_ptr<std::ifstream> czh_)
-        : lexer(std::move(czh_)), parser(&lexer)
-    {}
-    
+    explicit Czh(const std::string &path, InputMode mode)
+        : parser(&lexer)
+    {
+      if(mode == InputMode::nonstream)
+        lexer.set_czh(path, path);
+      else if(mode == InputMode::stream)
+        lexer.set_czh(path, std::make_unique<std::ifstream>(path));
+      else
+        lexer.set_czh(path);
+    }
     std::shared_ptr<Node> parse()
     {
       return parser.parse();
