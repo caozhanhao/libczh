@@ -105,6 +105,8 @@ namespace czh::lexer
     StreamFile(std::string name_, std::unique_ptr<std::ifstream> fs_)
         : File(std::move(name_)), file(std::move(fs_)), bufferpos(0)
     {
+      if(!file->good())
+        throw error::Error(CZH_ERROR_LOCATION, __func__, "Error File.");
       file->ignore(std::numeric_limits<std::streamsize>::max());
       file_size = file->gcount();
       file->clear();
@@ -182,15 +184,7 @@ namespace czh::lexer
     
     void ignore(std::size_t s) override
     {
-      int ig = buffer.size()  - s;
-      if(ig <= 0)
-      {
-        buffer.clear();
-        file->ignore(-ig);
-        write_buffer();
-      }
-      else
-        buffer.erase(buffer.begin(), buffer.begin() + s);
+      bufferpos += s;
     }
     
     [[nodiscard]] char view(int s) override
@@ -202,9 +196,9 @@ namespace czh::lexer
     
     [[nodiscard]] bool check(std::size_t s) override
     {
-      if(buffer.size() <= s)
+      if(buffer.size() <= bufferpos + s)
         write_buffer();
-      return !buffer.size() <= s;
+      return (bufferpos + s < buffer.size());
     }
     
   private:
@@ -222,7 +216,7 @@ namespace czh::lexer
         ++i;
       }
       
-      if(file->eof() && !buffer.empty())
+      if(buffer.back() == -1)
         buffer.pop_back();
     }
   };
@@ -422,6 +416,7 @@ namespace czh::lexer
     
     [[nodiscard]] std::string get_string() const
     {
+      if(type == TokenType::FEND) return "EOF";
       return pos.code->substring(pos.pos - pos.size, pos.size);
     }
   };
@@ -432,7 +427,7 @@ namespace czh::lexer
     ID, VALUE,
     ARR_VALUE, EQUAL, ARR_LP, ARR_RP,
     COMMA, SC_COLON, PATH_COLON, BPATH, PATH_ID_TARGET, PATH_ID,
-    UNEXPECTED
+    UNEXPECTED, END
   };
   
   class Match
@@ -467,21 +462,25 @@ namespace czh::lexer
         default:
           throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected state.");
       }
+      return "";
     }
-    
-    void match(const Token &token)
+    State get_state() const
     {
-      if (token.type == TokenType::NOTE) return;
+      return state;
+    }
+    void match(const TokenType &token)
+    {
+      if (token == TokenType::NOTE) return;
       switch (state)
       {
         case State::INIT:
-          switch (token.type)
+          switch (token)
           {
             case TokenType::ID:
               state = State::ID;
               break;
             case TokenType::SCEND:
-              reset();
+              state = State::END;
               break;
             default:
               last_state = state;
@@ -490,13 +489,13 @@ namespace czh::lexer
           }
           break;
         case State::ID:
-          switch (token.type)
+          switch (token)
           {
             case TokenType::EQUAL:
               state = State::EQUAL;
               break;
             case TokenType::COLON:
-              reset();
+              state = State::END;
               break;
             default:
               last_state = state;
@@ -505,14 +504,14 @@ namespace czh::lexer
           }
           break;
         case State::EQUAL:
-          switch (token.type)
+          switch (token)
           {
             case TokenType::INT:
             case TokenType::LONGLONG:
             case TokenType::DOUBLE:
             case TokenType::STRING:
             case TokenType::BOOL:
-              reset();
+              state = State::END;
               break;
             case TokenType::ARR_LP:
               state = State::ARR_LP;
@@ -527,7 +526,7 @@ namespace czh::lexer
           }
           break;
         case State::ARR_LP:
-          switch (token.type)
+          switch (token)
           {
             case TokenType::INT:
             case TokenType::LONGLONG:
@@ -537,7 +536,7 @@ namespace czh::lexer
               state = State::ARR_VALUE;
               break;
             case TokenType::ARR_RP:
-              reset();
+              state = State::END;
               break;
             default:
               last_state = state;
@@ -546,13 +545,13 @@ namespace czh::lexer
           }
           break;
         case State::ARR_VALUE:
-          switch (token.type)
+          switch (token)
           {
             case TokenType::COMMA:
               state = State::COMMA;
               break;
             case TokenType::ARR_RP:
-              reset();
+              state = State::END;
               break;
             default:
               last_state = state;
@@ -561,7 +560,7 @@ namespace czh::lexer
           }
           break;
         case State::COMMA:
-          switch (token.type)
+          switch (token)
           {
             case TokenType::INT:
             case TokenType::LONGLONG:
@@ -577,7 +576,7 @@ namespace czh::lexer
           }
           break;
         case State::BPATH:
-          switch (token.type)
+          switch (token)
           {
             case TokenType::ID:
               state = State::PATH_ID;
@@ -589,7 +588,7 @@ namespace czh::lexer
           }
           break;
         case State::PATH_ID:
-          switch (token.type)
+          switch (token)
           {
             case TokenType::BPATH:
               state = State::BPATH;
@@ -604,10 +603,10 @@ namespace czh::lexer
           }
           break;
         case State::PATH_COLON:
-          switch (token.type)
+          switch (token)
           {
             case TokenType::ID:
-              reset();
+              state = State::END;
               break;
             default:
               last_state = state;
@@ -623,6 +622,12 @@ namespace czh::lexer
         case State::UNEXPECTED:
           throw error::Error(CZH_ERROR_LOCATION, __func__,
                              "Unexpected state can not match.");
+        case State::END:
+          if(token != TokenType::SEND && token != TokenType::FEND)
+            throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected end.");
+          else
+            reset();
+          break;
         default:
           throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected state.");
       }
@@ -632,7 +637,10 @@ namespace czh::lexer
     {
       return state != State::UNEXPECTED;
     }
-    
+    bool end()
+    {
+      return state == State::END;
+    }
     void reset()
     {
       state = State::INIT;
@@ -897,14 +905,13 @@ namespace czh::lexer
         while (tokenstream.size() < 1024)
         {
           auto t = get_tok();
+          check_token(t);
+          tokenstream.emplace_back(t);
           if (t.type == TokenType::FEND)
           {
             is_eof = true;
             break;
           }
-          else
-            check_token(t);
-          tokenstream.emplace_back(t);
         }
       }
       return tokenstream[s];
@@ -923,8 +930,16 @@ namespace czh::lexer
   private:
     void check_token(const Token &token)
     {
-      if (token.type == TokenType::SEND) return;
-      match.match(token);
+      if(token.type == TokenType::FEND)
+      {
+        if(match.get_state() == State::END || match.get_state() == State::INIT)
+          return;
+        else
+          token.error("Unexpected end of file.");
+      }
+      if(match.end() && token.type != TokenType::SEND)
+        match.match(TokenType::SEND);
+      match.match(token.type);
       if (!match.good())
       {
         token.error("Unexpected token '" + token.get_string() + "'.Do you mean '"
@@ -1070,7 +1085,7 @@ namespace czh::lexer
       return code->view(s);
     }
     
-    void next_char(const std::size_t &s = 1)
+    void next_char(std::size_t s = 1)
     {
       code->ignore(s);
       codepos.pos += s;
