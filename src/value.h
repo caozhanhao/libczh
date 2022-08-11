@@ -29,10 +29,11 @@ namespace czh
     class Value
     {
     public:
-      using AnyArray = std::vector<std::variant<int, long long, double, std::string, bool>>;
-      using AnyArrayValueType = std::variant<int, long long, double, std::string, bool>;
+      using BasicVT = std::variant<int, long long, double, std::string, bool>;
+      using AnyArray = std::vector<BasicVT>;
+      using AnyArrayValueType = BasicVT;
     private:
-      std::variant<int, long long, double, std::string, Note, bool,
+      std::variant<int, long long, double, std::string, bool, Note, char,
           std::vector<int>, std::vector<long long>, std::vector<double>,
           std::vector<std::string>, std::vector<bool>,
           AnyArray,

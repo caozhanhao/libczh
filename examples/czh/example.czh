@@ -1,27 +1,27 @@
 /b/ note example /e/
 example:
-    array_example = [-6e-2,2,-90E2];
-    string_array_example = ["1", "2", "3"];
-    bool_array_example = [true, true, false];
-    any_array_example = [false, 1.0000000000000002, "2", 3, 4e11];
-    string_example = "string test";
-    double_example = -123.456e9;
-    bool_example = true;/b/bool/e/
-    int_example = +2e8;
-    long_long_example = +2e11;
-    block_example:
-        ref_example0 = -example:int_example;
+    int_array = [-6e-2,2,-90E2];
+    string_array = ["1", "2", "3"];
+    bool_array = [true, true, false];
+    any_array = [false, 1.0000000000000002, "2", 3, 4e11];
+    string = "string test";
+    double = -123.456e9;
+    bool = true;/b/bool/e/
+    int = +2e8;
+    long_long = +2e11;
+    block:
+        ref0 = -example:int;
         test:
-            ref_example1 = -..:ref_example0;/b/ref/e/
+            ref1 = -..:ref0;/b/ref/e/
         end;
-        ref_example2 = -.-test:ref_example1;
+        ref2 = -.-test:ref1;
     end;
-   value_map_example:
+   value_map:
         k1 = 1;
         k2 = 2;
         k3 = 3;
     end;
-    value_array_map_example:
+    value_array_map:
         k1 = [1,2,3];
         k2 = [4,5,6];/b/note/e/
         k3 = [6,7,8];

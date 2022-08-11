@@ -7,48 +7,50 @@ using namespace std;
 
 void test()
 {
+//  czh::Czh x("example.czh", czh::Czh::file);
+//  auto xx = *x.parse();
   czh::Czh e(std::make_unique<std::ifstream>("example.czh"));
   auto example = *e.parse();
   
   //view_char value
-  cout << "example int: " << example["example"]["int_example"].get<int>() << endl;
-  cout << "example long: " << example["example"]["long_long_example"].get<long long>() << endl;
-  cout << "example double: " << example["example"]["double_example"].get<double>() << endl;
-  cout << "example string: " << example["example"]["string_example"].get<std::string>() << endl;
-  cout << "example ref: " << example["example"]["block_example"]["ref_example0"].get<int>() << endl;
+  cout << "example int: " << example["example"]["int"].get<int>() << endl;
+  cout << "example long: " << example["example"]["long_long"].get<long long>() << endl;
+  cout << "example double: " << example["example"]["double"].get<double>() << endl;
+  cout << "example string: " << example["example"]["string"].get<std::string>() << endl;
+  cout << "example ref: " << example["example"]["block"]["ref0"].get<int>() << endl;
   
   
   cout << "example any array: ";
-  auto arr = example["example"]["any_array_example"].get<czh::value::Value::AnyArray>();
+  auto arr = example["example"]["any_array"].get<czh::value::Value::AnyArray>();
   for(auto& r : arr)
     visit([](auto&& i){cout << czh::node::to_czhstr(i, false) << ", ";}, r);
   
   //value_map
   cout << "\nvalue_map(map<string, int>): ";
-  auto m1 = *example["example"]["value_map_example"].value_map<int>();
+  auto m1 = *example["example"]["value_map"].value_map<int>();
   for (auto &r: m1)
     cout << r.second << ",";
   cout << "\nexample value_array_map(to map<string, vector<int>>): ";
-  auto m2 = *example["example"]["value_array_map_example"].value_map<vector<int>>();
+  auto m2 = *example["example"]["value_array_map"].value_map<vector<int>>();
   for (auto &r: m2)
     for (auto &a: r.second)
       cout << a << ",";
   
   //edit
-  example["example"]["double_example"].get_value() = "edit example";
+  example["example"]["double"].get_value() = "edit example";
   //rename
-  example["example"].rename("double_example", "edit_example");
+  example["example"].rename("double", "edit");
   //add Value
-  example["example"].add("add_test", "123", "edit_example");
+  example["example"].add("add_test", "123", "edit");
   //remove Value
-  example["example"].remove("string_example");
+  example["example"].remove("string");
   //clear Node
-  example["example"]["value_array_map_example"].clear();
+  example["example"]["value_array_map"].clear();
   //add Node
-  example["example"].add_node("ref", "block_example")
-  ->add("ref", example["example"]["edit_example"].get_ref());
+  example["example"].add_node("ref", "block")
+  ->add("ref", example["example"]["edit"].get_ref());
   //remove Node
-  example["example"].remove("value_map_example");
+  example["example"].remove("value_map");
   
   //output(hightlight)
   std::cout << "\n" << example.to_string(czh::node::Node::color) << std::endl;

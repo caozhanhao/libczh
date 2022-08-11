@@ -1,25 +1,25 @@
 /b/ note example /e/
 example:
-  array_example = [0, 2, -9000]
-  string_array_example = ["1", "2", "3"]
-  bool_array_example = [true, true, false]
-  any_array_example = [false, 1.0000000000000002, "2", 3, 400000000000]
+  int_array = [0, 2, -9000]
+  string_array = ["1", "2", "3"]
+  bool_array = [true, true, false]
+  any_array = [false, 1.0000000000000002, "2", 3, 400000000000]
   add_test = "123"
-  edit_example = "edit example"
-  bool_example = true/b/bool/e/
-  int_example = 200000000
-  long_long_example = 200000000000
+  edit = "edit example"
+  bool = true/b/bool/e/
+  int = 200000000
+  long_long = 200000000000
   ref:
-    ref = -..:edit_example
+    ref = -..:edit
   end
-  block_example:
-    ref_example0 = -..:int_example
+  block:
+    ref0 = -..:int
     test:
-      ref_example1 = -..:ref_example0/b/ref/e/
+      ref1 = -..:ref0/b/ref/e/
     end
-    ref_example2 = -test:ref_example1
+    ref2 = -test:ref1
   end
-  value_array_map_example:
+  value_array_map:
   end
   dt1 = 1.0000000000000002
   dt2 = 4.9406564584124654e-324

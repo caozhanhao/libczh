@@ -62,6 +62,8 @@ namespace czh::parser
     void parse_end()
     {
       curr_node = curr_node->to_last_node();
+      if(!curr_node)
+        view().error("Unexpected scope end.");
       if (check())
         next();
     }

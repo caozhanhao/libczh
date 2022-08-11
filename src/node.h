@@ -118,14 +118,6 @@ namespace czh::node
     return result;
   }
   
-  
-  template<class... Ts>
-  struct overloaded : Ts ...
-  {
-    using Ts::operator()...;
-  };
-  template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-  
   class Node
   {
     friend std::ostream &operator<<(std::ostream &, const Node &);
@@ -431,7 +423,7 @@ namespace czh::node
     [[nodiscard]] std::string value_to_string(const std::string &value_name, const Value &val, bool with_color) const
     {
       return std::visit(
-          overloaded{
+          utils::overloaded{
               [&with_color](auto &&i) -> std::string
               { return czh::node::to_czhstr(i, with_color); },
               [&with_color, this](Node *n) -> std::string

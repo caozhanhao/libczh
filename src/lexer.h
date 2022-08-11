@@ -79,13 +79,11 @@ namespace czh::lexer
     
     [[nodiscard]] virtual std::size_t get_lineno(std::size_t pos) const = 0;
     
-    [[nodiscard]] virtual std::size_t get_errorline_size(std::size_t pos) const = 0;
+    [[nodiscard]] virtual std::size_t get_arrowpos(std::size_t pos) const = 0;
     
     [[nodiscard]] virtual std::string get_name() const = 0;
     
     [[nodiscard]] virtual std::size_t size() const = 0;
-    
-    [[nodiscard]] virtual std::string substring(std::size_t beg, std::size_t n) const = 0;
     
     [[nodiscard]] virtual char view(int s) = 0;
     
@@ -115,7 +113,12 @@ namespace czh::lexer
     
     [[nodiscard]] std::string get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize) const override
     {
+      std::string ret;
+      if (linenosize == 0)
+        linenosize = utils::to_str(end).size();
+  
       std::string tmp;
+      
       std::string buffer;
       file->clear();
       file->seekg(std::ios::beg);
@@ -123,6 +126,10 @@ namespace czh::lexer
       {
         if (beg <= a && a < end)
         {
+          std::string addition = utils::to_str(a);
+          if (addition.size() < linenosize)
+            buffer += std::string(linenosize - addition.size(), '0');
+          buffer += addition + " ";
           buffer += tmp;
           buffer += "\n";
         }
@@ -146,18 +153,16 @@ namespace czh::lexer
       return lineno;
     }
     
-    [[nodiscard]] std::size_t get_errorline_size(std::size_t pos) const override
+    [[nodiscard]] std::size_t get_arrowpos(std::size_t pos) const override
     {
       std::size_t postmp = 0;
-      std::size_t sz = 0;
       std::string tmp;
       file->clear();
       file->seekg(std::ios::beg);
       while (std::getline(*file, tmp))
       {
-        sz = tmp.size();
+        if (postmp + tmp.size() >= pos) return pos - postmp;
         postmp += tmp.size() + 1;
-        if (postmp >= pos) return sz;
       }
       return 0;
     }
@@ -170,16 +175,6 @@ namespace czh::lexer
     [[nodiscard]] std::size_t size() const override
     {
       return file_size;
-    }
-    
-    [[nodiscard]] std::string substring(std::size_t beg, std::size_t n) const override
-    {
-      file->clear();
-      file->seekg(std::ios::beg);
-      std::string tmp;
-      for (std::size_t i = 0; !file->eof() && i < n; ++i)
-        tmp += (char) file->get();
-      return tmp;
     }
     
     void ignore(std::size_t s) override
@@ -200,7 +195,7 @@ namespace czh::lexer
         write_buffer();
       return (bufferpos + s < buffer.size());
     }
-    
+  
   private:
     void write_buffer()
     {
@@ -269,6 +264,7 @@ namespace czh::lexer
         else
           i++;
       }
+      ret.erase(ret.begin());
       return ret;
     }
     
@@ -285,7 +281,7 @@ namespace czh::lexer
       return lineno;
     }
     
-    [[nodiscard]] std::size_t get_errorline_size(std::size_t pos) const override
+    [[nodiscard]] std::size_t get_arrowpos(std::size_t pos) const override
     {
       std::size_t i = pos;
       while (i > 0)
@@ -307,11 +303,6 @@ namespace czh::lexer
     [[nodiscard]] std::size_t size() const override
     {
       return code.size();
-    }
-    
-    [[nodiscard]] std::string substring(std::size_t beg, std::size_t n) const override
-    {
-      return code.substr(beg, n);
     }
     
     void ignore(std::size_t s) override
@@ -372,30 +363,47 @@ namespace czh::lexer
     
     [[nodiscard]] std::unique_ptr<std::string> get_details_from_code() const
     {
-      const std::size_t last = 3;
-      const std::size_t next = 3;
+      constexpr std::size_t last = 3;
+      constexpr std::size_t next = 3;
       std::size_t lineno = code->get_lineno(pos);
       std::size_t linenosize = utils::to_str(lineno + next).size();
       std::size_t actual_last = last;
       std::size_t actual_next = next;
-      if (lineno - 1 < last)
-        actual_last = lineno - 1;
-      if (code->get_lineno(code->size() - 1) < lineno + next - 1)
-        actual_next = lineno - 1;
-      std::string temp1 = code->get_spec_line(lineno - actual_last, lineno + 1, linenosize);//[beg, end)
+      std::size_t total_line = code->get_lineno(code->size() - 1);
+      
+      while(lineno - actual_last <= 0 && actual_last > 0)
+        --actual_last;
+      while(lineno + actual_next >= total_line && actual_next > 0)
+        --actual_next;
+      
+      std::string temp1,temp2;
+      if(actual_last != 0)
+        temp1 += code->get_spec_line(lineno - actual_last, lineno + 1, linenosize);//[beg, end)
+      if(actual_next != 0)
+        temp2 = code->get_spec_line(lineno + 1, lineno + actual_next + 1, linenosize);
       
       std::string arrow("\n");
-      arrow += std::string(code->get_errorline_size(pos) - size + linenosize + 1, ' ');
+      arrow += std::string(code->get_arrowpos(pos) - size + linenosize + 1, ' ');
       arrow += "\033[0;32;32m";
       arrow.insert(arrow.end(), size, '^');
       arrow += "\033[m\n";
       
-      std::string temp2 = code->get_spec_line(lineno + 1, lineno + actual_next + 1, linenosize);
       std::string errorstring = temp1 + arrow + temp2;
       return std::move(std::make_unique<std::string>(errorstring));
     }
   };
-  
+  template<typename T>
+  std::string to_token_str(const T&v) {return utils::to_str(v);}
+  template <>
+  std::string to_token_str(const std::string& v) { return v; }
+  //not use
+  template <>
+  std::string to_token_str(const value::Note& v) { return ""; }
+  template <>
+  std::string to_token_str(node::Node* const& v) { return ""; }
+  template<typename Ty>
+  std::string to_token_str(const std::vector<Ty> &v){ return ""; }
+  //end
   class Token
   {
   public:
@@ -416,8 +424,12 @@ namespace czh::lexer
     
     [[nodiscard]] std::string get_string() const
     {
-      if(type == TokenType::FEND) return "EOF";
-      return pos.code->substring(pos.pos - pos.size, pos.size);
+      return std::visit(
+          utils::overloaded{
+            [](auto&& i)->auto{return czh::lexer::to_token_str(i);},
+            [](char i)->auto{return std::string(1, i);}
+          }
+      , what.get_variant());
     }
   };
   
@@ -454,7 +466,7 @@ namespace czh::lexer
         case State::ARR_LP:
           return "value or ']'";
         case State::ARR_VALUE:
-          return "'[' or ','";
+          return "']' or ','";
         case State::COMMA:
           return "value";
         case State::PATH_ID:

@@ -5,6 +5,13 @@
 #include <charconv>
 namespace czh::utils
 {
+  template<class... Ts>
+  struct overloaded : Ts ...
+  {
+    using Ts::operator()...;
+  };
+  template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+  
   template<typename T>
   T str_to(const std::string &str) = delete;
   
