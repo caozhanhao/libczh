@@ -15,6 +15,7 @@ namespace czh
   {
     stream, nonstream, string
   };
+  
   class Czh
   {
   private:
@@ -24,13 +25,14 @@ namespace czh
     explicit Czh(const std::string &path, InputMode mode)
         : parser(&lexer)
     {
-      if(mode == InputMode::nonstream)
+      if (mode == InputMode::nonstream)
         lexer.set_czh(path, path);
-      else if(mode == InputMode::stream)
+      else if (mode == InputMode::stream)
         lexer.set_czh(path, std::make_unique<std::ifstream>(path));
       else
         lexer.set_czh(path);
     }
+    
     std::shared_ptr<Node> parse()
     {
       return parser.parse();

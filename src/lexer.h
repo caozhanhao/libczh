@@ -103,7 +103,7 @@ namespace czh::lexer
     StreamFile(std::string name_, std::unique_ptr<std::ifstream> fs_)
         : File(std::move(name_)), file(std::move(fs_)), bufferpos(0)
     {
-      if(!file->good())
+      if (!file->good())
         throw error::Error(CZH_ERROR_LOCATION, __func__, "Error File.");
       file->ignore(std::numeric_limits<std::streamsize>::max());
       file_size = file->gcount();
@@ -116,7 +116,7 @@ namespace czh::lexer
       std::string ret;
       if (linenosize == 0)
         linenosize = utils::to_str(end).size();
-  
+      
       std::string tmp;
       
       std::string buffer;
@@ -184,14 +184,14 @@ namespace czh::lexer
     
     [[nodiscard]] char view(int s) override
     {
-      if(buffer.size() <= s)
+      if (buffer.size() <= s)
         write_buffer();
       return buffer[bufferpos + s];
     }
     
     [[nodiscard]] bool check(std::size_t s) override
     {
-      if(buffer.size() <= bufferpos + s)
+      if (buffer.size() <= bufferpos + s)
         write_buffer();
       return (bufferpos + s < buffer.size());
     }
@@ -199,20 +199,20 @@ namespace czh::lexer
   private:
     void write_buffer()
     {
-      if(buffer.size() > 1024) return;
-      while(bufferpos >= 10)
+      if (buffer.size() > 1024) return;
+      while (bufferpos >= 10)
       {
         buffer.pop_front();
         --bufferpos;
       }
       int i = 0;
-      while(i < 1024 && !file->eof())
+      while (i < 1024 && !file->eof())
       {
         buffer.emplace_back(file->get());
         ++i;
       }
       
-      if(buffer.back() == -1)
+      if (buffer.back() == -1)
         buffer.pop_back();
     }
   };
@@ -372,15 +372,15 @@ namespace czh::lexer
       std::size_t actual_next = next;
       std::size_t total_line = code->get_lineno(code->size() - 1);
       
-      while(lineno - actual_last <= 0 && actual_last > 0)
+      while (lineno - actual_last <= 0 && actual_last > 0)
         --actual_last;
-      while(lineno + actual_next >= total_line && actual_next > 0)
+      while (lineno + actual_next >= total_line && actual_next > 0)
         --actual_next;
       
-      std::string temp1,temp2;
-      if(actual_last != 0)
+      std::string temp1, temp2;
+      if (actual_last != 0)
         temp1 += code->get_spec_line(lineno - actual_last, lineno + 1, linenosize);//[beg, end)
-      if(actual_next != 0)
+      if (actual_next != 0)
         temp2 = code->get_spec_line(lineno + 1, lineno + actual_next + 1, linenosize);
       
       std::string arrow("\n");
@@ -393,17 +393,28 @@ namespace czh::lexer
       return std::move(std::make_unique<std::string>(errorstring));
     }
   };
+  
   template<typename T>
-  std::string to_token_str(const T&v) {return utils::to_str(v);}
-  template <>
-  std::string to_token_str(const std::string& v) { return v; }
+  std::string to_token_str(const T &v)
+  { return utils::to_str(v); }
+  
+  template<>
+  std::string to_token_str(const std::string &v)
+  { return v; }
+  
   //not use
-  template <>
-  std::string to_token_str(const value::Note& v) { return ""; }
-  template <>
-  std::string to_token_str(node::Node* const& v) { return ""; }
+  template<>
+  std::string to_token_str(const value::Note &v)
+  { return ""; }
+  
+  template<>
+  std::string to_token_str(node::Node *const &v)
+  { return ""; }
+  
   template<typename Ty>
-  std::string to_token_str(const std::vector<Ty> &v){ return ""; }
+  std::string to_token_str(const std::vector<Ty> &v)
+  { return ""; }
+  
   //end
   class Token
   {
@@ -427,10 +438,11 @@ namespace czh::lexer
     {
       return std::visit(
           utils::overloaded{
-            [](auto&& i)->auto{return czh::lexer::to_token_str(i);},
-            [](char i)->auto{return std::string(1, i);}
-          }
-      , what.get_variant());
+              [](auto &&i) -> auto
+              { return czh::lexer::to_token_str(i); },
+              [](char i) -> auto
+              { return std::string(1, i); }
+          }, what.get_variant());
     }
   };
   
@@ -477,10 +489,12 @@ namespace czh::lexer
       }
       return "";
     }
+    
     State get_state() const
     {
       return state;
     }
+    
     void match(const TokenType &token)
     {
       if (token == TokenType::NOTE) return;
@@ -636,7 +650,7 @@ namespace czh::lexer
           throw error::Error(CZH_ERROR_LOCATION, __func__,
                              "Unexpected state can not match.");
         case State::END:
-          if(token != TokenType::SEND && token != TokenType::FEND)
+          if (token != TokenType::SEND && token != TokenType::FEND)
             throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected end.");
           else
             reset();
@@ -650,10 +664,12 @@ namespace czh::lexer
     {
       return state != State::UNEXPECTED;
     }
+    
     bool end()
     {
       return state == State::END;
     }
+    
     void reset()
     {
       state = State::INIT;
@@ -902,16 +918,19 @@ namespace czh::lexer
       code = std::make_shared<StreamFile>(std::move(filename), std::move(fs));
       codepos = Pos(code);
     }
+    
     void set_czh(const std::string &path, const std::string &filename)
     {
       code = std::make_shared<NonStreamFile>(filename, get_string_from_file(path));
       codepos = Pos(code);
     }
+    
     void set_czh(const std::string &str)
     {
       code = std::make_shared<NonStreamFile>("czh from std::string", std::move(str));
       codepos = Pos(code);
     }
+    
     Token view(std::size_t s)
     {
       if (tokenstream.size() <= s)
@@ -944,14 +963,14 @@ namespace czh::lexer
   private:
     void check_token(const Token &token)
     {
-      if(token.type == TokenType::FEND)
+      if (token.type == TokenType::FEND)
       {
-        if(match.get_state() == State::END || match.get_state() == State::INIT)
+        if (match.get_state() == State::END || match.get_state() == State::INIT)
           return;
         else
           token.error("Unexpected end of file.");
       }
-      if(match.end() && token.type != TokenType::SEND)
+      if (match.end() && token.type != TokenType::SEND)
         match.match(TokenType::SEND);
       match.match(token.type);
       if (!match.good())
