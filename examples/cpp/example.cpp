@@ -3,8 +3,6 @@
 #include <vector>
 #include <string>
 
-using namespace std;
-
 int main()
 {
   try
@@ -15,20 +13,20 @@ int main()
     auto example = *e.parse();
   
     //get value
-    cout << "double: " << example["example"]["double"].get<double>();
-    cout << "\nref: " << example["example"]["block"]["ref0"].get<int>();
+    std::cout << "double: " << example["example"]["double"].get<double>();
+    std::cout << "\nref: " << example["example"]["block"]["ref0"].get<int>();
   
-    cout << "\nexample any array: ";
+    std::cout << "\nexample any array: ";
     auto arr = example["example"]["any_array"].get<czh::value::Value::AnyArray>();
     for(auto& r : arr)
-      visit([](auto&& i){cout << czh::node::to_czhstr(i, false) << ", ";}, r);
+      visit([](auto&& i){std::cout << czh::node::to_czhstr(i, false) << ", ";}, r);
   
     //value_map
-    cout << "\nvalue_map: ";
-    auto vmap = *example["example"]["value_array_map"].value_map<vector<int>>();
+    std::cout << "\nvalue_map: ";
+    auto vmap = *example["example"]["value_array_map"].value_map<std::vector<int>>();
     for (auto &r: vmap)
       for (auto &a: r.second)
-        cout << a << ",";
+        std::cout << a << ",";
   
     //edit
     example["example"]["double"].get_value() = "edit example";
@@ -59,11 +57,13 @@ int main()
     auto p = czh::Czh("onelinetest.czh", czh::InputMode::stream).parse();
     czh::Czh(p->to_string(), czh::InputMode::string).parse();
   }
-  catch (Error &err)
+  catch (czh::error::Error &err)
   {
-    if (err.is_internal())
-      std::cout << "internal:\n";
-    std::cout << err.get() << std::endl;
+    std::cout << "internal:\n" << err.get_content() << std::endl;
+  }
+  catch (czh::error::CzhError& err)
+  {
+    std::cout << err.get_content() << std::endl;
   }
   return 0;
 }

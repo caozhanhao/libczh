@@ -8,40 +8,40 @@
 
 namespace czh::error
 {
-  class Error : public std::logic_error
+  class CzhError : public std::runtime_error
   {
-  public:
-    static const bool internal = true;
   private:
     std::string location;
-    std::string func_name;
-    std::string details;
-    bool is_internal_;
+    std::string detail;
   public:
-    Error(std::string location_, std::string func_name_, const std::string &details_, bool internal_ = false)
-        : logic_error(details_), location(std::move(location_)),
-          func_name(std::move(func_name_)), details(details_),
-          is_internal_(internal_)
+    CzhError(std::string location_, const std::string &detail_)
+    : runtime_error(detail_), location(std::move(location_)),
+      detail(detail_)
     {}
-    
-    [[nodiscard]] std::string get(const bool &add_location = true) const
+    [[nodiscard]] std::string get_content() const
     {
-      std::string ret;
-      if (add_location)
-        ret += "\033[1;37m" + location + ":";
-      if (!is_internal())
-        ret += "\033[0;32;31m error : \033[m" + details;
-      return ret;
+      return {"\033[1;37m" + location + ":"
+              + "\033[0;32;31m error : \033[m" + detail};
     }
-    
+  };
+  class Error : public std::logic_error
+  {
+  private:
+    std::string location;
+    std::string detail;
+  public:
+    Error(std::string location_, std::string func_name_, const std::string &detail_)
+        : logic_error(detail_), location(std::move(location_) + ":" + func_name_),
+         detail(detail_)
+    {}
     [[nodiscard]] std::string get_detail() const
     {
-      return details;
+      return detail;
     }
-    
-    [[nodiscard]] bool is_internal() const
+    [[nodiscard]] std::string get_content() const
     {
-      return is_internal_;
+      return {"\033[1;37m" + location + ":"
+              + "\033[0;32;31m error : \033[m" + detail};
     }
   };
 }

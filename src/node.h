@@ -5,7 +5,6 @@
 #include "utils.h"
 #include <iostream>
 #include <algorithm>
-#include <charconv>
 #include <string>
 #include <vector>
 #include <map>
@@ -163,8 +162,8 @@ namespace czh::node
         auto it = std::find(output_list->begin(), output_list->end(), item);
         if (it == output_list->end())
         {
-          throw Error(CZH_ERROR_LOCATION, __func__, "There is no Node named '"
-                                                    + item + "'.");
+          throw Error(CZH_ERROR_LOCATION, __func__,
+                      "There is no Node named '"  + item + "'.Do you mean '" + error_correct(item) + "'?");
         }
         output_list->erase(it);
       }
@@ -186,15 +185,15 @@ namespace czh::node
         auto it = std::find(output_list->begin(), output_list->end(), item);
         if (it == output_list->end())
         {
-          throw Error(CZH_ERROR_LOCATION, __func__, "There is no Node named '"
-                                                    + item + "'.");
+          throw Error(CZH_ERROR_LOCATION, __func__,
+                      "There is no Node named '" + item + "'.Do you mean '" + error_correct(item) + "'?");
         }
         *it = newname;
       }
       if (node.find(item) == node.end())
       {
-        throw Error(CZH_ERROR_LOCATION, __func__, "There is no Node named '"
-                                                  + item + "'.");
+        throw Error(CZH_ERROR_LOCATION, __func__,
+                    "There is no Node named '" + item + "'.Do you mean '" + error_correct(item) + "'?");
       }
       node[item].name = newname;
       auto n = node.extract(item);
@@ -241,8 +240,8 @@ namespace czh::node
           }
           if (!added)
           {
-            throw Error(CZH_ERROR_LOCATION, __func__, "There is no Node named '"
-                                                      + before + "'.");
+            throw Error(CZH_ERROR_LOCATION, __func__,
+                        "There is no Node named '" + before +"'.Do you mean '" + error_correct(before) + "'?");
           }
         }
       }
@@ -273,8 +272,8 @@ namespace czh::node
           }
           if (!added)
           {
-            throw Error(CZH_ERROR_LOCATION, __func__, "There is no Node named '"
-                                                      + before + "'.");
+            throw Error(CZH_ERROR_LOCATION, __func__,
+                        "There is no Node named '" + before +"'.Do you mean '" + error_correct(before) + "'?");
           }
         }
       }
@@ -284,7 +283,7 @@ namespace czh::node
     [[nodiscard]] auto type() const
     {
       if (is_node)
-        throw Error(CZH_ERROR_LOCATION, __func__, "Node not get type.", Error::internal);
+        throw Error(CZH_ERROR_LOCATION, __func__, "Node not get type.");
       return value.type();
       
     }
@@ -305,9 +304,9 @@ namespace czh::node
         if (r.second.type() == note_type)
           continue;
         else if (r.second.type() != value_type)
-          throw Error(CZH_ERROR_LOCATION, __func__, "TokenType is not same.", Error::internal);
+          throw Error(CZH_ERROR_LOCATION, __func__, "TokenType is not same.");
         else if (r.second.type() == node_type)
-          throw Error(CZH_ERROR_LOCATION, __func__, "TokenType is Node.", Error::internal);
+          throw Error(CZH_ERROR_LOCATION, __func__, "TokenType is Node.");
         else
           (*result)[r.first] = r.second.get<T>();
       }
@@ -322,18 +321,20 @@ namespace czh::node
     Node &operator[](const std::string &s)
     {
       if (!is_node)
-        throw Error(CZH_ERROR_LOCATION, __func__, "Value can not []", Error::internal);
+        throw Error(CZH_ERROR_LOCATION, __func__, "Value can not []");
       if (node.find(s) == node.end())
-        throw Error(CZH_ERROR_LOCATION, __func__, "There is no node named '" + s + "'.");
+        throw Error(CZH_ERROR_LOCATION, __func__,
+                    "There is no node named '" + s +"'.Do you mean '" + error_correct(s) + "'?");
       return node[s];
     }
     
     const Node &operator[](const std::string &s) const
     {
       if (!is_node)
-        throw Error(CZH_ERROR_LOCATION, __func__, "Value can not []", Error::internal);
+        throw Error(CZH_ERROR_LOCATION, __func__, "Value can not []");
       if (node.find(s) == node.end())
-        throw Error(CZH_ERROR_LOCATION, __func__, "There is no node named '" + s + "'.");
+        throw Error(CZH_ERROR_LOCATION, __func__,
+                    "There is no node named '" + s + "'.Do you mean '" + error_correct(s) + "'?");
       return node.at(s);
     }
     
@@ -342,7 +343,7 @@ namespace czh::node
     T get() const
     {
       if (is_node)
-        throw Error(CZH_ERROR_LOCATION, __func__, "Can not get value from a Node.", Error::internal);
+        throw Error(CZH_ERROR_LOCATION, __func__, "Can not get value from a Node.");
       if (type() == typeid(Node *))
       {
         return value.get<Node *>()->get<T>();
@@ -370,7 +371,7 @@ namespace czh::node
     [[nodiscard]] bool has_node(const std::string &tag) const
     {
       if (!is_node)
-        throw Error(CZH_ERROR_LOCATION, __func__, "Value has no node.", Error::internal);
+        throw Error(CZH_ERROR_LOCATION, __func__, "Value has no node.");
       return (node.find(tag) != node.end());
     }
     
@@ -379,7 +380,7 @@ namespace czh::node
       if (!outputable)
       {
         throw Error(CZH_ERROR_LOCATION, __func__,
-                    "Node is not outputable.", Error::internal);
+                    "Node is not outputable.");
       }
       std::string ret;
       if (is_node && name != "/")
@@ -420,6 +421,14 @@ namespace czh::node
     }
   
   private:
+    [[nodiscard]] std::string error_correct(const std::string& str) const
+    {
+      return std::min_element(node.cbegin(), node.cend(), [&str](auto&& n1, auto&& n2) -> bool
+      {
+        return czh::utils::get_distance(n1.second.name, str)
+        <  czh::utils::get_distance(n2.second.name, str);
+      })->first;
+    }
     [[nodiscard]] std::string value_to_string(const std::string &value_name, const Value &val, bool with_color) const
     {
       return std::visit(
@@ -439,7 +448,7 @@ namespace czh::node
                   if (path[i] == this_path[i])
                   {
                     samepos++;
-                    if (i == this_path.size())
+                    if (samepos == this_path.size())
                     {
                       res += "-.";
                       break;
@@ -447,7 +456,7 @@ namespace czh::node
                   }
                   else
                   {
-                    if (i == this_path.size() - 1)
+                    if (samepos == this_path.size() - 1)
                     {
                       res += "-..";
                       break;

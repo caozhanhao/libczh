@@ -1,450 +1,34 @@
 ﻿#pragma once
 
 #include "value.h"
+#include "token.h"
+#include "file.h"
 #include "err.h"
 #include "utils.h"
 
 #include <memory>
 #include <limits>
-#include <fstream>
-#include <charconv>
 #include <vector>
-#include <sstream>
 #include <queue>
 #include <string>
-#include <set>
 #include <map>
 #include <algorithm>
-#include <cstdio>
 using czh::error::Error;
+using czh::error::CzhError;
 using czh::value::Value;
 namespace czh::lexer
 {
-  enum class TokenType
-  {
-    ID,
-    INT, LONGLONG, DOUBLE, STRING, BOOL,
-    EQUAL,//=
-    ARR_LP, ARR_RP,//[]
-    COMMA, COLON,
-    BPATH,//-
-    FEND, SEND, SCEND,
-    NOTE,
-    UNEXPECTED
-  };
-  
-  const std::map<char, TokenType> marks =
+  const std::map<char, token::TokenType> marks =
       {
-          {'=', TokenType::EQUAL},
-          {'[', TokenType::ARR_LP},
-          {']', TokenType::ARR_RP},
-          {':', TokenType::COLON},
-          {'-', TokenType::BPATH},
-          {';', TokenType::SEND},
-          {',', TokenType::COMMA}
+          {'=', token::TokenType::EQUAL},
+          {'[', token::TokenType::ARR_LP},
+          {']', token::TokenType::ARR_RP},
+          {':', token::TokenType::COLON},
+          {'-', token::TokenType::BPATH},
+          {';', token::TokenType::SEND},
+          {',', token::TokenType::COMMA}
       };
   
-  bool is_newline_and_next(const std::string &str, std::size_t &pos, int delta = 1)
-  {
-    if (str[pos] == '\r')
-    {
-      if (pos + 1 < str.size() && str[pos + 1] == '\n')
-      {
-        pos += 2 * delta;
-        return true;
-      }
-      else
-        pos += 1 * delta;
-      return true;
-    }
-    else if (str[pos] == '\n')
-    {
-      pos += 1 * delta;
-      return true;
-    }
-    return false;
-  }
-  
-  class File
-  {
-  public:
-    std::string filename;
-    
-    explicit File(std::string name)
-        : filename(std::move(name))
-    {}
-    
-    [[nodiscard]] virtual std::string
-    get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize) const = 0;
-    
-    [[nodiscard]] virtual std::size_t get_lineno(std::size_t pos) const = 0;
-    
-    [[nodiscard]] virtual std::size_t get_arrowpos(std::size_t pos) const = 0;
-    
-    [[nodiscard]] virtual std::string get_name() const = 0;
-    
-    [[nodiscard]] virtual std::size_t size() const = 0;
-    
-    [[nodiscard]] virtual char view(int s) = 0;
-    
-    virtual void ignore(std::size_t s) = 0;
-    
-    [[nodiscard]] virtual bool check(std::size_t s) = 0;
-  };
-  
-  class StreamFile : public File
-  {
-  public:
-    std::unique_ptr<std::ifstream> file;
-    std::size_t file_size;
-    std::deque<char> buffer;
-    std::size_t bufferpos;
-  public:
-    StreamFile(std::string name_, std::unique_ptr<std::ifstream> fs_)
-        : File(std::move(name_)), file(std::move(fs_)), bufferpos(0)
-    {
-      if (!file->good())
-        throw error::Error(CZH_ERROR_LOCATION, __func__, "Error File.");
-      file->ignore(std::numeric_limits<std::streamsize>::max());
-      file_size = file->gcount();
-      file->clear();
-      file->seekg(std::ios_base::beg);
-    }
-    
-    [[nodiscard]] std::string get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize) const override
-    {
-      std::string ret;
-      if (linenosize == 0)
-        linenosize = utils::to_str(end).size();
-      
-      std::string tmp;
-      
-      std::string buffer;
-      file->clear();
-      file->seekg(std::ios::beg);
-      for (int a = 1; std::getline(*file, tmp); a++)
-      {
-        if (beg <= a && a < end)
-        {
-          std::string addition = utils::to_str(a);
-          if (addition.size() < linenosize)
-            buffer += std::string(linenosize - addition.size(), '0');
-          buffer += addition + " ";
-          buffer += tmp;
-          buffer += "\n";
-        }
-      }
-      buffer.pop_back();
-      return buffer;
-    }
-    
-    [[nodiscard]] std::size_t get_lineno(std::size_t pos) const override
-    {
-      std::size_t lineno = 1;
-      std::size_t postmp = 0;
-      std::string tmp;
-      file->clear();
-      file->seekg(std::ios::beg);
-      for (; std::getline(*file, tmp); lineno++)
-      {
-        postmp += tmp.size() + 1;
-        if (postmp >= pos) break;
-      }
-      return lineno;
-    }
-    
-    [[nodiscard]] std::size_t get_arrowpos(std::size_t pos) const override
-    {
-      std::size_t postmp = 0;
-      std::string tmp;
-      file->clear();
-      file->seekg(std::ios::beg);
-      while (std::getline(*file, tmp))
-      {
-        if (postmp + tmp.size() >= pos) return pos - postmp;
-        postmp += tmp.size() + 1;
-      }
-      return 0;
-    }
-    
-    [[nodiscard]] std::string get_name() const override
-    {
-      return filename;
-    }
-    
-    [[nodiscard]] std::size_t size() const override
-    {
-      return file_size;
-    }
-    
-    void ignore(std::size_t s) override
-    {
-      bufferpos += s;
-    }
-    
-    [[nodiscard]] char view(int s) override
-    {
-      if (buffer.size() <= s)
-        write_buffer();
-      return buffer[bufferpos + s];
-    }
-    
-    [[nodiscard]] bool check(std::size_t s) override
-    {
-      if (buffer.size() <= bufferpos + s)
-        write_buffer();
-      return (bufferpos + s < buffer.size());
-    }
-  
-  private:
-    void write_buffer()
-    {
-      if (buffer.size() > 1024) return;
-      while (bufferpos >= 10)
-      {
-        buffer.pop_front();
-        --bufferpos;
-      }
-      int i = 0;
-      while (i < 1024 && !file->eof())
-      {
-        buffer.emplace_back(file->get());
-        ++i;
-      }
-      
-      if (buffer.back() == -1)
-        buffer.pop_back();
-    }
-  };
-  
-  class NonStreamFile : public File
-  {
-  public:
-    std::string code;
-    std::size_t codepos;
-  public:
-    NonStreamFile(std::string name, std::string code_)
-        : File(std::move(name)), code(std::move(code_)), codepos(0)
-    {}
-    
-    [[nodiscard]] std::string get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize) const override
-    {
-      std::string ret;
-      if (linenosize == 0)
-        linenosize = utils::to_str(end).size();
-      std::size_t lineno = 1;
-      bool first_line_flag = false;
-      auto add = [&]()
-      {
-        std::string addition = utils::to_str(lineno);
-        if (addition.size() < linenosize)
-          ret += std::string(linenosize - addition.size(), '0');
-        ret += addition + " ";
-      };
-      for (std::size_t i = 0; i < code.size();)
-      {
-        if (lineno >= beg && lineno < end)
-        {
-          if (!first_line_flag && lineno == 1)
-          {
-            add();
-            first_line_flag = true;
-          }
-          if (code[i] != '\r' && code[i] != '\n')
-            ret += code[i];
-        }
-        if (is_newline_and_next(code, i))
-        {
-          lineno++;
-          if (lineno >= beg && lineno < end)
-          {
-            ret += '\n';
-            add();
-          }
-        }
-        else
-          i++;
-      }
-      ret.erase(ret.begin());
-      return ret;
-    }
-    
-    [[nodiscard]] std::size_t get_lineno(std::size_t pos) const override
-    {
-      std::size_t lineno = 1;
-      for (std::size_t i = 0; i < pos;)
-      {
-        if (is_newline_and_next(code, i))
-          lineno++;
-        else
-          i++;
-      }
-      return lineno;
-    }
-    
-    [[nodiscard]] std::size_t get_arrowpos(std::size_t pos) const override
-    {
-      std::size_t i = pos;
-      while (i > 0)
-      {
-        if (is_newline_and_next(code, i, -1))
-          break;
-        else i--;
-      }
-      if (code[i] == '\r' && i + 1 < code.size() && code[i + 1] == '\n')
-        return pos - i - 2;
-      return pos - i - 1;
-    }
-    
-    [[nodiscard]] std::string get_name() const override
-    {
-      return filename;
-    }
-    
-    [[nodiscard]] std::size_t size() const override
-    {
-      return code.size();
-    }
-    
-    void ignore(std::size_t s) override
-    {
-      codepos += s;
-    }
-    
-    [[nodiscard]] char view(int s) override
-    {
-      return code[codepos + s];
-    }
-    
-    [[nodiscard]] bool check(std::size_t s) override
-    {
-      return (codepos + s) < code.size();
-    }
-  };
-  
-  class Pos
-  {
-  public:
-    std::size_t pos;
-    std::size_t size;
-    std::shared_ptr<File> code;
-  public:
-    explicit Pos(std::shared_ptr<File> code_)
-        : pos(0), size(0), code(std::move(code_))
-    {}
-    
-    Pos &operator+=(const std::size_t &p)
-    {
-      pos += p;
-      return *this;
-    }
-    
-    Pos &operator-=(const std::size_t &p)
-    {
-      pos -= p;
-      return *this;
-    }
-    
-    [[nodiscard]] std::string location() const
-    {
-      return (code->get_name() + ":line " + utils::to_str(code->get_lineno(pos)));
-    }
-    
-    [[nodiscard]] std::size_t get() const
-    {
-      return pos;
-    }
-  
-  public:
-    Pos &set_size(std::size_t s)
-    {
-      size = s;
-      return *this;
-    }
-    
-    [[nodiscard]] std::unique_ptr<std::string> get_details_from_code() const
-    {
-      constexpr std::size_t last = 3;
-      constexpr std::size_t next = 3;
-      std::size_t lineno = code->get_lineno(pos);
-      std::size_t linenosize = utils::to_str(lineno + next).size();
-      std::size_t actual_last = last;
-      std::size_t actual_next = next;
-      std::size_t total_line = code->get_lineno(code->size() - 1);
-      
-      while (lineno - actual_last <= 0 && actual_last > 0)
-        --actual_last;
-      while (lineno + actual_next >= total_line && actual_next > 0)
-        --actual_next;
-      
-      std::string temp1, temp2;
-      if (actual_last != 0)
-        temp1 += code->get_spec_line(lineno - actual_last, lineno + 1, linenosize);//[beg, end)
-      if (actual_next != 0)
-        temp2 = code->get_spec_line(lineno + 1, lineno + actual_next + 1, linenosize);
-      
-      std::string arrow("\n");
-      arrow += std::string(code->get_arrowpos(pos) - size + linenosize + 1, ' ');
-      arrow += "\033[0;32;32m";
-      arrow.insert(arrow.end(), size, '^');
-      arrow += "\033[m\n";
-      
-      std::string errorstring = temp1 + arrow + temp2;
-      return std::move(std::make_unique<std::string>(errorstring));
-    }
-  };
-  
-  template<typename T>
-  std::string to_token_str(const T &v)
-  { return utils::to_str(v); }
-  
-  template<>
-  std::string to_token_str(const std::string &v)
-  { return v; }
-  
-  //not use
-  template<>
-  std::string to_token_str(const value::Note &v)
-  { return ""; }
-  
-  template<>
-  std::string to_token_str(node::Node *const &v)
-  { return ""; }
-  
-  template<typename Ty>
-  std::string to_token_str(const std::vector<Ty> &v)
-  { return ""; }
-  
-  //end
-  class Token
-  {
-  public:
-    TokenType type;
-    Value what;
-    Pos pos;
-  public:
-    template<typename T>
-    Token(TokenType type_, T what_, Pos pos_)
-        :type(type_), what(std::move(what_)), pos(std::move(pos_))
-    {}
-    
-    void error(const std::string &details) const
-    {
-      throw Error(pos.location(), __func__, details + ": \n"
-                                            + *(pos.get_details_from_code()));
-    }
-    
-    [[nodiscard]] std::string get_string() const
-    {
-      return std::visit(
-          utils::overloaded{
-              [](auto &&i) -> auto
-              { return czh::lexer::to_token_str(i); },
-              [](char i) -> auto
-              { return std::string(1, i); }
-          }, what.get_variant());
-    }
-  };
   
   enum class State
   {
@@ -495,18 +79,18 @@ namespace czh::lexer
       return state;
     }
     
-    void match(const TokenType &token)
+    void match(const token::TokenType &token)
     {
-      if (token == TokenType::NOTE) return;
+      if (token == token::TokenType::NOTE) return;
       switch (state)
       {
         case State::INIT:
           switch (token)
           {
-            case TokenType::ID:
+            case token::TokenType::ID:
               state = State::ID;
               break;
-            case TokenType::SCEND:
+            case token::TokenType::SCEND:
               state = State::END;
               break;
             default:
@@ -518,10 +102,10 @@ namespace czh::lexer
         case State::ID:
           switch (token)
           {
-            case TokenType::EQUAL:
+            case token::TokenType::EQUAL:
               state = State::EQUAL;
               break;
-            case TokenType::COLON:
+            case token::TokenType::COLON:
               state = State::END;
               break;
             default:
@@ -533,17 +117,17 @@ namespace czh::lexer
         case State::EQUAL:
           switch (token)
           {
-            case TokenType::INT:
-            case TokenType::LONGLONG:
-            case TokenType::DOUBLE:
-            case TokenType::STRING:
-            case TokenType::BOOL:
+            case token::TokenType::INT:
+            case token::TokenType::LONGLONG:
+            case token::TokenType::DOUBLE:
+            case token::TokenType::STRING:
+            case token::TokenType::BOOL:
               state = State::END;
               break;
-            case TokenType::ARR_LP:
+            case token::TokenType::ARR_LP:
               state = State::ARR_LP;
               break;
-            case TokenType::BPATH:
+            case token::TokenType::BPATH:
               state = State::BPATH;
               break;
             default:
@@ -555,14 +139,14 @@ namespace czh::lexer
         case State::ARR_LP:
           switch (token)
           {
-            case TokenType::INT:
-            case TokenType::LONGLONG:
-            case TokenType::DOUBLE:
-            case TokenType::STRING:
-            case TokenType::BOOL:
+            case token::TokenType::INT:
+            case token::TokenType::LONGLONG:
+            case token::TokenType::DOUBLE:
+            case token::TokenType::STRING:
+            case token::TokenType::BOOL:
               state = State::ARR_VALUE;
               break;
-            case TokenType::ARR_RP:
+            case token::TokenType::ARR_RP:
               state = State::END;
               break;
             default:
@@ -574,10 +158,10 @@ namespace czh::lexer
         case State::ARR_VALUE:
           switch (token)
           {
-            case TokenType::COMMA:
+            case token::TokenType::COMMA:
               state = State::COMMA;
               break;
-            case TokenType::ARR_RP:
+            case token::TokenType::ARR_RP:
               state = State::END;
               break;
             default:
@@ -589,11 +173,11 @@ namespace czh::lexer
         case State::COMMA:
           switch (token)
           {
-            case TokenType::INT:
-            case TokenType::LONGLONG:
-            case TokenType::DOUBLE:
-            case TokenType::STRING:
-            case TokenType::BOOL:
+            case token::TokenType::INT:
+            case token::TokenType::LONGLONG:
+            case token::TokenType::DOUBLE:
+            case token::TokenType::STRING:
+            case token::TokenType::BOOL:
               state = State::ARR_VALUE;
               break;
             default:
@@ -605,7 +189,7 @@ namespace czh::lexer
         case State::BPATH:
           switch (token)
           {
-            case TokenType::ID:
+            case token::TokenType::ID:
               state = State::PATH_ID;
               break;
             default:
@@ -617,10 +201,10 @@ namespace czh::lexer
         case State::PATH_ID:
           switch (token)
           {
-            case TokenType::BPATH:
+            case token::TokenType::BPATH:
               state = State::BPATH;
               break;
-            case TokenType::COLON:
+            case token::TokenType::COLON:
               state = State::PATH_COLON;
               break;
             default:
@@ -632,7 +216,7 @@ namespace czh::lexer
         case State::PATH_COLON:
           switch (token)
           {
-            case TokenType::ID:
+            case token::TokenType::ID:
               state = State::END;
               break;
             default:
@@ -650,7 +234,7 @@ namespace czh::lexer
           throw error::Error(CZH_ERROR_LOCATION, __func__,
                              "Unexpected state can not match.");
         case State::END:
-          if (token != TokenType::SEND && token != TokenType::FEND)
+          if (token != token::TokenType::SEND && token != token::TokenType::FEND)
             throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected end.");
           else
             reset();
@@ -897,11 +481,11 @@ namespace czh::lexer
   class Lexer
   {
   private:
-    std::shared_ptr<File> code;
-    std::deque<Token> tokenstream;
+    std::shared_ptr<file::File> code;
+    std::deque<token::Token> tokenstream;
     Match match;
     NumberMatch nmatch;
-    Pos codepos;
+    token::Pos codepos;
     bool parsing_path;
     bool is_eof;
   
@@ -915,23 +499,23 @@ namespace czh::lexer
     
     void set_czh(std::string filename, std::unique_ptr<std::ifstream> fs)
     {
-      code = std::make_shared<StreamFile>(std::move(filename), std::move(fs));
-      codepos = Pos(code);
+      code = std::make_shared<file::StreamFile>(std::move(filename), std::move(fs));
+      codepos = token::Pos(code);
     }
     
     void set_czh(const std::string &path, const std::string &filename)
     {
-      code = std::make_shared<NonStreamFile>(filename, get_string_from_file(path));
-      codepos = Pos(code);
+      code = std::make_shared<file::NonStreamFile>(filename, get_string_from_file(path));
+      codepos = token::Pos(code);
     }
     
     void set_czh(const std::string &str)
     {
-      code = std::make_shared<NonStreamFile>("czh from std::string", std::move(str));
-      codepos = Pos(code);
+      code = std::make_shared<file::NonStreamFile>("czh from std::string", std::move(str));
+      codepos = token::Pos(code);
     }
     
-    Token view(std::size_t s)
+    token::Token view(std::size_t s)
     {
       if (tokenstream.size() <= s)
       {
@@ -940,7 +524,7 @@ namespace czh::lexer
           auto t = get_tok();
           check_token(t);
           tokenstream.emplace_back(t);
-          if (t.type == TokenType::FEND)
+          if (t.type == token::TokenType::FEND)
           {
             is_eof = true;
             break;
@@ -961,17 +545,17 @@ namespace czh::lexer
     }
   
   private:
-    void check_token(const Token &token)
+    void check_token(const token::Token &token)
     {
-      if (token.type == TokenType::FEND)
+      if (token.type == token::TokenType::FEND)
       {
         if (match.get_state() == State::END || match.get_state() == State::INIT)
           return;
         else
           token.error("Unexpected end of file.");
       }
-      if (match.end() && token.type != TokenType::SEND)
-        match.match(TokenType::SEND);
+      if (match.end() && token.type != token::TokenType::SEND)
+        match.match(token::TokenType::SEND);
       match.match(token.type);
       if (!match.good())
       {
@@ -979,13 +563,13 @@ namespace czh::lexer
                     + match.error_correct() + "'?");
       }
     }
-    
-    Pos get_pos()
+  
+    token::Pos get_pos()
     {
       return codepos;
     }
-    
-    Token get_tok()
+  
+    token::Token get_tok()
     {
       while (check_char() && isspace(view_char()))
         next_char();
@@ -1021,21 +605,23 @@ namespace czh::lexer
           if (nmatch.is_double())
           {
             nmatch.reset();
-            return {TokenType::DOUBLE, utils::str_to<double>(temp), get_pos().set_size(temp.size())};
+            return {token::TokenType::DOUBLE, utils::str_to<double>(temp),
+                get_pos().set_size(temp.size())};
           }
           else
           {
             nmatch.reset();
             auto t = utils::str_to<double>(temp);
             if (t < std::numeric_limits<int>().max())
-              return {TokenType::INT, (int) t, get_pos().set_size(temp.size())};
+              return {token::TokenType::INT, (int) t, get_pos().set_size(temp.size())};
             else
-              return {TokenType::LONGLONG, (long long) t, get_pos().set_size(temp.size())};
+              return {token::TokenType::LONGLONG, (long long) t,
+                      get_pos().set_size(temp.size())};
           }
         }
         else
         {
-          Token tmp(TokenType::UNEXPECTED, 0, get_pos().set_size(temp.size()));
+          token::Token tmp(token::TokenType::UNEXPECTED, 0, get_pos().set_size(temp.size()));
           tmp.error("Unexpected token '" + temp + "'.Is this a number?");
         }
       }
@@ -1049,10 +635,10 @@ namespace czh::lexer
           next_char();
         }
         next_char();//eat '"'
-        return {TokenType::STRING, temp, get_pos().set_size(temp.size())};
+        return {token::TokenType::STRING, temp, get_pos().set_size(temp.size())};
       }
-      else if ((check_char() && (isalpha(view_char()) || view_char() == '_')) || (check_char() && parsing_path &&
-                                                                                  view_char() == '.'))//id
+      else if ((check_char() && (isalpha(view_char()) || view_char() == '_'))
+      || (check_char() && parsing_path && view_char() == '.'))//id
       {
         std::string temp;
         if (parsing_path && view_char() == '.')
@@ -1072,19 +658,19 @@ namespace czh::lexer
         }
         
         if (temp == "end")
-          return {TokenType::SCEND, temp, get_pos().set_size(3)};
+          return {token::TokenType::SCEND, temp, get_pos().set_size(3)};
         else if (temp == "true")
-          return {TokenType::BOOL, true, get_pos().set_size(4)};
+          return {token::TokenType::BOOL, true, get_pos().set_size(4)};
         else if (temp == "false")
-          return {TokenType::BOOL, false, get_pos().set_size(5)};
+          return {token::TokenType::BOOL, false, get_pos().set_size(5)};
         else
-          return {TokenType::ID, temp, get_pos().set_size(temp.size())};
+          return {token::TokenType::ID, temp, get_pos().set_size(temp.size())};
       }
       else if (check_char() && marks.find(view_char()) != marks.end())//mark
       {
         next_char();
-        if (marks.at(view_char(-1)) == TokenType::BPATH) parsing_path = true;
-        if (parsing_path && marks.at(view_char(-1)) == TokenType::COLON) parsing_path = false;
+        if (marks.at(view_char(-1)) == token::TokenType::BPATH) parsing_path = true;
+        if (parsing_path && marks.at(view_char(-1)) == token::TokenType::COLON) parsing_path = false;
         return {marks.at(view_char(-1)), view_char(-1), get_pos().set_size(1)};
       }
       else if (check_char(2) && view_char() == '/' && view_char(1) == 'b' && view_char(2) == '/')//note
@@ -1097,15 +683,16 @@ namespace czh::lexer
           next_char();
         }
         next_char(3);//eat '/e/'
-        return {TokenType::NOTE, value::Note(temp), get_pos().set_size(temp.size())};
+        return {token::TokenType::NOTE, value::Note(temp),
+                get_pos().set_size(temp.size())};
       }
-      else if (!check_char()) return {TokenType::FEND, 0, get_pos().set_size(0)};
+      else if (!check_char()) return {token::TokenType::FEND, 0, get_pos().set_size(0)};
       else
       {
-        Token(TokenType::UNEXPECTED, 0, get_pos().set_size(0))
+        token::Token(token::TokenType::UNEXPECTED, 0, get_pos().set_size(0))
             .error(std::string("Unexpected token '" + std::string(1, view_char()) + "'."));
       }
-      return {TokenType::UNEXPECTED, 0, get_pos().set_size(0)};
+      return {token::TokenType::UNEXPECTED, 0, get_pos().set_size(0)};
     }
     
     bool check_char(std::size_t s = 0)
