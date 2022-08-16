@@ -1,3 +1,16 @@
+//   Copyright 2022 caozhanhao
+//
+//   Licensed under the Apache License, Version 2.0 (the "License");
+//   you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the License is distributed on an "AS IS" BASIS,
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+//   limitations under the License.
 #pragma once
 
 #include "value.h"
@@ -163,7 +176,7 @@ namespace czh::node
         if (it == output_list->end())
         {
           throw Error(CZH_ERROR_LOCATION, __func__,
-                      "There is no Node named '"  + item + "'.Do you mean '" + error_correct(item) + "'?");
+                      "There is no Node named '" + item + "'.Do you mean '" + error_correct(item) + "'?");
         }
         output_list->erase(it);
       }
@@ -241,7 +254,7 @@ namespace czh::node
           if (!added)
           {
             throw Error(CZH_ERROR_LOCATION, __func__,
-                        "There is no Node named '" + before +"'.Do you mean '" + error_correct(before) + "'?");
+                        "There is no Node named '" + before + "'.Do you mean '" + error_correct(before) + "'?");
           }
         }
       }
@@ -273,7 +286,7 @@ namespace czh::node
           if (!added)
           {
             throw Error(CZH_ERROR_LOCATION, __func__,
-                        "There is no Node named '" + before +"'.Do you mean '" + error_correct(before) + "'?");
+                        "There is no Node named '" + before + "'.Do you mean '" + error_correct(before) + "'?");
           }
         }
       }
@@ -324,7 +337,7 @@ namespace czh::node
         throw Error(CZH_ERROR_LOCATION, __func__, "Value can not []");
       if (node.find(s) == node.end())
         throw Error(CZH_ERROR_LOCATION, __func__,
-                    "There is no node named '" + s +"'.Do you mean '" + error_correct(s) + "'?");
+                    "There is no node named '" + s + "'.Do you mean '" + error_correct(s) + "'?");
       return node[s];
     }
     
@@ -421,14 +434,15 @@ namespace czh::node
     }
   
   private:
-    [[nodiscard]] std::string error_correct(const std::string& str) const
+    [[nodiscard]] std::string error_correct(const std::string &str) const
     {
-      return std::min_element(node.cbegin(), node.cend(), [&str](auto&& n1, auto&& n2) -> bool
+      return std::min_element(node.cbegin(), node.cend(), [&str](auto &&n1, auto &&n2) -> bool
       {
         return czh::utils::get_distance(n1.second.name, str)
-        <  czh::utils::get_distance(n2.second.name, str);
+               < czh::utils::get_distance(n2.second.name, str);
       })->first;
     }
+    
     [[nodiscard]] std::string value_to_string(const std::string &value_name, const Value &val, bool with_color) const
     {
       return std::visit(

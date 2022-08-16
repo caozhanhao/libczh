@@ -1,3 +1,16 @@
+//   Copyright 2022 caozhanhao
+//
+//   Licensed under the Apache License, Version 2.0 (the "License");
+//   you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the License is distributed on an "AS IS" BASIS,
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+//   limitations under the License.
 #pragma once
 
 #include "lexer.h"
@@ -60,7 +73,7 @@ namespace czh::parser
     void parse_end()
     {
       curr_node = curr_node->to_last_node();
-      if(!curr_node)
+      if (!curr_node)
         view().error("Unexpected scope end.");
       if (check())
         next();
@@ -101,7 +114,7 @@ namespace czh::parser
         {
           if (view(1).type == token::TokenType::INT)
             curr_node->add(id_name, *parse_array<int>());
-          else if (view(1).type ==token::TokenType::LONGLONG)
+          else if (view(1).type == token::TokenType::LONGLONG)
             curr_node->add(id_name, *parse_array<long long>());
           else if (view(1).type == token::TokenType::DOUBLE)
             curr_node->add(id_name, *parse_array<double>());
@@ -138,7 +151,7 @@ namespace czh::parser
       next();//eat id
       return val;
     }
-  
+    
     node::Node *to_scope(const std::string &id, node::Node *ptr)
     {
       if (ptr == nullptr) ptr = node.get();
@@ -224,7 +237,7 @@ namespace czh::parser
     {
       return !lex->eof();
     }
-  
+    
     token::Token view(std::size_t s = 0)
     {
       return lex->view(s);

@@ -1,4 +1,17 @@
-﻿#pragma once
+﻿//   Copyright 2022 caozhanhao
+//
+//   Licensed under the Apache License, Version 2.0 (the "License");
+//   you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the License is distributed on an "AS IS" BASIS,
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+//   limitations under the License.
+#pragma once
 
 #include "value.h"
 #include "token.h"
@@ -300,7 +313,7 @@ namespace czh::lexer
       return true;
     }
     
-    [[nodiscard]]bool is_double() const
+    [[nodiscard]]bool has_dot() const
     {
       return _is_double;
     }
@@ -563,12 +576,12 @@ namespace czh::lexer
                     + match.error_correct() + "'?");
       }
     }
-  
+    
     token::Pos get_pos()
     {
       return codepos;
     }
-  
+    
     token::Token get_tok()
     {
       while (check_char() && isspace(view_char()))
@@ -602,21 +615,29 @@ namespace czh::lexer
         } while (check_char() && isnumber(view_char()));
         if (nmatch.match(temp))
         {
-          if (nmatch.is_double())
+          if (nmatch.has_dot())
           {
             nmatch.reset();
-            return {token::TokenType::DOUBLE, utils::str_to<double>(temp),
-                get_pos().set_size(temp.size())};
+            return {token::TokenType::DOUBLE, utils::str_to_num(temp),
+                    get_pos().set_size(temp.size())};
           }
           else
           {
             nmatch.reset();
-            auto t = utils::str_to<double>(temp);
-            if (t < std::numeric_limits<int>().max())
-              return {token::TokenType::INT, (int) t, get_pos().set_size(temp.size())};
-            else
-              return {token::TokenType::LONGLONG, (long long) t,
+            auto t = utils::str_to_num(temp);
+            if ((long long) t != t)//like -6e-2
+            {
+              return {token::TokenType::DOUBLE, t,
                       get_pos().set_size(temp.size())};
+            }
+            else
+            {
+              if (t < std::numeric_limits<int>().max())
+                return {token::TokenType::INT, (int) t, get_pos().set_size(temp.size())};
+              else
+                return {token::TokenType::LONGLONG, (long long) t,
+                        get_pos().set_size(temp.size())};
+            }
           }
         }
         else
@@ -638,7 +659,7 @@ namespace czh::lexer
         return {token::TokenType::STRING, temp, get_pos().set_size(temp.size())};
       }
       else if ((check_char() && (isalpha(view_char()) || view_char() == '_'))
-      || (check_char() && parsing_path && view_char() == '.'))//id
+               || (check_char() && parsing_path && view_char() == '.'))//id
       {
         std::string temp;
         if (parsing_path && view_char() == '.')

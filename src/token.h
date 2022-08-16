@@ -1,3 +1,16 @@
+//   Copyright 2022 caozhanhao
+//
+//   Licensed under the Apache License, Version 2.0 (the "License");
+//   you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the License is distributed on an "AS IS" BASIS,
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+//   limitations under the License.
 #pragma once
 #include "file.h"
 #include "utils.h"
@@ -18,6 +31,7 @@ namespace czh::token
     NOTE,
     UNEXPECTED
   };
+  
   class Pos
   {
   private:
@@ -68,25 +82,25 @@ namespace czh::token
       std::size_t actual_last = last;
       std::size_t actual_next = next;
       std::size_t total_line = code->get_lineno(code->size() - 1);
-  
+      
       while (lineno - actual_last <= 0 && actual_last > 0)
         --actual_last;
       while (lineno + actual_next >= total_line && actual_next > 0)
         --actual_next;
-  
+      
       std::string temp1, temp2;
       
       if (actual_last != 0)
         temp1 += code->get_spec_line(lineno - actual_last, lineno + 1, linenosize);//[beg, end)
       if (actual_next != 0)
         temp2 = code->get_spec_line(lineno + 1, lineno + actual_next + 1, linenosize);
-  
+      
       std::string arrow("\n");
       arrow += std::string(code->get_arrowpos(pos) - size + linenosize + 1, ' ');
       arrow += "\033[0;32;32m";
       arrow.insert(arrow.end(), size, '^');
       arrow += "\033[m\n";
-  
+      
       std::string errorstring = temp1 + arrow + temp2;
       return std::make_unique<std::string>(errorstring);
     }
@@ -128,8 +142,8 @@ namespace czh::token
     
     void error(const std::string &details) const
     {
-      throw error::CzhError(pos.location(),  details + ": \n"
-                                      + *(pos.get_details_from_code()));
+      throw error::CzhError(pos.location(), details + ": \n"
+                                            + *(pos.get_details_from_code()));
     }
     
     [[nodiscard]] std::string get_string() const

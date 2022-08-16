@@ -11,23 +11,24 @@ int main()
     // or czh::Czh e("example.czh", czh::InputMode::stream);
     // or czh::Czh e("example: a = 1; end;",  czh::InputMode::string);
     auto example = *e.parse();
-  
+    
     //get value
     std::cout << "double: " << example["example"]["double"].get<double>();
     std::cout << "\nref: " << example["example"]["block"]["ref0"].get<int>();
-  
+    
     std::cout << "\nexample any array: ";
     auto arr = example["example"]["any_array"].get<czh::value::Value::AnyArray>();
-    for(auto& r : arr)
-      visit([](auto&& i){std::cout << czh::node::to_czhstr(i, false) << ", ";}, r);
-  
+    for (auto &r: arr)
+      visit([](auto &&i)
+            { std::cout << czh::node::to_czhstr(i, false) << ", "; }, r);
+    
     //value_map
     std::cout << "\nvalue_map: ";
     auto vmap = *example["example"]["value_array_map"].value_map<std::vector<int>>();
     for (auto &r: vmap)
       for (auto &a: r.second)
         std::cout << a << ",";
-  
+    
     //edit
     example["example"]["double"].get_value() = "edit example";
     //rename
@@ -43,7 +44,7 @@ int main()
         ->add("ref", example["example"]["edit"].get_ref());
     //remove Node
     example["example"].remove("value_map");
-  
+    
     //output to file
     std::ofstream out("output.czh");
     out << example;
@@ -61,7 +62,7 @@ int main()
   {
     std::cout << "internal:\n" << err.get_content() << std::endl;
   }
-  catch (czh::error::CzhError& err)
+  catch (czh::error::CzhError &err)
   {
     std::cout << err.get_content() << std::endl;
   }
