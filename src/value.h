@@ -68,6 +68,10 @@ namespace czh
       template<typename T>
       T get() const
       {
+        if (std::type_index(typeid(T)) != value_type)
+          throw error::Error(CZH_ERROR_LOCATION, __func__,
+                             "The value is '" + std::string(value_type.name()) + "', not '"
+                             + std::string(std::type_index(typeid(T)).name()) + "'.");
         return std::get<T>(value);
       }
       

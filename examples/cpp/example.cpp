@@ -20,7 +20,7 @@ int main()
     auto arr = example["example"]["any_array"].get<czh::value::Value::AnyArray>();
     for (auto &r: arr)
       visit([](auto &&i)
-            { std::cout << czh::node::to_czhstr(i, false) << ", "; }, r);
+            { std::cout << czh::node::to_czhstr(i, czh::node::Color::no_color) << ", "; }, r);
     
     //value_map
     std::cout << "\nvalue_map: ";
@@ -32,18 +32,18 @@ int main()
     //edit
     example["example"]["double"].get_value() = "edit example";
     //rename
-    example["example"].rename("double", "edit");
+    example["example"]["double"].rename("edit");
     //add Value
     example["example"].add("add_test", "123", "edit");
     //remove Value
-    example["example"].remove("string");
+    example["example"]["string"].remove();
     //clear Node
     example["example"]["value_array_map"].clear();
     //add Node
     example["example"].add_node("ref", "block")
-        ->add("ref", example["example"]["edit"].get_ref());
+        .add("ref", example["example"]["edit"].make_ref());
     //remove Node
-    example["example"].remove("value_map");
+    example["example"]["value_map"].remove();
     
     //output to file
     std::ofstream out("output.czh");
@@ -51,7 +51,7 @@ int main()
     out.close();
     //output(hightlight)
     czh::Czh czh("czh.czh", czh::InputMode::nonstream);
-    std::cout << "\n" << czh.parse()->to_string(czh::node::Node::color) << std::endl;
+    std::cout << "\n" << czh.parse()->to_string(czh::node::Color::with_color) << std::endl;
     
     //test
     czh::Czh("output.czh", czh::InputMode::nonstream).parse();

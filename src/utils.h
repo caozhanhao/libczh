@@ -52,11 +52,11 @@ namespace czh::utils
     return dtoa(a);
   }
   
-  int get_distance(const std::string &s1, const std::string &s2)
+  int get_string_edit_distance(const std::string &s1, const std::string &s2)
   {
     std::size_t n = s1.size();
     std::size_t m = s2.size();
-    if (n * m == 0) return n + m;
+    if (n * m == 0) return static_cast<int>(n + m);
     std::vector<std::vector<int>> D(n + 1, std::vector<int>(m + 1));
     for (int i = 0; i < n + 1; i++)
       D[i][0] = i;

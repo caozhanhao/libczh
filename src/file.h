@@ -94,7 +94,7 @@ namespace czh::file
       
       std::string tmp;
       
-      std::string buffer;
+      std::string fbuffer;
       file->clear();
       file->seekg(std::ios::beg);
       for (int a = 1; std::getline(*file, tmp); a++)
@@ -103,14 +103,14 @@ namespace czh::file
         {
           std::string addition = utils::to_str(a);
           if (addition.size() < linenosize)
-            buffer += std::string(linenosize - addition.size(), '0');
-          buffer += addition + " ";
-          buffer += tmp;
-          buffer += "\n";
+            fbuffer += std::string(linenosize - addition.size(), '0');
+          fbuffer += addition + " ";
+          fbuffer += tmp;
+          fbuffer += "\n";
         }
       }
-      buffer.pop_back();
-      return buffer;
+      fbuffer.pop_back();
+      return fbuffer;
     }
     
     [[nodiscard]] std::size_t get_lineno(std::size_t pos) const override

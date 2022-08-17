@@ -66,6 +66,7 @@ auto vmap = example["example"]["valmap"].value_map<vector<int>>();
 ##### Node::add(key, value, before)
 - 在名为'before'的Node前添加
 - before默认为空，此时添加在末尾
+- 返回添加的Node(存储Value)的引用
 ```c++
 example["add"].add("add", "123", "edit");
 ```
@@ -73,11 +74,11 @@ example["add"].add("add", "123", "edit");
 add = 123
 edit = xxx
 ```
-##### Node::get_ref()
+##### Node::make_ref()
 - 获取该Node的”引用“，实际上是存储Node指针的Value,用来在czh中添加引用
 - 注意，不可在被引用对象之前添加
 ```c++
- example["example"].add("ref",example["example"]["i"].get_ref());
+ example["example"].add("ref",example["example"]["i"].make_ref());
 ```
 ```
 i = 0
@@ -85,7 +86,7 @@ ref = -.:i
 ```
 ##### Node::add_node(name, before)
 - 在名为'before'的Node前添加
-- 返回添加的Node的指针
+- 返回添加的Node的引用
 ```c++
 example.add_node("newnode", "before");
 ```
@@ -97,10 +98,10 @@ xxx
 end
 ```
 #### 删除
-##### Node::remove(name)
-- 删除该Node下名为name的Node
+##### Node::remove()
+- 删除该Node
 ```c++
-example["example"].remove("remove");
+example["example"].remove();
 ```
 #### 清除
 ##### Node::clear()
@@ -110,15 +111,16 @@ example["example"].clear();
 ```
 #### 重命名
 ##### Node::rename(name, newname)
-- 将该Node下名为name的Node改为newname
+- 将该Node改为newname
 ```c++
-example["example"].rename("a", "b");
+example["a"].rename("b");
 ```
 ### 输出
 - 输出的czh仍保留注释
 ##### Node::to_string(with_color)
 - 返回格式化后的czh
-- 传入Node::color时，返回有高亮的czh，默认无高亮
+- czh::node::Color::with_color 有高亮
+- czh::node::Color::no_color 无高亮(默认)
 - 不要将高亮的czh写入文件，否则无法解析
 ##### operator<<
 - 输出Node::to_string()返回值

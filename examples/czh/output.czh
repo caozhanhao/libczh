@@ -4,22 +4,30 @@ example:
   string_array = ["1", "2", "3"]
   bool_array = [true, true, false]
   any_array = [false, 1.0000000000000002, "2", 3, 400000000000]
-  add_test = "123"
-  edit = "edit example"
-  bool = true/b/bool/e/
+  string = "string test"
+  double = -123456
+  bool = true
+  /b/bool/e/
   int = 200000000
   long_long = 200000000000
-  ref:
-    ref = -..:edit
-  end
   block:
     ref0 = -..:int
     test:
-      ref1 = -..:ref0/b/ref/e/
+      ref1 = -..:ref0
+      /b/ref/e/
     end
     ref2 = -.-test:ref1
   end
+  value_map:
+    k1 = 1
+    k2 = 2
+    k3 = 3
+  end
   value_array_map:
+    k1 = [1, 2, 3]
+    k2 = [4, 5, 7]
+    /b/note/e/
+    k3 = [6, 8, 9]
   end
   dt1 = 1.0000000000000002
   dt2 = 2.225073858507201e-308

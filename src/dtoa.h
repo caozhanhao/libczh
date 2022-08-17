@@ -19,6 +19,8 @@
 #include "err.h"
 #include <string>
 #include <cmath>
+#include <cstdint>
+#include <cstring>
 #include <array>
 #include <tuple>
 #include <utility>
@@ -316,33 +318,14 @@ namespace czh::utils
                                              1029, 1033, 1036, 1039, 1043, 1046, 1049, 1053, 1056, 1059, 1063, 1066,
                                              1069, 1073, 1076};
   
-  typedef union
-  {
-    double d;
-    uint64_t n;
-  } converter_t;
-  
-  static uint64_t double_to_uint64(double d)
-  {
-    converter_t tmp;
-    tmp.d = d;
-    return tmp.n;
-  }
-  
-  static double uint64_to_double(uint64_t d64)
-  {
-    converter_t tmp;
-    tmp.n = d64;
-    return tmp.d;
-  }
-  
   class DiyFp
   {
   public:
     uint64_t f;
     int e;
     
-    DiyFp() = default;
+    DiyFp() : f(0), e(0)
+    {};
     
     DiyFp(uint64_t f_, int e_)
         : f(f_), e(e_)
@@ -350,8 +333,9 @@ namespace czh::utils
     
     explicit DiyFp(const double &d)
     {
-      auto d64 = double_to_uint64(d);
-      int biased_e = (d64 & DP_EXPONENT_MASK) >> DP_SIGNIFICAND_SIZE;
+      uint64_t d64;
+      std::memcpy(&d64, &d, sizeof(d));
+      int biased_e = static_cast<int>((d64 & DP_EXPONENT_MASK) >> DP_SIGNIFICAND_SIZE);
       uint64_t significand = (d64 & DP_SIGNIFICAND_MASK);
       if (biased_e != 0)
       {
@@ -472,9 +456,9 @@ namespace czh::utils
     div = TEN9;
     while (kappa > 0)
     {
-      d = p1 / div;
+      d = static_cast<int>(p1 / div);
       if (d || !buffer.empty())
-        buffer += '0' + d;
+        buffer += static_cast<char>(static_cast<int>('0') + d);
       p1 %= div;
       kappa--;
       uint64_t tmp = (((uint64_t) p1) << -one.e) + p2;
@@ -492,9 +476,9 @@ namespace czh::utils
       p2 *= 10;
       delta.f *= 10;
       unit *= 10;
-      d = p2 >> -one.e;
+      d = static_cast<int>(p2 >> -one.e);
       if (d || !buffer.empty())
-        buffer += '0' + d;
+        buffer += static_cast<char>(static_cast<int>('0') + d);
       p2 &= one.f - 1;
       kappa--;
       if (p2 < delta.f)
@@ -509,7 +493,6 @@ namespace czh::utils
   void grisu2(double v, std::string &buffer, int &K)
   {
     int q = 64, alpha = -59;
-    int pos;
     auto[w_m, w_p] = DiyFp(v).normalized_boundaries();
     DiyFp w = DiyFp(v).normalize();
     int mk = k_comp(w_p.e + q, alpha);
@@ -535,25 +518,25 @@ namespace czh::utils
       buffer += '+';
     if (K >= 100)
     {
-      buffer += '0' + K / 100;
+      buffer += static_cast<char>(static_cast<int>('0') + K / 100);
       K %= 100;
-      buffer += '0' + K / 10;
+      buffer += static_cast<char>(static_cast<int>('0') + K / 10);
       K %= 10;
-      buffer += '0' + K;
+      buffer += static_cast<char>(static_cast<int>('0') + K);
     }
     else if (K >= 10)
     {
-      buffer += '0' + K / 10;
+      buffer += static_cast<char>(static_cast<int>('0') + K / 10);
       K %= 10;
-      buffer += '0' + K;
+      buffer += static_cast<char>(static_cast<int>('0') + K);
     }
     else
-      buffer += '0' + K;
+      buffer += static_cast<char>(static_cast<int>('0') + K);
   }
   
   void prettify_string(std::string &buffer, int k)
   {
-    int end_pos = buffer.size();
+    int end_pos = static_cast<int>(buffer.size());
     int nb_digits = end_pos;
     int kk = nb_digits + k;
     if (nb_digits <= kk && kk <= 21)

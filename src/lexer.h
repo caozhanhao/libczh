@@ -31,18 +31,6 @@ using czh::error::CzhError;
 using czh::value::Value;
 namespace czh::lexer
 {
-  const std::map<char, token::TokenType> marks =
-      {
-          {'=', token::TokenType::EQUAL},
-          {'[', token::TokenType::ARR_LP},
-          {']', token::TokenType::ARR_RP},
-          {':', token::TokenType::COLON},
-          {'-', token::TokenType::BPATH},
-          {';', token::TokenType::SEND},
-          {',', token::TokenType::COMMA}
-      };
-  
-  
   enum class State
   {
     INIT,
@@ -87,7 +75,7 @@ namespace czh::lexer
       return "";
     }
     
-    State get_state() const
+    [[nodiscard]]State get_state() const
     {
       return state;
     }
@@ -501,7 +489,6 @@ namespace czh::lexer
     token::Pos codepos;
     bool parsing_path;
     bool is_eof;
-  
   public:
     Lexer()
         : code(nullptr),
@@ -522,7 +509,7 @@ namespace czh::lexer
       codepos = token::Pos(code);
     }
     
-    void set_czh(const std::string &str)
+    void set_czh(std::string str)
     {
       code = std::make_shared<file::NonStreamFile>("czh from std::string", std::move(str));
       codepos = token::Pos(code);
@@ -584,6 +571,17 @@ namespace czh::lexer
     
     token::Token get_tok()
     {
+      static const std::map<char, token::TokenType> marks =
+          {
+              {'=', token::TokenType::EQUAL},
+              {'[', token::TokenType::ARR_LP},
+              {']', token::TokenType::ARR_RP},
+              {':', token::TokenType::COLON},
+              {'-', token::TokenType::BPATH},
+              {';', token::TokenType::SEND},
+              {',', token::TokenType::COMMA}
+          };
+      
       while (check_char() && isspace(view_char()))
         next_char();
       
@@ -625,14 +623,14 @@ namespace czh::lexer
           {
             nmatch.reset();
             auto t = utils::str_to_num(temp);
-            if ((long long) t != t)//like -6e-2
+            if (static_cast<double>(static_cast<long long>(t)) != t)//like -6e-2
             {
               return {token::TokenType::DOUBLE, t,
                       get_pos().set_size(temp.size())};
             }
             else
             {
-              if (t < std::numeric_limits<int>().max())
+              if (t < std::numeric_limits<int>::max())
                 return {token::TokenType::INT, (int) t, get_pos().set_size(temp.size())};
               else
                 return {token::TokenType::LONGLONG, (long long) t,

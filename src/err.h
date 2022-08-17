@@ -45,7 +45,7 @@ namespace czh::error
     std::string location;
     std::string detail;
   public:
-    Error(std::string location_, std::string func_name_, const std::string &detail_)
+    Error(std::string location_, const std::string &func_name_, const std::string &detail_)
         : logic_error(detail_), location(std::move(location_) + ":" + func_name_),
           detail(detail_)
     {}

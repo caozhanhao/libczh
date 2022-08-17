@@ -88,7 +88,7 @@ namespace czh::parser
       if (view().type == token::TokenType::COLON)//scope
       {
         next();
-        curr_node = curr_node->add_node(id_name);
+        curr_node = &curr_node->add_node(id_name);
         return;
       }
       //id = xxx
