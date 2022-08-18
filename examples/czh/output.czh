@@ -1,33 +1,22 @@
-/b/ note example /e/
 example:
-  int_array = [-0.06, 2, -9000]
-  string_array = ["1", "2", "3"]
-  bool_array = [true, true, false]
-  any_array = [false, 1.0000000000000002, "2", 3, 400000000000]
-  string = "string test"
-  double = -123456
+  int_array = {-0.06, 2, -9000}
+  string_array = {"1", "2", "3"}
+  bool_array = {true, true, false}
+  any_array = {false, 1.0000000000000002, "2", 3, 400000000000}
+  edit = "edit example"
   bool = true
-  /b/bool/e/
-  int = 200000000
+  int = "d changed"
   long_long = 200000000000
   block:
-    ref0 = -..:int
-    test:
-      ref1 = -..:ref0
-      /b/ref/e/
+    example:
+      int = 0
     end
-    ref2 = -.-test:ref1
-  end
-  value_map:
-    k1 = 1
-    k2 = 2
-    k3 = 3
+    a = int
+    b = example::int
+    c = int
+    d = c
   end
   value_array_map:
-    k1 = [1, 2, 3]
-    k2 = [4, 5, 7]
-    /b/note/e/
-    k3 = [6, 8, 9]
   end
   dt1 = 1.0000000000000002
   dt2 = 2.225073858507201e-308
@@ -36,4 +25,8 @@ example:
   dt5 = -2.2250738585072014e-308
   dt6 = 1.7976931348623157e+308
   dt7 = -1.7976931348623157e+308
+  add_test = "123"
+  ref:
+    ref = edit
+  end
 end

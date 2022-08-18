@@ -11,16 +11,32 @@
 - 语句后可以有`;`但不是必需的
 - 使用`=`连接key和value
 ### 注释
-- `/b/ xxxx /e/`
+- `<xxxx>`
 ### Node
 - 使用`id:`作为一个Node的开始，使用`end`表示结束
 ### array
-- 使用`[]`作为array,元素由`,`连接
+- 使用`{}`作为array,元素由`,`连接
 ### 引用
-- 使用`-xxx-xxx:`表示引用
-- 引用的作用域由`-`连接，key由`:`连接
-- 只可以引用前面已定义的key
+- 使用`id = key`表示引用
+- 引用的作用域由`::`连接
+- `::`在开头时为全局作用域
+- 只可以引用前面已定义的值
 - 引用中可使用`.`表示本作用域,`..`表示上级作用域
+- 如下
+```
+example:
+a = 1
+end;
+block:
+    example:
+    a = 2;
+    end;    
+    b = 3
+    c = ::example::a <c == 1>
+    d = example::a   <d == 2>
+    e = b            <e == 3>
+end;
+```
 ## czh-cpp使用方法
 ### 编译
 - `#include "czh.h"`即可
@@ -38,13 +54,6 @@
 ##### Node::operator[]
 - 进入Node
 - 返回类型为Node
-### Value
-##### Node::get_value()
-- 返回Value&，可修改值
-- 仅存储值的Node可调用
-```c++
-example["czh"]["edit"].get_value() = "edit example";
-```
 ##### Node::get<T>()
 - 获取具体类型的值
 - 当值为array时，用Node::get<std::vector<T>>
@@ -115,8 +124,14 @@ example["example"].clear();
 ```c++
 example["a"].rename("b");
 ```
+#### 更改值
+##### Node::operator=(value)
+- 仅储存值Node可调用
+```c++
+example["czh"]["edit"] = "edit example";
+```
 ### 输出
-- 输出的czh仍保留注释
+- 输出的czh不保留注释
 ##### Node::to_string(with_color)
 - 返回格式化后的czh
 - czh::node::Color::with_color 有高亮

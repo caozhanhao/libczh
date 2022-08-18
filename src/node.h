@@ -37,7 +37,7 @@ namespace czh::node
   };
   enum class Type
   {
-    ID, REF_ID, NUM, STR, BOOL, BLOCK_BEG, BLOCK_END, REF_BLOCK_ID, NOTE
+    ID, REF_ID, NUM, STR, BOOL, BLOCK_BEG, BLOCK_END
   };
   enum class CzhColor
   {
@@ -49,14 +49,12 @@ namespace czh::node
     static const std::map<Type, CzhColor> colors =
         {
             {Type::ID,           CzhColor::PURPLE},
-            {Type::REF_ID,       CzhColor::PURPLE},
+            {Type::REF_ID,       CzhColor::LIGHT_BLUE},
             {Type::NUM,          CzhColor::BLUE},
             {Type::STR,          CzhColor::GREEN},
             {Type::BOOL,         CzhColor::BLUE},
             {Type::BLOCK_BEG,    CzhColor::LIGHT_BLUE},
             {Type::BLOCK_END,    CzhColor::LIGHT_BLUE},
-            {Type::REF_BLOCK_ID, CzhColor::LIGHT_BLUE},
-            {Type::NOTE,         CzhColor::YELLOW}
         };
     return colors.at(a);
   }
@@ -104,23 +102,17 @@ namespace czh::node
     return colorify(("\"" + val + "\""), color, Type::STR);
   }
   
-  template<>
-  std::string to_czhstr(const value::Note &val, Color color)
-  {
-    return colorify(("/b/" + val.note + "/e/"), color, Type::NOTE);
-  }
-  
   template<typename Ty>
   std::string to_czhstr(const std::vector<Ty> &v, Color color)
   {
-    std::string result = "[";
+    std::string result = "{";
     for (auto it = v.cbegin(); it != (v.cend() - 1); ++it)
     {
       result += to_czhstr(*it, color);
       result += ", ";
     }
     result += to_czhstr(*(v.cend() - 1), color);
-    result += "]";
+    result += "}";
     return result;
   }
   
@@ -129,14 +121,14 @@ namespace czh::node
   {
     auto visitor = [&color](auto &&v) -> std::string
     { return to_czhstr(v, color); };
-    std::string result = "[";
+    std::string result = "{";
     for (auto it = v.cbegin(); it != (v.cend() - 1); ++it)
     {
       result += std::visit(visitor, *it);
       result += ", ";
     }
     result += std::visit(visitor, *(v.cend() - 1));
-    result += "]";
+    result += "}";
     return result;
   }
   
@@ -147,8 +139,10 @@ namespace czh::node
   private:
     class NodeData
     {
+    public:
+      using IndexType = std::map<std::string, std::list<Node>::iterator>;
     private:
-      std::map<std::string, std::list<Node>::iterator> index;
+      IndexType index;
       std::list<Node> nodes;
     public:
       NodeData() = default;
@@ -159,12 +153,12 @@ namespace czh::node
       auto &get_nodes()
       { return nodes; }
       
-      Node &add(const Node &node)
+      Node &add(Node node)
       {
-        nodes.emplace_back(node);
+        nodes.emplace_back(std::move(node));
         auto a = nodes.rbegin();
         // rbegin() -> end()
-        index[node.name] = std::next(nodes.rbegin()).base();
+        index[nodes.rbegin()->name] = std::next(nodes.rbegin()).base();
         return *nodes.rbegin();
       }
       
@@ -189,11 +183,18 @@ namespace czh::node
         index[newname]->name = newname;
       }
       
-      [[nodiscard]]auto find(const std::string &str) const
+      [[nodiscard]]NodeData::IndexType::iterator find(const std::string &str)
       {
         return index.find(str);
       }
-      
+      [[nodiscard]]auto end()
+      {
+        return index.end();
+      }
+      [[nodiscard]]NodeData::IndexType::const_iterator find(const std::string &str) const
+      {
+        return index.find(str);
+      }
       [[nodiscard]]auto end() const
       {
         return index.end();
@@ -212,10 +213,10 @@ namespace czh::node
     Node(Node *node_ptr, std::string node_name, Value val)
         : name(std::move(node_name)), last_node(node_ptr), data(val)
     {}
-    
     Node() : name("/"), last_node(nullptr)
     { data.emplace<NodeData>(); }
-    
+    Node(const Node&) = delete;
+    Node(Node&&) = default;
     [[nodiscard]]bool is_node() const
     {
       return data.index() == 0;
@@ -249,13 +250,6 @@ namespace czh::node
       auto &nd = std::get<NodeData>(last_node->data);
       nd.rename(name, newname);
       return *this;
-    }
-    
-    Value &get_value()
-    {
-      if (is_node())
-        throw Error(CZH_ERROR_LOCATION, __func__, "This Node is not Value.");
-      return std::get<Value>(data);
     }
     
     Value make_ref()
@@ -300,12 +294,9 @@ namespace czh::node
       auto &nd = std::get<NodeData>(data);
       std::type_index value_type(typeid(T));
       std::type_index node_type(typeid(Node));
-      std::type_index note_type(typeid(value::Note));
       for (auto &r: nd.get_nodes())
       {
-        if (r.type() == note_type)
-          continue;
-        else if (r.type() != value_type)
+        if (r.type() != value_type)
           throw Error(CZH_ERROR_LOCATION, __func__, "TokenType is not same.");
         else if (r.type() == node_type)
           throw Error(CZH_ERROR_LOCATION, __func__, "TokenType is Node.");
@@ -325,11 +316,11 @@ namespace czh::node
       if (!is_node())
         throw Error(CZH_ERROR_LOCATION, __func__, "Value can not []");
       auto &nd = std::get<NodeData>(data);
-      auto it = nd.find(s);
+      NodeData::IndexType::iterator it = nd.find(s);
       if (it == nd.end())
         throw Error(CZH_ERROR_LOCATION, __func__,
                     "There is no node named '" + s + "'.Do you mean '" + error_correct(s) + "'?");
-      return *it->second;
+      return  *it->second;
     }
     
     const Node &operator[](const std::string &s) const
@@ -337,20 +328,32 @@ namespace czh::node
       if (!is_node())
         throw Error(CZH_ERROR_LOCATION, __func__, "Value can not []");
       auto &nd = std::get<NodeData>(data);
-      auto it = nd.find(s);
+      NodeData::IndexType::const_iterator it = nd.find(s);
       if (it == nd.end())
         throw Error(CZH_ERROR_LOCATION, __func__,
                     "There is no node named '" + s + "'.Do you mean '" + error_correct(s) + "'?");
       return *it->second;
     }
-    
     template<typename T>
-    T get() const
+    Node &operator=(T&& v)
+    {
+      if (is_node())
+        throw Error(CZH_ERROR_LOCATION, __func__, "This Node does not contain not Value.");
+      auto& value = std::get<Value>(data);
+      if (type() == typeid(Node *))
+      {
+        *value.get<Node *>() = std::forward<T>(v);
+      }
+      else
+        value = std::forward<T>(v);
+      return *this;
+    }
+    template<typename T>
+    const T& get() const
     {
       if (is_node())
         throw Error(CZH_ERROR_LOCATION, __func__, "Can not get value from a Node.");
       auto &value = std::get<Value>(data);
-      
       if (type() == typeid(Node *))
       {
         return value.get<Node *>()->get<T>();
@@ -392,7 +395,6 @@ namespace czh::node
       }
       return value_to_string(with_color, indentation, n + 1);
     }
-  
   private:
     [[nodiscard]]std::string node_to_string(Color with_color, std::size_t indentation, int n) const
     {
@@ -427,69 +429,33 @@ namespace czh::node
                 std::string res;
                 auto path = *n->get_path();
                 auto this_path = *to_last_node()->get_path();
-                std::reverse(path.begin(), path.end());
-                std::reverse(this_path.begin(), this_path.end());
-                std::size_t samepos = 0;
-                for (auto i = 0; i < std::min(path.size(), this_path.size()); i++)
-                {
-                  if (path[i] == this_path[i])
-                  {
-                    samepos++;
-                    if (samepos == this_path.size())
-                    {
-                      res += "-.";
-                      break;
-                    }
-                  }
-                  else
-                  {
-                    if (samepos == this_path.size() - 1)
-                    {
-                      res += "-..";
-                      break;
-                    }
-                    samepos = 0;
-                    break;
-                  }
-                }
-                
-                for (auto it = path.cbegin() + (int) samepos; it < path.cend() - 1; it++)
-                {
-                  res += "-";
-                  res += colorify(*it, with_color, Type::REF_BLOCK_ID);
-                }
-                res += ":";
-                res += colorify(*path.crbegin(), with_color, Type::REF_ID);
+                auto [itpath, itthis] = std::mismatch(path.rbegin(), path.rend(),
+                                                      this_path.rbegin(), this_path.rend());
+                if(itpath == path.rend() && itthis == this_path.rend()) res += "::";
+                for(; itpath < path.rend() - 1; ++itpath)
+                  res += colorify(*itpath, with_color, Type::REF_ID) + "::";
+                res += colorify(path[0], with_color, Type::REF_ID);
                 return res;
               }
           },
           value.get_variant());
-      std::string ret;
-      if (type() != typeid(value::Note))
-      {
-        ret = std::string(indentation * n, ' ') +
-              colorify(name, with_color, Type::ID)// id name
-              + " = " + valuestr + "\n";
-      }
-      else
-      {
-        if (!ret.empty() && *ret.crbegin() == '\n')
-          ret.pop_back();//eat '\n'
-        ret += std::string(indentation * n, ' ')
-               + to_czhstr(value.get<value::Note>(), with_color) + "\n";
-      }
+      std::string ret = std::string(indentation * n, ' ') +
+            colorify(name, with_color, Type::ID)// id name
+            + " = " + valuestr + "\n";
       return ret;
     }
     
     [[nodiscard]] std::string error_correct(const std::string &str) const
     {
       auto &nd = std::get<NodeData>(data);
-      return std::min_element(nd.get_nodes().cbegin(), nd.get_nodes().cend(),
+      if(nd.get_nodes().empty()) return "";
+      auto it = std::min_element(nd.get_nodes().cbegin(), nd.get_nodes().cend(),
                               [&str](auto &&n1, auto &&n2) -> bool
                               {
                                 return czh::utils::get_string_edit_distance(n1.name, str)
                                        < czh::utils::get_string_edit_distance(n2.name, str);
-                              })->name;
+                              });
+      return it->name;
     }
     
   };

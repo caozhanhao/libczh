@@ -36,7 +36,7 @@ namespace czh::lexer
     INIT,
     ID, VALUE,
     ARR_VALUE, EQUAL, ARR_LP, ARR_RP,
-    COMMA, SC_COLON, PATH_COLON, BPATH, PATH_ID_TARGET, PATH_ID,
+    COMMA, SC_COLON, REF, REF_ID,
     UNEXPECTED, END
   };
   
@@ -53,9 +53,8 @@ namespace czh::lexer
     {
       switch (last_state)
       {
+        case State::REF:
         case State::INIT:
-        case State::PATH_COLON:
-        case State::BPATH:
           return "identifier";
         case State::ID:
           return "'=' or ':'";
@@ -67,8 +66,8 @@ namespace czh::lexer
           return "']' or ','";
         case State::COMMA:
           return "value";
-        case State::PATH_ID:
-          return "'-' or ':'";
+        case State::REF_ID:
+          return "'::'";
         default:
           throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected state.");
       }
@@ -128,8 +127,11 @@ namespace czh::lexer
             case token::TokenType::ARR_LP:
               state = State::ARR_LP;
               break;
-            case token::TokenType::BPATH:
-              state = State::BPATH;
+            case token::TokenType::REF:
+              state = State::REF;
+              break;
+            case token::TokenType::ID:
+              state = State::REF_ID;
               break;
             default:
               last_state = state;
@@ -187,11 +189,11 @@ namespace czh::lexer
               break;
           }
           break;
-        case State::BPATH:
+        case State::REF:
           switch (token)
           {
             case token::TokenType::ID:
-              state = State::PATH_ID;
+              state = State::REF_ID;
               break;
             default:
               last_state = state;
@@ -199,38 +201,25 @@ namespace czh::lexer
               break;
           }
           break;
-        case State::PATH_ID:
+        case State::REF_ID:
           switch (token)
           {
-            case token::TokenType::BPATH:
-              state = State::BPATH;
+            case token::TokenType::REF:
+              state = State::REF;
               break;
-            case token::TokenType::COLON:
-              state = State::PATH_COLON;
-              break;
-            default:
-              last_state = state;
-              state = State::UNEXPECTED;
-              break;
-          }
-          break;
-        case State::PATH_COLON:
-          switch (token)
-          {
-            case token::TokenType::ID:
-              state = State::END;
+            case token::TokenType::SEND:
+            case token::TokenType::FEND:
+              reset();
               break;
             default:
-              last_state = state;
-              state = State::UNEXPECTED;
+              reset();
+              match(token);
               break;
           }
           break;
         case State::VALUE:
         case State::ARR_RP:
         case State::SC_COLON:
-        case State::PATH_ID_TARGET:
-          break;
         case State::UNEXPECTED:
           throw error::Error(CZH_ERROR_LOCATION, __func__,
                              "Unexpected state can not match.");
@@ -487,13 +476,11 @@ namespace czh::lexer
     Match match;
     NumberMatch nmatch;
     token::Pos codepos;
-    bool parsing_path;
     bool is_eof;
   public:
     Lexer()
         : code(nullptr),
           codepos(nullptr),
-          parsing_path(false),
           is_eof(false)
     {}
     
@@ -568,25 +555,45 @@ namespace czh::lexer
     {
       return codepos;
     }
-    
+    void skip()
+    {
+      while (check_char() && isspace(view_char()))
+        next_char();
+      while (check_char() && view_char() == '<')
+      {
+        std::size_t notes = 0;
+        auto bak = get_pos().set_size(1);
+        next_char();//eat '<'
+        for(; check_char() && !(view_char() == '>' && notes == 0); next_char())
+        {
+          if(view_char() == '<') ++notes;
+          if(view_char() == '>') --notes;
+        }
+        if(notes != 0 && !check_char())
+        {
+          token::Token tmp(token::TokenType::UNEXPECTED, '<', bak);
+          tmp.error("Unexpected note begin.");
+        }
+        next_char();//eat '>'
+      }
+    }
     token::Token get_tok()
     {
       static const std::map<char, token::TokenType> marks =
           {
               {'=', token::TokenType::EQUAL},
-              {'[', token::TokenType::ARR_LP},
-              {']', token::TokenType::ARR_RP},
+              {'{', token::TokenType::ARR_LP},
+              {'}', token::TokenType::ARR_RP},
               {':', token::TokenType::COLON},
-              {'-', token::TokenType::BPATH},
               {';', token::TokenType::SEND},
               {',', token::TokenType::COMMA}
           };
-      
-      while (check_char() && isspace(view_char()))
-        next_char();
-      
+      //space and note
+      while (check_char() && (isspace(view_char()) || view_char() == '<'))
+        skip();
+      //num
       bool is_num = false;
-      if (!parsing_path && check_char() && (std::isdigit(view_char()) || view_char() == '.' || view_char() == '+' ||
+      if (check_char() && (std::isdigit(view_char()) || view_char() == '.' || view_char() == '+' ||
                                             view_char() == '-'))
       {
         is_num = true;
@@ -644,7 +651,8 @@ namespace czh::lexer
           tmp.error("Unexpected token '" + temp + "'.Is this a number?");
         }
       }
-      else if (check_char() && view_char() == '"')//str
+      //string
+      else if (check_char() && view_char() == '"')
       {
         std::string temp;
         next_char();//eat '"'.
@@ -656,21 +664,12 @@ namespace czh::lexer
         next_char();//eat '"'
         return {token::TokenType::STRING, temp, get_pos().set_size(temp.size())};
       }
-      else if ((check_char() && (isalpha(view_char()) || view_char() == '_'))
-               || (check_char() && parsing_path && view_char() == '.'))//id
+      //id = ...
+      else if (check_char() && (isalpha(view_char()) || view_char() == '_'))
       {
         std::string temp;
-        if (parsing_path && view_char() == '.')
-        {
-          temp = ".";
-          next_char();
-          if (check_char() && view_char() == '.')
-          {
-            temp += ".";
-            next_char();
-          }
-        }
-        while (check_char() && (isalnum(view_char()) || view_char() == '_') && view_char() != '-')
+
+        while (check_char() && (isalnum(view_char()) || view_char() == '_'))
         {
           temp += view_char();
           next_char();
@@ -685,33 +684,27 @@ namespace czh::lexer
         else
           return {token::TokenType::ID, temp, get_pos().set_size(temp.size())};
       }
-      else if (check_char() && marks.find(view_char()) != marks.end())//mark
+      //marks
+      else if (check_char() && marks.find(view_char()) != marks.end())
       {
         next_char();
-        if (marks.at(view_char(-1)) == token::TokenType::BPATH) parsing_path = true;
-        if (parsing_path && marks.at(view_char(-1)) == token::TokenType::COLON) parsing_path = false;
+        if(check_char() && view_char(-1) == ':' && view_char() == ':')
+        {
+          next_char();
+          return {token::TokenType::REF, ":", get_pos().set_size(2)};
+        }
         return {marks.at(view_char(-1)), view_char(-1), get_pos().set_size(1)};
       }
-      else if (check_char(2) && view_char() == '/' && view_char(1) == 'b' && view_char(2) == '/')//note
-      {
-        std::string temp;
-        next_char(3);//eat '/b/'
-        while (!(check_char(2) && view_char() == '/' && view_char(1) == 'e' && view_char(2) == '/'))
-        {
-          temp += view_char();
-          next_char();
-        }
-        next_char(3);//eat '/e/'
-        return {token::TokenType::NOTE, value::Note(temp),
-                get_pos().set_size(temp.size())};
-      }
-      else if (!check_char()) return {token::TokenType::FEND, 0, get_pos().set_size(0)};
+      //end
+      else if (!check_char()) return {token::TokenType::FEND, 0, get_pos().set_size(1)};
       else
       {
-        token::Token(token::TokenType::UNEXPECTED, 0, get_pos().set_size(0))
-            .error(std::string("Unexpected token '" + std::string(1, view_char()) + "'."));
+        char bak = view_char();
+        next_char();//eat the unexpected
+        token::Token(token::TokenType::UNEXPECTED, 0, get_pos().set_size(1))
+            .error(std::string("Unexpected token '" + std::string(1, bak) + "'."));
       }
-      return {token::TokenType::UNEXPECTED, 0, get_pos().set_size(0)};
+      return {token::TokenType::UNEXPECTED, 0, get_pos().set_size(1)};
     }
     
     bool check_char(std::size_t s = 0)

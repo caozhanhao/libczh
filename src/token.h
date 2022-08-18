@@ -24,9 +24,9 @@ namespace czh::token
     ID,
     INT, LONGLONG, DOUBLE, STRING, BOOL,
     EQUAL,//=
-    ARR_LP, ARR_RP,//[]
+    ARR_LP, ARR_RP,//{}
     COMMA, COLON,
-    BPATH,//-
+    REF,//::
     FEND, SEND, SCEND,
     NOTE,
     UNEXPECTED
@@ -45,36 +45,36 @@ namespace czh::token
     explicit Pos(std::shared_ptr<file::File> code_)
         : pos(0), size(0), code(std::move(code_))
     {}
-    
+  
     Pos &operator+=(const std::size_t &p)
     {
       pos += p;
       return *this;
     }
-    
+  
     Pos &operator-=(const std::size_t &p)
     {
       pos -= p;
       return *this;
     }
-    
+  
     [[nodiscard]] std::string location() const
     {
       return (code->get_name() + ":line " + utils::to_str(code->get_lineno(pos)));
     }
-    
+  
     [[nodiscard]] std::size_t get() const
     {
       return pos;
     }
-  
+
   public:
     Pos &set_size(std::size_t s)
     {
       size = s;
       return *this;
     }
-    
+  
     [[nodiscard]] std::unique_ptr<std::string> get_details_from_code() const
     {
       std::size_t lineno = code->get_lineno(pos);
@@ -82,25 +82,23 @@ namespace czh::token
       std::size_t actual_last = last;
       std::size_t actual_next = next;
       std::size_t total_line = code->get_lineno(code->size() - 1);
-      
-      while (lineno - actual_last <= 0 && actual_last > 0)
+    
+      while (static_cast<int>(lineno) - static_cast<int>(actual_last) <= 0 && actual_last > 0)
         --actual_last;
       while (lineno + actual_next >= total_line && actual_next > 0)
         --actual_next;
-      
+    
       std::string temp1, temp2;
-      
-      if (actual_last != 0)
-        temp1 += code->get_spec_line(lineno - actual_last, lineno + 1, linenosize);//[beg, end)
-      if (actual_next != 0)
+      //lineno - actual_last is impossible to be equal lineno + 1
+      temp1 = code->get_spec_line(lineno - actual_last, lineno + 1, linenosize);//[beg, end)
+      if(actual_next != 0)//lineno + 1 might be equal to lineno + actual_next + 1
         temp2 = code->get_spec_line(lineno + 1, lineno + actual_next + 1, linenosize);
-      
       std::string arrow("\n");
       arrow += std::string(code->get_arrowpos(pos) - size + linenosize + 1, ' ');
       arrow += "\033[0;32;32m";
       arrow.insert(arrow.end(), size, '^');
       arrow += "\033[m\n";
-      
+    
       std::string errorstring = temp1 + arrow + temp2;
       return std::make_unique<std::string>(errorstring);
     }
@@ -115,10 +113,6 @@ namespace czh::token
   { return v; }
   
   //not use
-  template<>
-  std::string to_token_str(const value::Note &v)
-  { return ""; }
-  
   template<>
   std::string to_token_str(node::Node *const &v)
   { return ""; }

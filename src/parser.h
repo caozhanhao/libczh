@@ -32,10 +32,9 @@ namespace czh::parser
     lexer::Lexer *lex;
     std::shared_ptr<node::Node> node;
     node::Node *curr_node;
-    int note;
   public:
     explicit Parser(lexer::Lexer *lex_)
-        : lex(lex_), note(0), node(std::make_shared<node::Node>()), curr_node(node.get())
+        : lex(lex_), node(std::make_shared<node::Node>()), curr_node(node.get())
     {}
     
     std::shared_ptr<node::Node> parse()
@@ -49,11 +48,6 @@ namespace czh::parser
             break;
           case token::TokenType::SCEND:
             parse_end();
-            break;
-          case token::TokenType::NOTE:
-            curr_node->add(utils::to_str(note), view().what);
-            note++;
-            next();
             break;
           case token::TokenType::SEND:
             next();
@@ -93,12 +87,12 @@ namespace czh::parser
       }
       //id = xxx
       next();//eat '='
-      if (view().type == token::TokenType::BPATH)//ref id = -x:x
+      if (view().type == token::TokenType::ID || view().type == token::TokenType::REF)//ref id = -x:x
       {
         curr_node->add(id_name, parse_ref());
         return;
       }
-      if (view().type == token::TokenType::ARR_LP)// array id = [1,2,3]
+      else if (view().type == token::TokenType::ARR_LP)// array id = [1,2,3]
       {
         if (view(1).type == token::TokenType::ARR_RP)
         {
@@ -133,23 +127,46 @@ namespace czh::parser
     {
       if (!check()) return nullptr;
       node::Node *call = curr_node;
-      node::Node *val = nullptr;
-      for (; view().type != token::TokenType::COLON; next())
+      if (view().type == token::TokenType::REF)
+        call = node.get();
+      else
       {
-        if (view().type == token::TokenType::BPATH) continue;
-        call = to_scope(view().what.get<std::string>(), call);
+        auto name = view().what.get<std::string>();
+        while (call != nullptr)
+        {
+          if (call->has_node(name))
+          {
+            call = &(*call)[name];
+            next();
+            if (view().type != token::TokenType::REF)
+              return call;
+            else
+              break;
+          }
+          else
+            call = call->to_last_node();
+        }
+        if (call == nullptr)
+          view().error("There is no node named '" + name + "'.");
       }
-      next(); //eat :
-      try
+  
+      while (true)
       {
-        val = &(*call)[view().what.get<std::string>()];
+        if (view().type == token::TokenType::REF)
+          next();
+        try
+        {
+          call = &(*call)[view().what.get<std::string>()];
+        }
+        catch (Error &err)
+        {
+          view().error(err.get_detail());
+        }
+        next();
+        if (view().type != token::TokenType::REF)
+          return call;
       }
-      catch (Error &err)
-      {
-        view().error(err.get_detail());
-      }
-      next();//eat id
-      return val;
+      return nullptr;
     }
     
     node::Node *to_scope(const std::string &id, node::Node *ptr)

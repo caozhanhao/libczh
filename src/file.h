@@ -19,27 +19,6 @@
 #include <limits>
 namespace czh::file
 {
-  bool is_newline_and_next(const std::string &str, std::size_t &pos, int delta = 1)
-  {
-    if (str[pos] == '\r')
-    {
-      if (pos + 1 < str.size() && str[pos + 1] == '\n')
-      {
-        pos += 2 * delta;
-        return true;
-      }
-      else
-        pos += 1 * delta;
-      return true;
-    }
-    else if (str[pos] == '\n')
-    {
-      pos += 1 * delta;
-      return true;
-    }
-    return false;
-  }
-  
   class File
   {
   public:
@@ -104,7 +83,7 @@ namespace czh::file
           std::string addition = utils::to_str(a);
           if (addition.size() < linenosize)
             fbuffer += std::string(linenosize - addition.size(), '0');
-          fbuffer += addition + " ";
+          fbuffer += addition + "| ";
           fbuffer += tmp;
           fbuffer += "\n";
         }
@@ -136,7 +115,7 @@ namespace czh::file
       file->seekg(std::ios::beg);
       while (std::getline(*file, tmp))
       {
-        if (postmp + tmp.size() >= pos) return pos - postmp;
+        if (postmp + tmp.size() >= pos) return pos - postmp + 1;
         postmp += tmp.size() + 1;
       }
       return 0;
@@ -208,63 +187,59 @@ namespace czh::file
       if (linenosize == 0)
         linenosize = utils::to_str(end).size();
       std::size_t lineno = 1;
-      bool first_line_flag = false;
-      auto add = [&]()
+      bool first_line_flag = true;
+      bool first_line_no = true;
+
+      for (std::size_t i = 0; i < code.size() && lineno < end;++i)
       {
-        std::string addition = utils::to_str(lineno);
-        if (addition.size() < linenosize)
-          ret += std::string(linenosize - addition.size(), '0');
-        ret += addition + " ";
-      };
-      for (std::size_t i = 0; i < code.size();)
-      {
-        if (lineno >= beg && lineno < end)
+        if(code[i] == '\n')
         {
-          if (!first_line_flag && lineno == 1)
+          ++lineno;
+          first_line_flag = true;
+          continue;
+        }
+        if(lineno >= beg)
+        {
+          if(first_line_flag)
           {
-            add();
-            first_line_flag = true;
+            std::string addition = utils::to_str(lineno);
+            if (addition.size() < linenosize)
+              ret += std::string(linenosize - addition.size(), '0');
+            if(!first_line_no)
+              ret += '\n';
+            else
+              first_line_no = false;
+            ret += addition + "| ";
+            first_line_flag = false;
           }
-          if (code[i] != '\r' && code[i] != '\n')
+          if(code[i] != '\r')
             ret += code[i];
         }
-        if (is_newline_and_next(code, i))
-        {
-          lineno++;
-          if (lineno >= beg && lineno < end)
-          {
-            ret += '\n';
-            add();
-          }
-        }
-        else
-          i++;
       }
-      ret.erase(ret.begin());
+      while(code.back() == '\r' || code.back() == '\n')
+        ret.pop_back();
       return ret;
     }
     
     [[nodiscard]] std::size_t get_lineno(std::size_t pos) const override
     {
       std::size_t lineno = 1;
-      for (std::size_t i = 0; i < pos;)
+      for (std::size_t i = 0; i < pos; ++i)
       {
-        if (is_newline_and_next(code, i))
+        if (code[i] == '\n')
           lineno++;
-        else
-          i++;
       }
       return lineno;
     }
     
     [[nodiscard]] std::size_t get_arrowpos(std::size_t pos) const override
     {
-      std::size_t i = pos;
+      int i = pos;
       if (pos != 1)
         --i;
       while (code[i] != '\n' && i >= 0)
         --i;
-      return pos - i - 1;
+      return pos - i;
     }
     
     [[nodiscard]] std::string get_name() const override

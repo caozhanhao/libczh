@@ -21,6 +21,7 @@
 #include <typeinfo>
 #include <typeindex>
 #include <any>
+#include <cxxabi.h>
 
 namespace czh
 {
@@ -30,14 +31,10 @@ namespace czh
   }
   namespace value
   {
-    class Note
+    std::string get_type_str(const std::type_index& type)
     {
-    public:
-      std::string note;
-      
-      explicit Note(std::string note_) : note(std::move(note_))
-      {}
-    };
+      return abi::__cxa_demangle(type.name(),0,0,0);
+    }
     
     class Value
     {
@@ -46,7 +43,7 @@ namespace czh
       using AnyArray = std::vector<BasicVT>;
       using AnyArrayValueType = BasicVT;
     private:
-      std::variant<int, long long, double, std::string, bool, Note, char,
+      std::variant<int, long long, double, std::string, bool, char,
           std::vector<int>, std::vector<long long>, std::vector<double>,
           std::vector<std::string>, std::vector<bool>,
           AnyArray,
@@ -66,15 +63,14 @@ namespace czh
       {}
       
       template<typename T>
-      T get() const
+      const T& get() const
       {
         if (std::type_index(typeid(T)) != value_type)
           throw error::Error(CZH_ERROR_LOCATION, __func__,
-                             "The value is '" + std::string(value_type.name()) + "', not '"
-                             + std::string(std::type_index(typeid(T)).name()) + "'.");
+                             "The value is '" + get_type_str(type()) + "', not '"
+                             + get_type_str(typeid(T)) + "'.");
         return std::get<T>(value);
       }
-      
       [[nodiscard]] const auto &get_variant() const
       {
         return value;
