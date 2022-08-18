@@ -1,4 +1,4 @@
-# czh-cpp
+# libczh
 ![example](https://gitee.com/cmvy2020/czh-cpp/raw/master/examples/example.png)
 ## 介绍
 - czh是caozhanhao设计的一个简单的数据序列化格式
@@ -37,7 +37,8 @@ block:
     e = b            <e == 3>
 end;
 ```
-## czh-cpp使用方法
+
+## libczh使用方法
 ### 编译
 - `#include "czh.h"`即可
 - 需要C++17
@@ -141,8 +142,9 @@ example["czh"]["edit"] = "edit example";
 - 输出Node::to_string()返回值
 - 无高亮
 #### 示例
-- [czh-cpp示例](https://gitee.com/cmvy2020/czh-cpp/blob/master/examples/cpp/example.cpp)
-- [czh示例1](https://gitee.com/cmvy2020/czh-cpp/blob/master/examples/czh/example.czh)
-- [czh示例2](https://gitee.com/cmvy2020/czh-cpp/blob/master/examples/czh/czh.czh)
-- [czh示例3](https://gitee.com/cmvy2020/czh-cpp/blob/master/examples/czh/onelinetest.czh)
+
+- [libczh示例](https://gitee.com/cmvy2020/libczh/blob/master/examples/cpp/example.cpp)
+- [czh示例1](https://gitee.com/cmvy2020/libczh/blob/master/examples/czh/example.czh)
+- [czh示例2](https://gitee.com/cmvy2020/libczh/blob/master/examples/czh/czh.czh)
+- [czh示例3](https://gitee.com/cmvy2020/libczh/blob/master/examples/czh/onelinetest.czh)
 - [czh示例](https://gitee.com/cmvy2020/wxserver/blob/main/config.czh)
