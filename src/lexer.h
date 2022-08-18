@@ -555,6 +555,7 @@ namespace czh::lexer
     {
       return codepos;
     }
+    
     void skip()
     {
       while (check_char() && isspace(view_char()))
@@ -564,12 +565,12 @@ namespace czh::lexer
         std::size_t notes = 0;
         auto bak = get_pos().set_size(1);
         next_char();//eat '<'
-        for(; check_char() && !(view_char() == '>' && notes == 0); next_char())
+        for (; check_char() && !(view_char() == '>' && notes == 0); next_char())
         {
-          if(view_char() == '<') ++notes;
-          if(view_char() == '>') --notes;
+          if (view_char() == '<') ++notes;
+          if (view_char() == '>') --notes;
         }
-        if(notes != 0 && !check_char())
+        if (notes != 0 && !check_char())
         {
           token::Token tmp(token::TokenType::UNEXPECTED, '<', bak);
           tmp.error("Unexpected note begin.");
@@ -577,6 +578,7 @@ namespace czh::lexer
         next_char();//eat '>'
       }
     }
+    
     token::Token get_tok()
     {
       static const std::map<char, token::TokenType> marks =
@@ -594,7 +596,7 @@ namespace czh::lexer
       //num
       bool is_num = false;
       if (check_char() && (std::isdigit(view_char()) || view_char() == '.' || view_char() == '+' ||
-                                            view_char() == '-'))
+                           view_char() == '-'))
       {
         is_num = true;
         if (view_char() == '-')
@@ -651,7 +653,7 @@ namespace czh::lexer
           tmp.error("Unexpected token '" + temp + "'.Is this a number?");
         }
       }
-      //string
+        //string
       else if (check_char() && view_char() == '"')
       {
         std::string temp;
@@ -664,11 +666,11 @@ namespace czh::lexer
         next_char();//eat '"'
         return {token::TokenType::STRING, temp, get_pos().set_size(temp.size())};
       }
-      //id = ...
+        //id = ...
       else if (check_char() && (isalpha(view_char()) || view_char() == '_'))
       {
         std::string temp;
-
+        
         while (check_char() && (isalnum(view_char()) || view_char() == '_'))
         {
           temp += view_char();
@@ -684,18 +686,18 @@ namespace czh::lexer
         else
           return {token::TokenType::ID, temp, get_pos().set_size(temp.size())};
       }
-      //marks
+        //marks
       else if (check_char() && marks.find(view_char()) != marks.end())
       {
         next_char();
-        if(check_char() && view_char(-1) == ':' && view_char() == ':')
+        if (check_char() && view_char(-1) == ':' && view_char() == ':')
         {
           next_char();
           return {token::TokenType::REF, ":", get_pos().set_size(2)};
         }
         return {marks.at(view_char(-1)), view_char(-1), get_pos().set_size(1)};
       }
-      //end
+        //end
       else if (!check_char()) return {token::TokenType::FEND, 0, get_pos().set_size(1)};
       else
       {

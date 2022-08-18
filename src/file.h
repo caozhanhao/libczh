@@ -189,34 +189,34 @@ namespace czh::file
       std::size_t lineno = 1;
       bool first_line_flag = true;
       bool first_line_no = true;
-
-      for (std::size_t i = 0; i < code.size() && lineno < end;++i)
+      
+      for (std::size_t i = 0; i < code.size() && lineno < end; ++i)
       {
-        if(code[i] == '\n')
+        if (code[i] == '\n')
         {
           ++lineno;
           first_line_flag = true;
           continue;
         }
-        if(lineno >= beg)
+        if (lineno >= beg)
         {
-          if(first_line_flag)
+          if (first_line_flag)
           {
             std::string addition = utils::to_str(lineno);
             if (addition.size() < linenosize)
               ret += std::string(linenosize - addition.size(), '0');
-            if(!first_line_no)
+            if (!first_line_no)
               ret += '\n';
             else
               first_line_no = false;
             ret += addition + "| ";
             first_line_flag = false;
           }
-          if(code[i] != '\r')
+          if (code[i] != '\r')
             ret += code[i];
         }
       }
-      while(code.back() == '\r' || code.back() == '\n')
+      while (code.back() == '\r' || code.back() == '\n')
         ret.pop_back();
       return ret;
     }

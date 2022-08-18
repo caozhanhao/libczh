@@ -31,9 +31,9 @@ namespace czh
   }
   namespace value
   {
-    std::string get_type_str(const std::type_index& type)
+    std::string get_type_str(const std::type_index &type)
     {
-      return abi::__cxa_demangle(type.name(),0,0,0);
+      return abi::__cxa_demangle(type.name(), 0, 0, 0);
     }
     
     class Value
@@ -63,7 +63,7 @@ namespace czh
       {}
       
       template<typename T>
-      const T& get() const
+      const T &get() const
       {
         if (std::type_index(typeid(T)) != value_type)
           throw error::Error(CZH_ERROR_LOCATION, __func__,
@@ -71,6 +71,7 @@ namespace czh
                              + get_type_str(typeid(T)) + "'.");
         return std::get<T>(value);
       }
+      
       [[nodiscard]] const auto &get_variant() const
       {
         return value;

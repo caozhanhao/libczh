@@ -45,6 +45,7 @@ namespace czh
       else
         lexer.set_czh(path);
     }
+    
     std::shared_ptr<Node> parse()
     {
       return parser.parse();

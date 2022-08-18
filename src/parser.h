@@ -149,7 +149,7 @@ namespace czh::parser
         if (call == nullptr)
           view().error("There is no node named '" + name + "'.");
       }
-  
+      
       while (true)
       {
         if (view().type == token::TokenType::REF)

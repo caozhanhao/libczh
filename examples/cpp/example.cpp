@@ -11,8 +11,8 @@ int main()
     czh::Czh e("example.czh", czh::InputMode::nonstream);
     // or czh::Czh e("example.czh", czh::InputMode::stream);
     // or czh::Czh e("example: a = 1; end;",  czh::InputMode::string);
-    auto& example = *e.parse();
-    auto a  = ((1));
+    auto &example = *e.parse();
+    auto a = ((1));
     //get value
     std::cout << "double: " << example["example"]["double"].get<double>();
     std::cout << "\nref: ";
@@ -58,7 +58,7 @@ int main()
     //output(hightlight)
     czh::Czh czh("czh.czh", czh::InputMode::stream);
     std::cout << "\n" << czh.parse()->to_string(czh::node::Color::with_color) << std::endl;
-
+    
     //test
     //output.czh
     czh::Czh("output.czh", czh::InputMode::nonstream).parse();
@@ -67,7 +67,7 @@ int main()
     std::string tmp;
     outputczh.clear();
     outputczh.seekg(std::ios_base::beg);
-    while(std::getline(outputczh, tmp))
+    while (std::getline(outputczh, tmp))
       onelineczh << tmp << " ";
     onelineczh.close();
     auto p = czh::Czh("onelinetest.czh", czh::InputMode::nonstream).parse();
