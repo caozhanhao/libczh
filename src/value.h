@@ -66,9 +66,11 @@ namespace czh
       const T &get() const
       {
         if (std::type_index(typeid(T)) != value_type)
-          throw error::Error(CZH_ERROR_LOCATION, __func__,
+        {
+          throw error::Error(LIBCZH_ERROR_LOCATION, __func__,
                              "The value is '" + get_type_str(type()) + "', not '"
                              + get_type_str(typeid(T)) + "'.");
+        }
         return std::get<T>(value);
       }
       

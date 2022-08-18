@@ -34,7 +34,7 @@ namespace czh::parser
     node::Node *curr_node;
   public:
     explicit Parser(lexer::Lexer *lex_)
-        : lex(lex_), node(std::make_shared<node::Node>()), curr_node(node.get())
+        : lex(lex_), node(std::make_unique<node::Node>()), curr_node(node.get())
     {}
     
     std::shared_ptr<node::Node> parse()

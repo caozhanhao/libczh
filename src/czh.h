@@ -48,7 +48,20 @@ namespace czh
     
     std::shared_ptr<Node> parse()
     {
-      return parser.parse();
+      std::shared_ptr<Node> ret;
+      try
+      {
+        ret = parser.parse();
+      }
+      catch (czh::error::Error &err)
+      {
+        std::cout << "internal:\n" << err.get_content() << std::endl;
+      }
+      catch (czh::error::CzhError &err)
+      {
+        std::cout << err.get_content() << std::endl;
+      }
+      return ret;
     }
   };
 }

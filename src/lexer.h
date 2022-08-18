@@ -69,7 +69,7 @@ namespace czh::lexer
         case State::REF_ID:
           return "'::'";
         default:
-          throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected state.");
+          throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "Unexpected state.");
       }
       return "";
     }
@@ -221,16 +221,18 @@ namespace czh::lexer
         case State::ARR_RP:
         case State::SC_COLON:
         case State::UNEXPECTED:
-          throw error::Error(CZH_ERROR_LOCATION, __func__,
+          throw error::Error(LIBCZH_ERROR_LOCATION, __func__,
                              "Unexpected state can not match.");
         case State::END:
           if (token != token::TokenType::SEND && token != token::TokenType::FEND)
-            throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected end.");
+          {
+            throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "Unexpected end.");
+          }
           else
             reset();
           break;
         default:
-          throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected state.");
+          throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "Unexpected state.");
       }
     }
     
@@ -254,6 +256,10 @@ namespace czh::lexer
   std::string get_string_from_file(const std::string &path)
   {
     std::ifstream file{path, std::ios::binary};
+    if (!file.good())
+    {
+      throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "Failed loading file.");
+    }
     std::stringstream ss;
     ss << file.rdbuf();
     return ss.str();
@@ -486,10 +492,14 @@ namespace czh::lexer
     
     void set_czh(std::string filename, std::unique_ptr<std::ifstream> fs)
     {
+      if (!fs->good())
+      {
+        throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "Failed loading file.");
+      }
       code = std::make_shared<file::StreamFile>(std::move(filename), std::move(fs));
       codepos = token::Pos(code);
     }
-    
+  
     void set_czh(const std::string &path, const std::string &filename)
     {
       code = std::make_shared<file::NonStreamFile>(filename, get_string_from_file(path));

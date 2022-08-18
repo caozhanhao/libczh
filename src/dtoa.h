@@ -352,7 +352,9 @@ namespace czh::utils
     DiyFp operator-(const DiyFp &x) const
     {
       if (e != x.e || f < x.f)
-        throw error::Error(CZH_ERROR_LOCATION, __func__, "These DiyFps can not minus.");
+      {
+        throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "These DiyFps can not minus.");
+      }
       return {f - x.f, e};
     }
     

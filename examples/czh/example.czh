@@ -1,5 +1,5 @@
 <note>
-example:
+czh:
     int_array = {-6e-2,2,-90E2};
     string_array = {"1", "2", "3"};
     bool_array = {true, true, false};
@@ -13,8 +13,8 @@ example:
         example:
             int = 0;
         end;
-        a = ::example::int; <a == +2e8>
-        b = example::int    <b == 0>
+        a = ::czh::int; <a == +2e8>
+        b = czh::int    <b == 0>
         c = int;            <c == +2e8>
         d = c;              <d == +2e8>
     end;

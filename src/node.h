@@ -80,7 +80,7 @@ namespace czh::node
       case CzhColor::RED:
         return "\033[31m" + str + "\033[0m";
       default:
-        throw error::Error(CZH_ERROR_LOCATION, __func__, "Unexpected color");
+        throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "Unexpected color");
     }
   }
   
@@ -141,7 +141,7 @@ namespace czh::node
     {
     public:
       using IndexType = std::map<std::string, std::list<Node>::iterator>;
-    private:
+      using NodeType = std::list<Node>;
       IndexType index;
       std::list<Node> nodes;
     public:
@@ -197,13 +197,18 @@ namespace czh::node
       {
         return index.find(str);
       }
-      
+  
       [[nodiscard]]auto end() const
       {
         return index.end();
       }
     };
-  
+
+  public:
+    using iterator = NodeData::NodeType::iterator;
+    using const_iterator = NodeData::NodeType::const_iterator;
+    using reverse_iterator = NodeData::NodeType::reverse_iterator;
+    using const_reverse_iterator = NodeData::NodeType::const_reverse_iterator;
   private:
     std::string name;
     Node *last_node;
@@ -212,36 +217,125 @@ namespace czh::node
     Node(Node *node_ptr, std::string node_name)
         : name(std::move(node_name)), last_node(node_ptr)
     { data.emplace<NodeData>(); }
-    
+  
     Node(Node *node_ptr, std::string node_name, Value val)
         : name(std::move(node_name)), last_node(node_ptr), data(val)
     {}
     
     Node() : name("/"), last_node(nullptr)
     { data.emplace<NodeData>(); }
-    
+  
     Node(const Node &) = delete;
-    
+  
     Node(Node &&) = default;
-    
+  
     [[nodiscard]]bool is_node() const
     {
       return data.index() == 0;
     }
-    
+  
+    [[nodiscard]]iterator begin()
+    {
+      if (!is_node())
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Value has no iterator.");
+      }
+      auto &nd = std::get<NodeData>(data);
+      return nd.nodes.begin();
+    }
+  
+    [[nodiscard]]iterator end()
+    {
+      if (!is_node())
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Value has no iterator.");
+      }
+      auto &nd = std::get<NodeData>(data);
+      return nd.nodes.end();
+    }
+  
+    [[nodiscard]]reverse_iterator rbegin()
+    {
+      if (!is_node())
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Value has no reverse_iterator.");
+      }
+      auto &nd = std::get<NodeData>(data);
+      return nd.nodes.rbegin();
+    }
+  
+    [[nodiscard]]reverse_iterator rend()
+    {
+      if (!is_node())
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Value has no reverse_iterator.");
+      }
+      auto &nd = std::get<NodeData>(data);
+      return nd.nodes.rend();
+    }
+  
+    [[nodiscard]]const_iterator cbegin() const
+    {
+      if (!is_node())
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Value has no const_iterator.");
+      }
+      auto &nd = std::get<NodeData>(data);
+      return nd.nodes.cbegin();
+    }
+  
+    [[nodiscard]]const_iterator cend() const
+    {
+      if (!is_node())
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Value has no const_iterator.");
+      }
+      auto &nd = std::get<NodeData>(data);
+      return nd.nodes.cend();
+    }
+  
+    [[nodiscard]]const_reverse_iterator crbegin() const
+    {
+      if (!is_node())
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Value has no const_reverse_iterator.");
+      }
+      auto &nd = std::get<NodeData>(data);
+      return nd.nodes.crbegin();
+    }
+  
+    [[nodiscard]]const_reverse_iterator crend() const
+    {
+      if (!is_node())
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Value has no const_reverse_iterator.");
+      }
+      auto &nd = std::get<NodeData>(data);
+      return nd.nodes.crend();
+    }
+  
+    std::string get_name() const
+    {
+      return name;
+    }
+  
     Node &remove()
     {
       if (last_node == nullptr)
-        throw Error(CZH_ERROR_LOCATION, __func__, "Can not remove root.");
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not remove root.");
+      }
       auto &nd = std::get<NodeData>(last_node->data);
       nd.erase(name);
       return *this;
     }
-    
+  
     Node &clear()
     {
       if (!is_node())
-        throw Error(CZH_ERROR_LOCATION, __func__, "Value can not clear.");
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Value can not clear.");
+      }
       auto &nd = std::get<NodeData>(data);
       nd.clear();
       return *this;
@@ -262,7 +356,9 @@ namespace czh::node
     Value make_ref()
     {
       if (is_node())
-        throw Error(CZH_ERROR_LOCATION, __func__, "Can not make a reference to a Node.");
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not make a reference to a Node.");
+      }
       return value::Value(this);
     }
     
@@ -270,7 +366,9 @@ namespace czh::node
     Node &add(const std::string &add_name, const T &_value, const std::string &before = "")
     {
       if (!is_node())
-        throw Error(CZH_ERROR_LOCATION, __func__, "Can not add Value to Value");
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not add Value to Value");
+      }
       auto &nd = std::get<NodeData>(data);
       return nd.add(Node(this, add_name, Value(_value)));
     }
@@ -278,7 +376,9 @@ namespace czh::node
     Node &add_node(const std::string &add_name, const std::string &before = "")
     {
       if (!is_node())
-        throw Error(CZH_ERROR_LOCATION, __func__, "Can not add a Node to Value");
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not add a Node to Value");
+      }
       auto &nd = std::get<NodeData>(data);
       return nd.add(Node(this, add_name));
     }
@@ -286,7 +386,9 @@ namespace czh::node
     [[nodiscard]] auto type() const
     {
       if (is_node())
-        throw Error(CZH_ERROR_LOCATION, __func__, "Node not get type.");
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Node not get type.");
+      }
       return std::get<Value>(data).type();
     }
     
@@ -294,7 +396,9 @@ namespace czh::node
     std::unique_ptr<std::map<std::string, T>> value_map()
     {
       if (!is_node())
-        throw Error(CZH_ERROR_LOCATION, __func__, "Can not get a map from a Value.");
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not get a map from a Value.");
+      }
       std::unique_ptr<std::map<std::string, T>> result =
           std::make_unique<std::map<std::string, T>>();
       
@@ -304,9 +408,13 @@ namespace czh::node
       for (auto &r: nd.get_nodes())
       {
         if (r.type() != value_type)
-          throw Error(CZH_ERROR_LOCATION, __func__, "TokenType is not same.");
+        {
+          throw Error(LIBCZH_ERROR_LOCATION, __func__, "TokenType is not same.");
+        }
         else if (r.type() == node_type)
-          throw Error(CZH_ERROR_LOCATION, __func__, "TokenType is Node.");
+        {
+          throw Error(LIBCZH_ERROR_LOCATION, __func__, "TokenType is Node.");
+        }
         else
           (*result)[r.name] = r.get<T>();
       }
@@ -321,24 +429,32 @@ namespace czh::node
     Node &operator[](const std::string &s)
     {
       if (!is_node())
-        throw Error(CZH_ERROR_LOCATION, __func__, "Value can not []");
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Value can not []");
+      }
       auto &nd = std::get<NodeData>(data);
       NodeData::IndexType::iterator it = nd.find(s);
       if (it == nd.end())
-        throw Error(CZH_ERROR_LOCATION, __func__,
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__,
                     "There is no node named '" + s + "'.Do you mean '" + error_correct(s) + "'?");
+      }
       return *it->second;
     }
     
     const Node &operator[](const std::string &s) const
     {
       if (!is_node())
-        throw Error(CZH_ERROR_LOCATION, __func__, "Value can not []");
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Value can not []");
+      }
       auto &nd = std::get<NodeData>(data);
       NodeData::IndexType::const_iterator it = nd.find(s);
       if (it == nd.end())
-        throw Error(CZH_ERROR_LOCATION, __func__,
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__,
                     "There is no node named '" + s + "'.Do you mean '" + error_correct(s) + "'?");
+      }
       return *it->second;
     }
     
@@ -346,7 +462,9 @@ namespace czh::node
     Node &operator=(T &&v)
     {
       if (is_node())
-        throw Error(CZH_ERROR_LOCATION, __func__, "This Node does not contain not Value.");
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "This Node does not contain not Value.");
+      }
       auto &value = std::get<Value>(data);
       if (type() == typeid(Node *))
       {
@@ -361,7 +479,9 @@ namespace czh::node
     const T &get() const
     {
       if (is_node())
-        throw Error(CZH_ERROR_LOCATION, __func__, "Can not get value from a Node.");
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not get value from a Node.");
+      }
       auto &value = std::get<Value>(data);
       if (type() == typeid(Node *))
       {
@@ -387,7 +507,9 @@ namespace czh::node
     [[nodiscard]] bool has_node(const std::string &tag) const
     {
       if (!is_node())
-        throw Error(CZH_ERROR_LOCATION, __func__, "Value has no node.");
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Value has no node.");
+      }
       auto &nd = std::get<NodeData>(data);
       return (nd.find(tag) != nd.end());
     }

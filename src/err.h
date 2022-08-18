@@ -12,12 +12,13 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 #pragma once
+
 #include <stdexcept>
 #include <string>
 
-#define _CZH_STRINGFY(x) #x
-#define CZH_STRINGFY(x) _CZH_STRINGFY(x)
-#define CZH_ERROR_LOCATION  __FILE__ ":line " CZH_STRINGFY(__LINE__)
+#define _LIBCZH_STRINGFY(x) #x
+#define LIBCZH_STRINGFY(x) _LIBCZH_STRINGFY(x)
+#define LIBCZH_ERROR_LOCATION  __FILE__ ":line " LIBCZH_STRINGFY(__LINE__)
 
 namespace czh::error
 {
@@ -46,7 +47,7 @@ namespace czh::error
     std::string detail;
   public:
     Error(std::string location_, const std::string &func_name_, const std::string &detail_)
-        : logic_error(detail_), location(std::move(location_) + ":" + func_name_),
+        : logic_error(detail_), location(std::move(location_) + ":" + func_name_ + "()"),
           detail(detail_)
     {}
     

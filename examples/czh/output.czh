@@ -1,4 +1,4 @@
-example:
+czh:
   int_array = {-0.06, 2, -9000}
   string_array = {"1", "2", "3"}
   bool_array = {true, true, false}
@@ -12,7 +12,7 @@ example:
       int = 0
     end
     a = int
-    b = example::int
+    b = int
     c = int
     d = c
   end

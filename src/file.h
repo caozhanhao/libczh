@@ -58,7 +58,9 @@ namespace czh::file
         : File(std::move(name_)), file(std::move(fs_)), bufferpos(0)
     {
       if (!file->good())
-        throw error::Error(CZH_ERROR_LOCATION, __func__, "Error File.");
+      {
+        throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "Error File.");
+      }
       file->ignore(std::numeric_limits<std::streamsize>::max());
       file_size = file->gcount();
       file->clear();
@@ -216,8 +218,10 @@ namespace czh::file
             ret += code[i];
         }
       }
-      while (code.back() == '\r' || code.back() == '\n')
+      while (ret.back() == '\r' || ret.back() == '\n')
+      {
         ret.pop_back();
+      }
       return ret;
     }
     
