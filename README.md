@@ -1,5 +1,5 @@
 # libczh
-![example](https://gitee.com/cmvy2020/czh-cpp/raw/master/examples/example.png)
+![example](examples/example.png)
 ## 介绍
 - czh是caozhanhao设计的一个简单的数据序列化格式
 - 创建于 2021年3月27日
