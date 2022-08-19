@@ -75,11 +75,13 @@ namespace czh::parser
     {
       if (!check()) return;
       auto id_name = view().what.get<std::string>();
+      if (curr_node->has_node(id_name))
+        view().error("Node cannot be duplicated.");
       next();//eat name
       // id:
       if (view().type == token::TokenType::COLON)//scope
       {
-        next();
+        next();//eat ':'
         curr_node = &curr_node->add_node(id_name);
         return;
       }

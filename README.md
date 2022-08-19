@@ -13,7 +13,9 @@
 ### 注释
 - `<xxxx>`
 ### Node
-- 使用`id:`作为一个Node的开始，使用`end`表示结束
+- Node名不可重复
+- 使用`id: end`作为一个Node
+- 使用`id = xxx`作为一个存储值的Node
 ### array
 - 使用`{}`作为array,元素由`,`连接
 ### 引用

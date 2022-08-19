@@ -536,45 +536,52 @@ namespace czh::utils
       buffer += static_cast<char>(static_cast<int>('0') + K);
   }
   
-  void prettify_string(std::string &buffer, int k)
+  std::string prettify_string(const std::string& buffer, int k)
   {
+    std::string ret;
     int end_pos = static_cast<int>(buffer.size());
     int nb_digits = end_pos;
     int kk = nb_digits + k;
     if (nb_digits <= kk && kk <= 21)
     {
-      buffer.insert(buffer.end(), kk - 1, '0');
-      buffer += ".0";
+      ret = buffer;
+      ret.insert(ret.end(), kk - 1, '0');
+      ret += ".0";
     }
     else if (0 < kk && kk <= 21)
     {
-      buffer.insert(buffer.begin() + kk, '.');
+      ret.insert(ret.end(), buffer.begin(), buffer.begin() + kk);
+      ret += '.';
+      ret.insert(ret.end(), buffer.begin() + kk, buffer.end());
     }
     else if (-6 < kk && kk <= 0)
     {
-      std::string temp("0.");
-      temp.insert(temp.end(), -kk, '0');
-      buffer.insert(buffer.begin(), std::make_move_iterator(temp.begin()),
-        std::make_move_iterator(temp.end()));
+      ret = "0.";
+      ret.insert(ret.end(), -kk, '0');
+      ret += buffer;
     }
     else if (nb_digits == 1)
     {
-      buffer += 'e';
-      fill_exponent(kk - 1, buffer);
+      ret = buffer + "e";
+      fill_exponent(kk - 1, ret);
     }
     else
     {
-      buffer.insert(buffer.begin() + 1, '.');
-      buffer.insert(buffer.begin() + nb_digits + 1, 'e');
-      fill_exponent(kk - 1, buffer);
+      ret = buffer[0];
+      ret += ".";
+      ret.insert(ret.end(), buffer.begin() + 1, buffer.begin() + nb_digits);
+      ret += 'e';
+      fill_exponent(kk - 1, ret);
     }
+    return std::move(ret);
   }
   
-  void fill_double(double v, std::string &buffer)
+  std::string fill_double(double v)
   {
     int K;
+    std::string buffer;
     grisu2(v, buffer, K);
-    prettify_string(buffer, K);
+    return std::move(prettify_string(buffer, K));
   }
   
   std::string dtoa(const double &value)
@@ -583,11 +590,9 @@ namespace czh::utils
     if (value == 0)
       buffer = "0.0";
     else
-    {
-      fill_double(std::abs(value), buffer);
-    }
+      buffer = fill_double(std::abs(value));
     if (value < 0)
       return "-" + buffer;
-    return buffer;
+    return std::move(buffer);
   }
 }
