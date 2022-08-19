@@ -16,7 +16,7 @@
 #include "node.h"
 #include "parser.h"
 #include <fstream>
-#include <sstream>
+#include <iostream>
 #include <memory>
 using czh::parser::Parser;
 using czh::node::Node;

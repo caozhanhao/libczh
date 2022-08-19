@@ -5,7 +5,7 @@
 
 int main()
 {
-  czh::Czh e("example.czh", czh::InputMode::nonstream);
+  czh::Czh e("examples/czh/example.czh", czh::InputMode::nonstream);
   // or czh::Czh e("example.czh", czh::InputMode::stream);
   // or czh::Czh e("example: a = 1; end;",  czh::InputMode::string);
   auto nodeptr = e.parse();
@@ -62,19 +62,19 @@ int main()
   node["czh"]["value_map"].remove();
   
   //output to file
-  std::fstream outputczh("output.czh", std::ios_base::in | std::ios_base::out | std::ios_base::trunc);
+  std::fstream outputczh("examples/czh/output.czh", std::ios_base::in | std::ios_base::out | std::ios_base::trunc);
   outputczh << node;
   //output(hightlight)
-  czh::Czh czh("czh.czh", czh::InputMode::stream);
+  czh::Czh czh("examples/czh/czh.czh", czh::InputMode::stream);
   auto czhp = czh.parse();
   if (czhp == nullptr) return -1;
   std::cout << "\n" << czhp->to_string(czh::node::Color::with_color) << std::endl;
   
   //test
   //output.czh
-  if (czh::Czh("output.czh", czh::InputMode::nonstream).parse() == nullptr) return -1;
+  if (czh::Czh("examples/czh/output.czh", czh::InputMode::nonstream).parse() == nullptr) return -1;
   //output.czh -> onelinetest.czh
-  std::fstream onelineczh("onelinetest.czh", std::ios_base::out | std::ios_base::trunc);
+  std::fstream onelineczh("examples/czh/onelinetest.czh", std::ios_base::out | std::ios_base::trunc);
   std::string tmp;
   outputczh.clear();
   outputczh.seekg(std::ios_base::beg);
@@ -83,7 +83,7 @@ int main()
     onelineczh << tmp << " ";
   }
   onelineczh.close();
-  auto p = czh::Czh("onelinetest.czh", czh::InputMode::nonstream).parse();
+  auto p = czh::Czh("examples/czh/onelinetest.czh", czh::InputMode::nonstream).parse();
   if (p == nullptr) return -1;
   //onelinetest.czh -> string
   czh::Czh(p->to_string(), czh::InputMode::string).parse();

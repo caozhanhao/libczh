@@ -17,6 +17,7 @@
 #include "err.h"
 #include <string>
 #include <variant>
+#include <memory>
 namespace czh::token
 {
   enum class TokenType

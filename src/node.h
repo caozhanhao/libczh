@@ -16,11 +16,9 @@
 #include "value.h"
 #include "err.h"
 #include "utils.h"
-#include <iostream>
 #include <algorithm>
 #include <string>
 #include <vector>
-#include <iterator>
 #include <list>
 #include <map>
 #include <memory>

@@ -21,6 +21,7 @@
 
 #include <memory>
 #include <limits>
+#include <sstream>
 #include <vector>
 #include <queue>
 #include <string>

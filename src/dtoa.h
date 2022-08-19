@@ -543,10 +543,8 @@ namespace czh::utils
     int kk = nb_digits + k;
     if (nb_digits <= kk && kk <= 21)
     {
-      for (int i = nb_digits; i < kk; i++)
-        buffer[i] = '0';
-      buffer[kk] = '.';
-      buffer[kk + 1] = '0';
+      buffer.insert(buffer.end(), kk - 1, '0');
+      buffer += ".0";
     }
     else if (0 < kk && kk <= 21)
     {
@@ -554,10 +552,7 @@ namespace czh::utils
     }
     else if (-6 < kk && kk <= 0)
     {
-      std::string temp("0.");
-      temp.insert(temp.end(), -kk, '0');
-      buffer.insert(buffer.begin(), std::make_move_iterator(temp.begin()),
-                    std::make_move_iterator(temp.end()));
+      buffer.insert(buffer.begin(), -kk, '0');
     }
     else if (nb_digits == 1)
     {

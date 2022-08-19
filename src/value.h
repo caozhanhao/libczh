@@ -14,14 +14,10 @@
 #pragma once
 #include "err.h"
 #include <variant>
-#include <iostream>
 #include <string>
 #include <vector>
-#include <memory>
 #include <typeinfo>
 #include <typeindex>
-#include <any>
-#include <cxxabi.h>
 
 namespace czh
 {
@@ -33,7 +29,7 @@ namespace czh
   {
     std::string get_type_str(const std::type_index &type)
     {
-      return abi::__cxa_demangle(type.name(), 0, 0, 0);
+      return type.name();
     }
     
     class Value
