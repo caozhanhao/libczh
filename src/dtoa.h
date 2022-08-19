@@ -552,7 +552,10 @@ namespace czh::utils
     }
     else if (-6 < kk && kk <= 0)
     {
-      buffer.insert(buffer.begin(), -kk, '0');
+      std::string temp("0.");
+      temp.insert(temp.end(), -kk, '0');
+      buffer.insert(buffer.begin(), std::make_move_iterator(temp.begin()),
+        std::make_move_iterator(temp.end()));
     }
     else if (nb_digits == 1)
     {
