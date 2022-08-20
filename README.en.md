@@ -3,6 +3,8 @@
 ![example](examples/example.png)
 - [README zh](README.md)
 - [README en](README.en.md)
+- [简体中文主页](https://libczh.vercel.app/)
+- [English Page](https://libczh-en.vercel.app/)
 ## Introduction
 
 - czh is a simple data serialization format designed by caozhanhao.
