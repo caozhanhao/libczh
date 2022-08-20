@@ -14,7 +14,6 @@
 #pragma once
 #include <memory>
 #include <string>
-#include <deque>
 #include <fstream>
 #include <limits>
 namespace czh::file
@@ -39,11 +38,11 @@ namespace czh::file
     
     [[nodiscard]] virtual std::size_t size() const = 0;
     
-    [[nodiscard]] virtual char view(int s) = 0;
-    
-    virtual void ignore(std::size_t s) = 0;
-    
-    [[nodiscard]] virtual bool check(std::size_t s) = 0;
+    [[nodiscard]] virtual char get() = 0;
+  
+    [[nodiscard]] virtual char peek() = 0;
+  
+    [[nodiscard]] virtual bool check() = 0;
   };
   
   class StreamFile : public File
@@ -51,7 +50,6 @@ namespace czh::file
   public:
     std::unique_ptr<std::ifstream> file;
     std::size_t file_size;
-    std::deque<char> buffer;
     std::size_t bufferpos;
   public:
     StreamFile(std::string name_, std::unique_ptr<std::ifstream> fs_)
@@ -127,49 +125,25 @@ namespace czh::file
     {
       return filename;
     }
-    
+  
     [[nodiscard]] std::size_t size() const override
     {
       return file_size;
     }
-    
-    void ignore(std::size_t s) override
+  
+    [[nodiscard]] char get() override
     {
-      bufferpos += s;
-    }
-    
-    [[nodiscard]] char view(int s) override
-    {
-      if (buffer.size() <= s)
-        write_buffer();
-      return buffer[bufferpos + s];
-    }
-    
-    [[nodiscard]] bool check(std::size_t s) override
-    {
-      if (buffer.size() <= bufferpos + s)
-        write_buffer();
-      return (bufferpos + s < buffer.size());
+      return file->get();
     }
   
-  private:
-    void write_buffer()
+    [[nodiscard]] char peek() override
     {
-      if (buffer.size() > 1024) return;
-      while (bufferpos >= 10)
-      {
-        buffer.pop_front();
-        --bufferpos;
-      }
-      int i = 0;
-      while (i < 1024 && !file->eof())
-      {
-        buffer.emplace_back(file->get());
-        ++i;
-      }
-      
-      if (buffer.back() == -1)
-        buffer.pop_back();
+      return file->peek();
+    }
+  
+    [[nodiscard]] bool check() override
+    {
+      return !file->eof();
     }
   };
   
@@ -255,20 +229,20 @@ namespace czh::file
     {
       return code.size();
     }
-    
-    void ignore(std::size_t s) override
+  
+    [[nodiscard]] char get() override
     {
-      codepos += s;
+      return code[codepos++];
     }
-    
-    [[nodiscard]] char view(int s) override
+  
+    [[nodiscard]] char peek() override
     {
-      return code[codepos + s];
+      return code[codepos + 1];
     }
-    
-    [[nodiscard]] bool check(std::size_t s) override
+  
+    [[nodiscard]] bool check() override
     {
-      return (codepos + s) < code.size();
+      return codepos < code.size();
     }
   };
 }

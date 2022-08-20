@@ -27,6 +27,10 @@ namespace czh
   }
   namespace value
   {
+    using BasicVT = std::variant<int, long long, double, std::string, bool>;
+    using Array = std::vector<BasicVT>;
+    using ArrayValueType = BasicVT;
+    
     std::string get_type_str(const std::type_index &type)
     {
       return type.name();
@@ -34,16 +38,8 @@ namespace czh
     
     class Value
     {
-    public:
-      using BasicVT = std::variant<int, long long, double, std::string, bool>;
-      using AnyArray = std::vector<BasicVT>;
-      using AnyArrayValueType = BasicVT;
     private:
-      std::variant<int, long long, double, std::string, bool, char,
-          std::vector<int>, std::vector<long long>, std::vector<double>,
-          std::vector<std::string>, std::vector<bool>,
-          AnyArray,
-          node::Node *> value;
+      std::variant<int, long long, double, std::string, bool, char, Array, node::Node *> value;
       std::type_index value_type;
     public:
       template<typename T>
@@ -59,15 +55,30 @@ namespace czh
       {}
       
       template<typename T>
-      const T &get() const
+      T get() const
       {
-        if (std::type_index(typeid(T)) != value_type)
+        if constexpr(std::is_same_v<std::vector<int>, T>
+                     || std::is_same_v<std::vector<long long>, T>
+                     || std::is_same_v<std::vector<double>, T>
+                     || std::is_same_v<std::vector<std::string>, T>
+                     || std::is_same_v<std::vector<bool>, T>)
         {
-          throw error::Error(LIBCZH_ERROR_LOCATION, __func__,
-                             "The value is '" + get_type_str(type()) + "', not '"
-                             + get_type_str(typeid(T)) + "'.");
+          return get_array<T>();
         }
-        return std::get<T>(value);
+        else if constexpr(std::is_same_v<Array, T>)
+        {
+          return get_any_array();
+        }
+        else
+        {
+          if (std::type_index(typeid(T)) != value_type)
+          {
+            throw error::Error(LIBCZH_ERROR_LOCATION, __func__,
+                               "The value is '" + get_type_str(type()) + "', not '"
+                               + get_type_str(typeid(T)) + "'.");
+          }
+          return std::get<T>(value);
+        }
       }
       
       [[nodiscard]] const auto &get_variant() const
@@ -87,12 +98,50 @@ namespace czh
         value_type = typeid(T);
         return *this;
       }
-      
+  
       Value &operator=(const char *v)
       {
         value = std::string(v);
         value_type = typeid(std::string);
         return *this;
+      }
+
+    private:
+      template<typename T>
+      T get_array() const
+      {
+        if (std::type_index(typeid(Array)) != value_type)
+        {
+          throw error::Error(LIBCZH_ERROR_LOCATION, __func__,
+                             "The value is '" + get_type_str(type()) + "', not '"
+                             + get_type_str(typeid(Array)) + "'.");
+        }
+        auto &varr = std::get<Array>(value);
+        T ret;
+        for (auto &r: varr)
+        {
+          if (auto pval = std::get_if<typename T::value_type>(&r))
+          {
+            ret.emplace_back(*pval);
+          }
+          else
+          {
+            throw error::Error(LIBCZH_ERROR_LOCATION, __func__,
+                               "This array contains different types.");
+          }
+        }
+        return std::move(ret);
+      }
+  
+      Array get_any_array() const
+      {
+        if (std::type_index(typeid(Array)) != value_type)
+        {
+          throw error::Error(LIBCZH_ERROR_LOCATION, __func__,
+                             "The value is '" + get_type_str(type()) + "', not '"
+                             + get_type_str(typeid(Array)) + "'.");
+        }
+        return std::get<Array>(value);
       }
     };
     

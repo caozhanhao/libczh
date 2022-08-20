@@ -1,22 +1,22 @@
 <note>
 czh:
-    int_array = {-6e-2,2,-90E2};
+    int_array = {-6e+2,2,-90E2};
     string_array = {"1", "2", "3"};
     bool_array = {true, true, false};
     any_array = {false, 1.0000000000000002, "2", 3, 4e11};
-    string = "string test";
-    double = -123.456e9;
+    字符串 = "测试";
+    double = -6e-2;
     bool = true;
     int = +2e8;
     long_long = +2e11;
     block:
-        example:
+        czh:
             int = 0;
         end;
-        a = ::czh::int; <a == +2e8>
-        b = czh::int    <b == 0>
-        c = int;            <c == +2e8>
-        d = c;              <d == +2e8>
+        a = ::czh::int;  <a == +2e8>
+        b = czh::int     <b == 0>
+        c = int;         <c == +2e8>
+        d = c;           <d == +2e8>
     end;
    value_map:
         k1 = 1;
@@ -35,5 +35,4 @@ czh:
     dt5 = -2.2250738585072014e-308;
     dt6 = 1.7976931348623157e+308;
     dt7 = -1.7976931348623157e+308;
-<><><<<>note><><<t>>>
 end;

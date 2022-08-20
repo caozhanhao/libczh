@@ -2,8 +2,8 @@
 czh:
     int = +6e+2
     longlong = +6e+12
-    string = "This is a string"
-    double = 6.6
+    字符串 = "字符串"
+    double = +6e-2
     ref = int
     array = {false, 1.0, "2", 3}
     arrays:

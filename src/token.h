@@ -85,21 +85,28 @@ namespace czh::token
       std::size_t total_line = code->get_lineno(code->size() - 1);
       
       while (static_cast<int>(lineno) - static_cast<int>(actual_last) <= 0 && actual_last > 0)
+      {
         --actual_last;
+      }
       while (lineno + actual_next >= total_line && actual_next > 0)
+      {
         --actual_next;
-      
+      }
+  
       std::string temp1, temp2;
       //lineno - actual_last is impossible to be equal lineno + 1
       temp1 = code->get_spec_line(lineno - actual_last, lineno + 1, linenosize);//[beg, end)
-      if (actual_next != 0)//lineno + 1 might be equal to lineno + actual_next + 1
+      if (actual_next != 0)
+      {//lineno + 1 might be equal to lineno + actual_next + 1
         temp2 = code->get_spec_line(lineno + 1, lineno + actual_next + 1, linenosize);
+      }
       std::string arrow("\n");
-      arrow += std::string(code->get_arrowpos(pos) - size + linenosize + 1, ' ');
+      std::size_t arrowpos = code->get_arrowpos(pos) - size + linenosize + 1;
+      arrow += std::string(arrowpos, ' ');
       arrow += "\033[0;32;32m";
       arrow.insert(arrow.end(), size, '^');
       arrow += "\033[m\n";
-      
+  
       std::string errorstring = temp1 + arrow + temp2;
       return std::make_unique<std::string>(errorstring);
     }
@@ -134,13 +141,19 @@ namespace czh::token
     Token(TokenType type_, T what_, Pos pos_)
         :type(type_), what(std::move(what_)), pos(std::move(pos_))
     {}
-    
+  
+    Token(const Token &) = delete;
+  
+    Token(Token &&) = default;
+  
+    Token &operator=(Token &&) = default;
+  
     void error(const std::string &details) const
     {
       throw error::CzhError(pos.location(), details + ": \n"
                                             + *(pos.get_details_from_code()));
     }
-    
+  
     [[nodiscard]] std::string get_string() const
     {
       return std::visit(

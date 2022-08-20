@@ -1,5 +1,5 @@
 czh:
-  int_array = {-0.06, 2, -9000}
+  int_array = {-600, 2, -9000}
   string_array = {"1", "2", "3"}
   bool_array = {true, true, false}
   any_array = {false, 1.0000000000000002, "2", 3, 400000000000}
@@ -8,11 +8,11 @@ czh:
   int = "d changed"
   long_long = 200000000000
   block:
-    example:
+    czh:
       int = 0
     end
     a = int
-    b = int
+    b = czh::int
     c = int
     d = c
   end

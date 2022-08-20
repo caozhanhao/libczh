@@ -23,7 +23,6 @@
 #include <limits>
 #include <sstream>
 #include <vector>
-#include <queue>
 #include <string>
 #include <map>
 #include <algorithm>
@@ -470,25 +469,22 @@ namespace czh::lexer
     }
   };
   
-  inline bool isnumber(const char &ch)
-  {
-    return std::isdigit(ch) || ch == '.' || ch == 'e' || ch == 'E' || ch == '+' || ch == '-';
-  }
-  
   class Lexer
   {
   private:
     std::shared_ptr<file::File> code;
-    std::deque<token::Token> tokenstream;
     Match match;
     NumberMatch nmatch;
     token::Pos codepos;
+    token::Token buffer;
     bool is_eof;
+    char ch;
   public:
     Lexer()
         : code(nullptr),
           codepos(nullptr),
-          is_eof(false)
+          is_eof(false),
+          buffer(token::TokenType::UNEXPECTED, 0, codepos)
     {}
     
     void set_czh(std::string filename, std::unique_ptr<std::ifstream> fs)
@@ -499,47 +495,46 @@ namespace czh::lexer
       }
       code = std::make_shared<file::StreamFile>(std::move(filename), std::move(fs));
       codepos = token::Pos(code);
+      ch = get_char();
     }
   
     void set_czh(const std::string &path, const std::string &filename)
     {
       code = std::make_shared<file::NonStreamFile>(filename, get_string_from_file(path));
       codepos = token::Pos(code);
+      ch = get_char();
     }
     
     void set_czh(std::string str)
     {
       code = std::make_shared<file::NonStreamFile>("czh from std::string", std::move(str));
       codepos = token::Pos(code);
+      ch = get_char();
     }
-    
-    token::Token view(std::size_t s)
+  
+    token::Token get()
     {
-      if (tokenstream.size() <= s)
+      token::Token t = std::move(buffer);
+      if (t.type == token::TokenType::UNEXPECTED)
       {
-        while (tokenstream.size() < 1024)
-        {
-          auto t = get_tok();
-          check_token(t);
-          tokenstream.emplace_back(t);
-          if (t.type == token::TokenType::FEND)
-          {
-            is_eof = true;
-            break;
-          }
-        }
+        t = std::move(get_tok());
+        check_token(t);
+        is_eof = (t.type == token::TokenType::FEND);
       }
-      return tokenstream[s];
+      buffer = std::move(get_tok());
+      check_token(buffer);
+      is_eof = (buffer.type == token::TokenType::FEND);
+      return std::move(t);
     }
-    
-    void next(const std::size_t &s = 1)
+  
+    token::Token &peek()
     {
-      tokenstream.pop_front();
+      return buffer;
     }
     
     [[nodiscard]]bool eof() const
     {
-      return is_eof && tokenstream.empty();
+      return is_eof;
     }
   
   private:
@@ -566,33 +561,39 @@ namespace czh::lexer
     {
       return codepos;
     }
-    
-    void skip()
+  
+    void skip(char &ch)
     {
-      while (check_char() && isspace(view_char()))
-        next_char();
-      while (check_char() && view_char() == '<')
+      while (check_char() && isspace(ch))
       {
-        std::size_t notes = 0;
+        ch = get_char();
+      }
+      while (check_char() && ch == '<')
+      {
+        int notes = 0;
         auto bak = get_pos().set_size(1);
-        next_char();//eat '<'
-        for (; check_char() && !(view_char() == '>' && notes == 0); next_char())
+        ch = get_char();
+        while (check_char() && !(ch == '>' && notes == 0))
         {
-          if (view_char() == '<') ++notes;
-          if (view_char() == '>') --notes;
+          if (ch == '<') ++notes;
+          if (ch == '>') --notes;
+          ch = get_char();
         }
         if (notes != 0 && !check_char())
         {
           token::Token tmp(token::TokenType::UNEXPECTED, '<', bak);
           tmp.error("Unexpected note begin.");
         }
-        next_char();//eat '>'
+        if (ch == '>')
+        {
+          ch = get_char();
+        }
       }
     }
     
     token::Token get_tok()
     {
-      static const std::map<char, token::TokenType> marks =
+      static std::map<char, token::TokenType> marks =
           {
               {'=', token::TokenType::EQUAL},
               {'{', token::TokenType::ARR_LP},
@@ -602,35 +603,22 @@ namespace czh::lexer
               {',', token::TokenType::COMMA}
           };
       //space and note
-      while (check_char() && (isspace(view_char()) || view_char() == '<'))
-        skip();
-      //num
-      bool is_num = false;
-      if (check_char() && (std::isdigit(view_char()) || view_char() == '.' || view_char() == '+' ||
-                           view_char() == '-'))
+      while (check_char() && (isspace(ch) || ch == '<'))
       {
-        is_num = true;
-        if (view_char() == '-')
-        {
-          if (check_char(1) && !(std::isdigit(view_char(1)) || view_char(1) == '.'))
-            is_num = false; //-id
-          if (check_char(2) && view_char(1) == '.' && view_char(2) == '.')
-            is_num = false; //-..
-          if (check_char(2) && view_char(1) == '.' && view_char(2) == '-')
-            is_num = false;//-.-
-          if (check_char(2) && view_char(1) == '.' && view_char(2) == ':')
-            is_num = false;//-.:
-        }
+        skip(ch);
       }
-      
-      if (is_num)
+      //num
+      if (std::isdigit(ch) || ch == '.'
+          || ch == '+' || ch == '-')
       {
         std::string temp;
         do
         {
-          temp += view_char();
-          next_char();
-        } while (check_char() && isnumber(view_char()));
+          temp += ch;
+          ch = get_char();
+        } while (check_char() && (std::isdigit(ch)
+                                  || ch == '.' || ch == 'e' || ch == 'E'
+                                  || ch == '+' || ch == '-'));
         if (nmatch.match(temp))
         {
           if (nmatch.has_dot())
@@ -665,75 +653,113 @@ namespace czh::lexer
         }
       }
         //string
-      else if (check_char() && view_char() == '"')
+      else if (ch == '"')
       {
         std::string temp;
-        next_char();//eat '"'.
-        while (check_char() && view_char() != '"')
+        ch = get_char();
+        while (check_char() && ch != '"')
         {
-          temp += view_char();
-          next_char();
+          temp += ch;
+          ch = get_char();
         }
-        next_char();//eat '"'
+        ch = get_char();
         return {token::TokenType::STRING, temp, get_pos().set_size(temp.size())};
       }
         //id = ...
-      else if (check_char() && (isalpha(view_char()) || view_char() == '_'))
+      else if (isalpha(ch) || ch == '_'
+               || (ch & 0xE0) == 0xC0
+               || (ch & 0xF0) == 0xE0
+               || (ch & 0xF8) == 0xF0)
       {
         std::string temp;
-        
-        while (check_char() && (isalnum(view_char()) || view_char() == '_'))
+        while (check_char())
         {
-          temp += view_char();
-          next_char();
+          if ((ch & 0x80) == 0x00)
+          {
+            if (!std::isalnum(ch) && ch != '_')
+            {
+              break;
+            }
+            temp += ch;
+            ch = get_char();
+          }
+          else if ((ch & 0xE0) == 0xC0)
+          {
+            temp += ch;
+            temp += ch = get_char();
+            ch = get_char();
+          }
+          else if ((ch & 0xF0) == 0xE0)
+          {
+            temp += ch;
+            temp += ch = get_char();
+            temp += ch = get_char();
+            ch = get_char();
+          }
+          else if ((ch & 0xF8) == 0xF0)
+          {
+            temp += ch;
+            temp += ch = get_char();
+            temp += ch = get_char();
+            temp += ch = get_char();
+            ch = get_char();
+          }
         }
-        
+  
         if (temp == "end")
+        {
           return {token::TokenType::SCEND, temp, get_pos().set_size(3)};
+        }
         else if (temp == "true")
+        {
           return {token::TokenType::BOOL, true, get_pos().set_size(4)};
+        }
         else if (temp == "false")
+        {
           return {token::TokenType::BOOL, false, get_pos().set_size(5)};
+        }
         else
+        {
           return {token::TokenType::ID, temp, get_pos().set_size(temp.size())};
+        }
       }
         //marks
-      else if (check_char() && marks.find(view_char()) != marks.end())
+      else if (marks.find(ch) != marks.end())
       {
-        next_char();
-        if (check_char() && view_char(-1) == ':' && view_char() == ':')
+        char bak = ch;
+        ch = get_char();
+        if (bak == ':' && ch == ':')
         {
-          next_char();
-          return {token::TokenType::REF, ":", get_pos().set_size(2)};
+          ch = get_char();
+          return {token::TokenType::REF, "::", get_pos().set_size(2)};
         }
-        return {marks.at(view_char(-1)), view_char(-1), get_pos().set_size(1)};
+        return {marks[bak], bak, get_pos().set_size(1)};
       }
         //end
       else if (!check_char()) return {token::TokenType::FEND, 0, get_pos().set_size(1)};
       else
       {
-        char bak = view_char();
-        next_char();//eat the unexpected
+        char bak = get_char();
         token::Token(token::TokenType::UNEXPECTED, 0, get_pos().set_size(1))
             .error(std::string("Unexpected token '" + std::string(1, bak) + "'."));
       }
       return {token::TokenType::UNEXPECTED, 0, get_pos().set_size(1)};
     }
-    
-    bool check_char(std::size_t s = 0)
+  
+    bool check_char()
     {
-      return code->check(s);
+      return code->check();
     }
-    
-    char view_char(int s = 0)
+  
+    char get_char()
     {
-      return code->view(s);
+      ++codepos.pos;
+      return code->get();
     }
-    
-    void next_char(std::size_t s = 1)
+  
+    char peek_char()
     {
-      code->ignore(s);
-      codepos.pos += s;
+      return code->peek();
     }
   };
 }

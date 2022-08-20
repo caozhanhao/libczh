@@ -115,7 +115,7 @@ namespace czh::node
   }
   
   template<>
-  std::string to_czhstr(const value::Value::AnyArray &v, Color color)
+  std::string to_czhstr(const value::Array &v, Color color)
   {
     auto visitor = [&color](auto &&v) -> std::string
     { return to_czhstr(v, color); };
@@ -389,32 +389,27 @@ namespace czh::node
       }
       return std::get<Value>(data).type();
     }
-    
+  
     template<typename T>
-    std::unique_ptr<std::map<std::string, T>> value_map()
+    std::map<std::string, T> value_map()
     {
       if (!is_node())
       {
         throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not get a map from a Value.");
       }
-      std::unique_ptr<std::map<std::string, T>> result =
-          std::make_unique<std::map<std::string, T>>();
-      
+      std::map<std::string, T> result;
       auto &nd = std::get<NodeData>(data);
-      std::type_index value_type(typeid(T));
-      std::type_index node_type(typeid(Node));
       for (auto &r: nd.get_nodes())
       {
-        if (r.type() != value_type)
+        if (auto pval = std::get_if<value::Value>(&r.data))
         {
-          throw Error(LIBCZH_ERROR_LOCATION, __func__, "TokenType is not same.");
-        }
-        else if (r.type() == node_type)
-        {
-          throw Error(LIBCZH_ERROR_LOCATION, __func__, "TokenType is Node.");
+          result[r.name] = pval->get<T>();
         }
         else
-          (*result)[r.name] = r.get<T>();
+        {
+          throw error::Error(LIBCZH_ERROR_LOCATION, __func__,
+                             "This Node must only contain value.");
+        }
       }
       return result;
     }
@@ -472,9 +467,9 @@ namespace czh::node
         value = std::forward<T>(v);
       return *this;
     }
-    
+  
     template<typename T>
-    const T &get() const
+    T get() const
     {
       if (is_node())
       {
@@ -487,7 +482,18 @@ namespace czh::node
       }
       return value.get<T>();
     }
-    
+  
+    template<typename T>
+    std::vector<T> get_array() const
+    {
+      if (is_node())
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not get value from a Node.");
+      }
+      auto &value = std::get<Value>(data);
+      return value.get_array<T>();
+    }
+  
     [[nodiscard]] std::unique_ptr<std::vector<std::string>> get_path() const
     {
       auto n_ptr = to_last_node();
@@ -496,7 +502,9 @@ namespace czh::node
       while (n_ptr != nullptr)
       {
         if (n_ptr->name != "/")
+        {
           res.push_back(n_ptr->name);
+        }
         n_ptr = n_ptr->to_last_node();
       }
       return std::move(std::make_unique<decltype(res)>(res));

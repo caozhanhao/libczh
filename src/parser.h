@@ -30,16 +30,19 @@ namespace czh::parser
     lexer::Lexer *lex;
     std::shared_ptr<node::Node> node;
     node::Node *curr_node;
+    token::Token curr_tok;
   public:
     explicit Parser(lexer::Lexer *lex_)
-        : lex(lex_), node(std::make_unique<node::Node>()), curr_node(node.get())
+        : lex(lex_), node(std::make_unique<node::Node>()), curr_node(node.get()),
+          curr_tok(token::TokenType::UNEXPECTED, 0, token::Pos(0))
     {}
     
     std::shared_ptr<node::Node> parse()
     {
+      curr_tok = get();
       while (check())
       {
-        switch (view().type)
+        switch (curr_tok.type)
         {
           case token::TokenType::ID:
             parse_id();
@@ -48,13 +51,12 @@ namespace czh::parser
             parse_end();
             break;
           case token::TokenType::SEND:
-            next();
+            curr_tok = get();
             break;
           case token::TokenType::FEND:
             return node;
           default:
-            auto t = view();
-            t.error("unexpected token");
+            curr_tok.error("unexpected token");
             break;
         }
       }
@@ -66,105 +68,101 @@ namespace czh::parser
     {
       curr_node = curr_node->to_last_node();
       if (!curr_node)
-        view().error("Unexpected scope end.");
+      {
+        curr_tok.error("Unexpected scope end.");
+      }
       if (check())
-        next();
+      {
+        curr_tok = get();
+      }
     }
     
     void parse_id()
     {
       if (!check()) return;
-      auto id_name = view().what.get<std::string>();
+      auto id_name = curr_tok.what.get<std::string>();
       if (curr_node->has_node(id_name))
-        view().error("Node cannot be duplicated.");
-      next();//eat name
-      // id:
-      if (view().type == token::TokenType::COLON)//scope
       {
-        next();//eat ':'
+        curr_tok.error("Node cannot be duplicated.");
+      }
+      curr_tok = get();//eat name
+      // id:
+      if (curr_tok.type == token::TokenType::COLON)//scope
+      {
+        curr_tok = get();//eat ':'
         curr_node = &curr_node->add_node(id_name);
         return;
       }
       //id = xxx
-      next();//eat '='
-      if (view().type == token::TokenType::ID || view().type == token::TokenType::REF)//ref id = -x:x
+      curr_tok = get();//eat '='
+      if (curr_tok.type == token::TokenType::ID || curr_tok.type == token::TokenType::REF)//ref id = -x:x
       {
         curr_node->add(id_name, parse_ref());
         return;
       }
-      else if (view().type == token::TokenType::ARR_LP)// array id = [1,2,3]
+      else if (curr_tok.type == token::TokenType::ARR_LP)// array id = [1,2,3]
       {
-        if (view(1).type == token::TokenType::ARR_RP)
-        {
-          curr_node->add(id_name, std::vector<int>());
-        }
-        else if (is_any_array())
-        {
-          curr_node->add(id_name,
-                         *parse_any_array());
-          return;
-        }
-        else
-        {
-          if (view(1).type == token::TokenType::INT)
-            curr_node->add(id_name, *parse_array<int>());
-          else if (view(1).type == token::TokenType::LONGLONG)
-            curr_node->add(id_name, *parse_array<long long>());
-          else if (view(1).type == token::TokenType::DOUBLE)
-            curr_node->add(id_name, *parse_array<double>());
-          else if (view(1).type == token::TokenType::STRING)
-            curr_node->add(id_name, *parse_array<std::string>());
-          else if (view(1).type == token::TokenType::BOOL)
-            curr_node->add(id_name, *parse_array<bool>());
-          return;
-        }
+        curr_node->add(id_name, *parse_array());
+        return;
       }
-      curr_node->add(id_name, view().what);
-      next();//eat value
+      curr_node->add(id_name, curr_tok.what);
+      curr_tok = get();//eat value
     }
-    
+  
     node::Node *parse_ref()
     {
       if (!check()) return nullptr;
       node::Node *call = curr_node;
-      if (view().type == token::TokenType::REF)
+      if (curr_tok.type == token::TokenType::REF)
+      {
         call = node.get();
+      }
       else
       {
-        auto name = view().what.get<std::string>();
+        auto name = curr_tok.what.get<std::string>();
         while (call != nullptr)
         {
           if (call->has_node(name))
           {
             call = &(*call)[name];
-            next();
-            if (view().type != token::TokenType::REF)
+            curr_tok = get();
+            if (curr_tok.type != token::TokenType::REF)
+            {
               return call;
+            }
             else
+            {
               break;
+            }
           }
           else
             call = call->to_last_node();
         }
         if (call == nullptr)
-          view().error("There is no node named '" + name + "'.");
+        {
+          curr_tok.error("There is no node named '" + name + "'.");
+        }
       }
       
       while (true)
       {
-        if (view().type == token::TokenType::REF)
-          next();
+        if (curr_tok.type == token::TokenType::REF)
+        {
+          curr_tok = get();
+        }
         try
         {
-          call = &(*call)[view().what.get<std::string>()];
+          call = &(*call)[curr_tok.what.get<std::string>()];
         }
         catch (Error &err)
         {
-          view().error(err.get_detail());
+          curr_tok.error(err.get_detail());
         }
-        next();
-        if (view().type != token::TokenType::REF)
+        curr_tok = get();
+        if (curr_tok.type != token::TokenType::REF)
+        {
           return call;
+        }
       }
       return nullptr;
     }
@@ -187,82 +185,58 @@ namespace czh::parser
         }
         catch (Error &err)
         {
-          view().error(err.get_detail());
+          curr_tok.error(err.get_detail());
         }
       }
       return nullptr;
     }
-    
-    template<typename T>
-    std::unique_ptr<std::vector<T>> parse_array()
+  
+    std::unique_ptr<value::Array> parse_array()
     {
-      std::unique_ptr<std::vector<T>> ret = std::make_unique<std::vector<T>>();
-      next();//eat [
-      for (; view().type != token::TokenType::ARR_RP; next())
+      std::unique_ptr<value::Array> ret = std::make_unique<value::Array>();
+      curr_tok = get();//eat [
+      for (; curr_tok.type != token::TokenType::ARR_RP; curr_tok = get())
       {
-        if (view().type == token::TokenType::COMMA) continue;
-        ret->emplace_back(view().what.get<T>());
-      }
-      next();//eat ]
-      return ret;
-    }
-    
-    std::unique_ptr<value::Value::AnyArray> parse_any_array()
-    {
-      std::unique_ptr<value::Value::AnyArray> ret = std::make_unique<value::Value::AnyArray>();
-      next();//eat [
-      for (; view().type != token::TokenType::ARR_RP; next())
-      {
-        if (view().type == token::TokenType::COMMA) continue;
-        
-        if (view().type == token::TokenType::INT)
-          ret->emplace_back(view().what.get<int>());
-        else if (view().type == token::TokenType::LONGLONG)
-          ret->emplace_back(view().what.get<long long>());
-        else if (view().type == token::TokenType::DOUBLE)
-          ret->emplace_back(view().what.get<double>());
-        else if (view().type == token::TokenType::STRING)
-          ret->emplace_back(view().what.get<std::string>());
-        else if (view().type == token::TokenType::BOOL)
-          ret->emplace_back(view().what.get<bool>());
-      }
-      next();//eat ]
-      return ret;
-    }
-    
-    bool is_any_array()
-    {
-      int v = 1;
-      token::TokenType arrtype(token::TokenType::UNEXPECTED);
-      while (view(v).type != token::TokenType::ARR_RP)
-      {
-        if (view(v).type == token::TokenType::COMMA)
+        if (curr_tok.type == token::TokenType::COMMA) continue;
+      
+        if (curr_tok.type == token::TokenType::INT)
         {
-          ++v;
-          continue;
+          ret->emplace_back(curr_tok.what.get<int>());
         }
-        else if (arrtype == token::TokenType::UNEXPECTED)
-          arrtype = view(v).type;
-        else if (view(v).type != arrtype)
-          return true;
-        ++v;
+        else if (curr_tok.type == token::TokenType::LONGLONG)
+        {
+          ret->emplace_back(curr_tok.what.get<long long>());
+        }
+        else if (curr_tok.type == token::TokenType::DOUBLE)
+        {
+          ret->emplace_back(curr_tok.what.get<double>());
+        }
+        else if (curr_tok.type == token::TokenType::STRING)
+        {
+          ret->emplace_back(curr_tok.what.get<std::string>());
+        }
+        else if (curr_tok.type == token::TokenType::BOOL)
+        {
+          ret->emplace_back(curr_tok.what.get<bool>());
+        }
       }
-      return false;
+      curr_tok = get();//eat ]
+      return ret;
     }
-    
+  
     bool check()
     {
       return !lex->eof();
     }
-    
-    token::Token view(std::size_t s = 0)
+  
+    token::Token &peek()
     {
-      return lex->view(s);
+      return lex->peek();
     }
-    
-    void next()
+  
+    token::Token get()
     {
-      lex->next();
+      return lex->get();
     }
   };
 }

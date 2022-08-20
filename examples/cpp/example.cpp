@@ -5,15 +5,16 @@
 
 int main()
 {
-  czh::Czh e("examples/czh/example.czh", czh::InputMode::nonstream);
+  czh::Czh e("examples/czh/example.czh", czh::InputMode::stream);
   // or czh::Czh e("example.czh", czh::InputMode::stream);
   // or czh::Czh e("example: a = 1; end;",  czh::InputMode::string);
   auto nodeptr = e.parse();
   if (nodeptr == nullptr) return -1;
   auto &node = *nodeptr;
   //get value
-  std::cout << "double: " << node["czh"]["double"].get<double>();
-  std::cout << "\nref: ";
+  std::cout << "double: " << node["czh"]["double"].get<double>() << std::endl;
+  std::cout << "字符串: " << node["czh"]["字符串"].get<std::string>() << std::endl;
+  std::cout << "ref: ";
   std::cout << "\na = " << node["czh"]["block"]["a"].get<int>();
   std::cout << "\nb = " << node["czh"]["block"]["b"].get<int>();
   std::cout << "\nc = " << node["czh"]["block"]["c"].get<int>();
@@ -21,7 +22,7 @@ int main()
   
   //array
   std::cout << "\nany array: ";
-  auto arr = node["czh"]["any_array"].get<czh::value::Value::AnyArray>();
+  auto arr = node["czh"]["any_array"].get<czh::value::Array>();
   for (auto &r: arr)
   {
     visit([](auto &&i)
@@ -29,7 +30,7 @@ int main()
   }
   //value_map
   std::cout << "\nvalue map: ";
-  auto vmap = *node["czh"]["value_array_map"].value_map<std::vector<int>>();
+  auto vmap = node["czh"]["value_array_map"].value_map<std::vector<int>>();
   for (auto &r: vmap)
   {
     for (auto &a: r.second)
@@ -52,7 +53,7 @@ int main()
   //add Value
   node["czh"].add("add_test", "123", "edit");
   //remove Value
-  node["czh"]["string"].remove();
+  node["czh"]["字符串"].remove();
   //clear Node
   node["czh"]["value_array_map"].clear();
   //add Node
