@@ -1,7 +1,8 @@
 # libczh
 
 ![example](examples/example.png)
-
+- [README zh](README.md)
+- [README en](README.en.md)
 ## Introduction
 
 - czh is a simple data serialization format designed by caozhanhao.
