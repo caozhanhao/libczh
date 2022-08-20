@@ -6,25 +6,35 @@
 ## 语法
 ### 数据类型
 - `int`,`double`,`string`,`bool`,`array`,`ref`
+
 ### 语句
+
 - 可以没有缩进
 - 语句后可以有`;`但不是必需的
-- 使用`=`连接key和value
+
 ### 注释
+
 - `<xxxx>`
+
 ### Node
+
 - Node名不可重复
 - 使用`id: end`作为一个Node
 - 使用`id = xxx`作为一个存储值的Node
-### array
-- 使用`{}`作为array,元素由`,`连接
+
+### Array
+
+- 使用`{}`作为Array
+- 元素由`,`连接
+
 ### 引用
+
 - 使用`id = key`表示引用
 - 引用的作用域由`::`连接
 - `::`在开头时为全局作用域
 - 只可以引用前面已定义的值
-- 引用中可使用`.`表示本作用域,`..`表示上级作用域
 - 如下
+
 ```
 example:
 a = 1
@@ -44,28 +54,41 @@ end;
 ### 编译
 - `#include "czh.h"`即可
 - 需要C++17
+
 ### Czh
+
 #### Czh::Czh(str, mode)
+
 ##### mode
-- czh::InputMode::stream 第一个参数为文件名
-- czh::InputMode::nonstream 第一个参数为文件名
-- czh::InputMode::string 第一个参数为存储czh的std::string
+
+- `czh::InputMode::stream` -> 第一个参数为文件名
+- `czh::InputMode::nonstream`->第一个参数为文件名
+- `czh::InputMode::string`-> 第一个参数为存储czh的`std::string`
+
 ```c++
-  Czh("example: a = 1; end;",  czh::InputMode::string);
+  Czh("example: a = 1; end;", czh::InputMode::string);
 ```
+
 ### Node
-##### Node::operator[]
-- 进入Node
-- 返回类型为Node
+
+##### Node::operator[str]
+
+- 返回名为str的Node
+
 ##### Node::get<T>()
+
 - 获取具体类型的值
-- 当值为array时，用Node::get<std::vector<T>>
+- 当值为array时，用`Node::get<std::vector<T>>`
 - 仅存储值的Node可调用
+
 ```c++
 int a = example["czh"]["this_is_a_int"].get<int>();
 ```
+
 ### value_map
+
 - 同一Node下的值的类型相同时时，可以使用value_map()获取所有key和value组成的map
+
 ##### Node::value_map<T>()
 - 返回std::map<std::string, T>
 - 仅存储节点的Node可调用
@@ -73,11 +96,13 @@ int a = example["czh"]["this_is_a_int"].get<int>();
 auto vmap = example["example"]["valmap"].value_map<vector<int>>();
 ```
 ### 修改
-- 修改后可使用operator<<或Node::to_string()以更新文件
+
+- 修改后可使用`operator<<`或`Node::to_string()`以更新文件
 #### 添加
 ##### Node::add(key, value, before)
-- 在名为'before'的Node前添加
-- before默认为空，此时添加在末尾
+
+- 在名为`before`的Node前添加
+- `before`默认为空，此时添加在末尾
 - 返回添加的Node(存储Value)的引用
 ```c++
 example["add"].add("add", "123", "edit");
@@ -87,14 +112,15 @@ add = 123
 edit = xxx
 ```
 ##### Node::make_ref()
-- 获取该Node的”引用“，实际上是存储Node指针的Value,用来在czh中添加引用
-- 注意，不可在被引用对象之前添加
+
+- 获取该Node的”引用“，用以在czh中添加引用
+- 不可在被引用对象之前添加
 ```c++
  example["example"].add("ref",example["example"]["i"].make_ref());
 ```
 ```
 i = 0
-ref = -.:i
+ref = i
 ```
 ##### Node::add_node(name, before)
 - 在名为'before'的Node前添加
@@ -123,7 +149,8 @@ example["example"].clear();
 ```
 #### 重命名
 ##### Node::rename(name, newname)
-- 将该Node改为newname
+
+- 将该Node改为`newname`
 ```c++
 example["a"].rename("b");
 ```
@@ -149,4 +176,4 @@ example["czh"]["edit"] = "edit example";
 - [czh示例1](https://gitee.com/cmvy2020/libczh/blob/master/examples/czh/example.czh)
 - [czh示例2](https://gitee.com/cmvy2020/libczh/blob/master/examples/czh/czh.czh)
 - [czh示例3](https://gitee.com/cmvy2020/libczh/blob/master/examples/czh/onelinetest.czh)
-- [czh示例](https://gitee.com/cmvy2020/wxserver/blob/main/config.czh)
+- [czh示例4](https://gitee.com/cmvy2020/wxserver/blob/main/config.czh)
