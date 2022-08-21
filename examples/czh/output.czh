@@ -1,8 +1,8 @@
 czh:
-  int_array = {-600, 2, -9000}
+  int_array = {1, 2, 3}
   string_array = {"1", "2", "3"}
   bool_array = {true, true, false}
-  any_array = {false, 1.0000000000000002, "2", 3, 400000000000}
+  any_array = {1, "2", 3.0}
   edit = "edit example"
   bool = true
   int = "d changed"

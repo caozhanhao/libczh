@@ -198,26 +198,26 @@ namespace czh::parser
       for (; curr_tok.type != token::TokenType::ARR_RP; curr_tok = get())
       {
         if (curr_tok.type == token::TokenType::COMMA) continue;
-      
+  
         if (curr_tok.type == token::TokenType::INT)
         {
-          ret->emplace_back(curr_tok.what.get<int>());
+          ret->insert(ret->end(), curr_tok.what.get<int>());
         }
         else if (curr_tok.type == token::TokenType::LONGLONG)
         {
-          ret->emplace_back(curr_tok.what.get<long long>());
+          ret->insert(ret->end(), curr_tok.what.get<long long>());
         }
         else if (curr_tok.type == token::TokenType::DOUBLE)
         {
-          ret->emplace_back(curr_tok.what.get<double>());
+          ret->insert(ret->end(), curr_tok.what.get<double>());
         }
         else if (curr_tok.type == token::TokenType::STRING)
         {
-          ret->emplace_back(curr_tok.what.get<std::string>());
+          ret->insert(ret->end(), curr_tok.what.get<std::string>());
         }
         else if (curr_tok.type == token::TokenType::BOOL)
         {
-          ret->emplace_back(curr_tok.what.get<bool>());
+          ret->insert(ret->end(), curr_tok.what.get<bool>());
         }
       }
       curr_tok = get();//eat ]

@@ -125,8 +125,7 @@ namespace czh::token
   std::string to_token_str(node::Node *const &v)
   { return ""; }
   
-  template<typename Ty>
-  std::string to_token_str(const std::vector<Ty> &v)
+  std::string to_token_str(const value::Array &v)
   { return ""; }
   
   //end

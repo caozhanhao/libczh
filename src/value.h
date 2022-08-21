@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 #include <typeinfo>
-#include <typeindex>
+#include <type_traits>
 
 namespace czh
 {
@@ -27,58 +27,152 @@ namespace czh
   }
   namespace value
   {
-    using BasicVT = std::variant<int, long long, double, std::string, bool>;
-    using Array = std::vector<BasicVT>;
-    using ArrayValueType = BasicVT;
-    
-    std::string get_type_str(const std::type_index &type)
+    template<typename... List>
+    struct TypeList
     {
-      return type.name();
+    };
+    
+    template<typename... List>
+    std::variant<List...> as_variant(TypeList<List...>);
+    
+    template<typename List1, typename List2>
+    struct Link;
+    template<typename ... Args1, typename ... Args2>
+    struct Link<TypeList<Args1...>, TypeList<Args2...>>
+    {
+      using type = TypeList<Args1..., Args2...>;
+    };
+    
+    template<typename T, typename... List>
+    struct Contains : std::true_type
+    {
+    };
+    
+    template<typename T, typename First, typename... Rest>
+    struct Contains<T, TypeList<First, Rest...>>
+        : std::conditional<std::is_same<T, First>::value, std::true_type, Contains<T, Rest...>>::type
+    {
+    };
+    template<typename T>
+    struct Contains<T> : std::false_type
+    {
+    };
+    
+    template<typename T, typename List>
+    struct IndexOf;
+    template<typename First, typename ... Rest>
+    struct IndexOf<First, TypeList<First, Rest...>>
+    {
+      const static int value = 0;
+    };
+    template<typename T>
+    struct IndexOf<T, TypeList<>>
+    {
+      const static int value = -1;
+    };
+    template<typename T, typename First, typename ...Rest>
+    struct IndexOf<T, TypeList<First, Rest...>>
+    {
+      const static int temp = IndexOf<T, TypeList<Rest...>>::value;
+      const static int value = temp == -1 ? -1 : temp + 1;
+    };
+    
+    std::string VTstr(std::size_t index)
+    {
+      static std::vector<std::string>
+          types{"int", "long long", "double", "std::string", "bool", "czh::node::Node*", "czh::value::Array"};
+      return types[index];
     }
+    
+    using BasicVTList = TypeList<int, long long, double, std::string, bool>;
+    using BasicVT = decltype(as_variant(BasicVTList{}));
+    
+    using Array = std::vector<BasicVT>;//insert() begin() end()
+    
+    using HighVTList = TypeList<node::Node *, Array>;
+    using VTList = Link<BasicVTList, HighVTList>::type;
+    using VT = decltype(as_variant(VTList{}));
+    
+    struct ValueTag
+    {
+    };
+    struct NormalArrayTag
+    {
+    };
+    struct AnyArrayTag
+    {
+    };
+    struct ErrorTag
+    {
+    };
+    
+    template<typename T, typename = void>
+    struct is_normal_array
+    {
+      static constexpr bool value = !std::is_same_v<T, std::string>
+                                    && Contains<typename T::value_type, BasicVTList>::value;
+    };
+    
+    template<typename T>
+    struct is_normal_array<T, std::enable_if_t<(std::is_fundamental_v<T> || std::is_same_v<T, node::Node *>)>>
+    {
+      static constexpr bool value = false;
+    };
+    
+    template<typename T>
+    struct TagDispatch
+    {
+      using tag = std::conditional_t<
+          std::is_same_v<T, Array>, AnyArrayTag,
+          std::conditional_t<is_normal_array<T>::value, NormalArrayTag,
+              std::conditional_t<(Contains<T, BasicVTList>::value || std::is_same_v<T, node::Node *>), ValueTag,
+                  ErrorTag>>>;
+    };
     
     class Value
     {
     private:
-      std::variant<int, long long, double, std::string, bool, char, Array, node::Node *> value;
-      std::type_index value_type;
+      VT value;
     public:
-      template<typename T>
-      explicit Value(const T &data)
-          : value(data), value_type(typeid(T))
+      template<typename T, typename = typename std::enable_if_t<
+          Contains<T, BasicVTList>::value || std::is_same_v<T, node::Node *>>>
+      explicit Value(T &&data)
+          : value(std::forward<T>(data))
       {}
+      
+      template<typename T, typename = typename std::enable_if_t<
+          Contains<typename T::value_type, BasicVTList>::value && !std::is_same_v<T, std::string>>>
+      explicit Value(const T &data)
+      {
+        value.emplace<Array>();
+        auto &arr = std::get<Array>(value);
+        for (auto &r: arr)
+        {
+          arr.insert(arr.end(), r);
+        }
+      }
       
       explicit Value(const char *v)
-          : value(std::string(v)), value_type(typeid(std::string))
+          : value(std::string(v))
       {}
       
-      Value() : value(0), value_type(typeid(void))
+      Value(Value &&) = default;
+      
+      Value(const Value &) = default;
+      
+      Value() : value(0)
       {}
       
       template<typename T>
       T get() const
       {
-        if constexpr(std::is_same_v<std::vector<int>, T>
-                     || std::is_same_v<std::vector<long long>, T>
-                     || std::is_same_v<std::vector<double>, T>
-                     || std::is_same_v<std::vector<std::string>, T>
-                     || std::is_same_v<std::vector<bool>, T>)
-        {
-          return get_array<T>();
-        }
-        else if constexpr(std::is_same_v<Array, T>)
-        {
-          return get_any_array();
-        }
-        else
-        {
-          if (std::type_index(typeid(T)) != value_type)
-          {
-            throw error::Error(LIBCZH_ERROR_LOCATION, __func__,
-                               "The value is '" + get_type_str(type()) + "', not '"
-                               + get_type_str(typeid(T)) + "'.");
-          }
-          return std::get<T>(value);
-        }
+        return internal_get<T>(typename TagDispatch<T>::tag{});
+      }
+      
+      template<typename T>
+      bool is() const
+      {
+        return value.index() == IndexOf<T, VTList>::value;
       }
       
       [[nodiscard]] const auto &get_variant() const
@@ -86,35 +180,82 @@ namespace czh
         return value;
       }
       
-      [[nodiscard]] std::type_index type() const
+      template<typename T>
+      std::enable_if_t<Contains<T, BasicVTList>::value, Value &> operator=(const T &v)
       {
-        return value_type;
+        value = v;
+        return *this;
       }
       
       template<typename T>
-      Value &operator=(const T &v)
+      std::enable_if_t<std::is_same_v<T, Array>
+                       || Contains<typename T::value_type, BasicVTList>::value, Value &>
+      operator=(T &&v)
       {
-        value = v;
-        value_type = typeid(T);
+        if constexpr(std::is_same_v<Array, T>)
+        {
+          value = v;
+        }
+        else
+        {
+          Array tmp;
+          for (auto &r: v)
+          {
+            tmp.insert(tmp.end(), r);
+          }
+        }
         return *this;
       }
-  
+      
+      template<typename T, typename =  std::enable_if_t<
+          Contains<T, BasicVTList>::value>>
+      Value &operator=(const std::initializer_list<T> &data)
+      {
+        Array tmp;
+        for (auto &r: data)
+        {
+          tmp.insert(tmp.end(), r);
+        }
+        value = tmp;
+        return *this;
+      }
+      
+      template<typename T>
+      Value &operator=(Array &&data)
+      {
+        value = std::forward<T>(data);
+        return *this;
+      }
+      
+      Value &operator=(const Value &v)
+      {
+        value = v.value;
+        return *this;
+      }
+      
       Value &operator=(const char *v)
       {
         value = std::string(v);
-        value_type = typeid(std::string);
         return *this;
       }
-
+    
     private:
       template<typename T>
-      T get_array() const
+      T internal_get(ValueTag) const
       {
-        if (std::type_index(typeid(Array)) != value_type)
+        if (!is<T>())
         {
-          throw error::Error(LIBCZH_ERROR_LOCATION, __func__,
-                             "The value is '" + get_type_str(type()) + "', not '"
-                             + get_type_str(typeid(Array)) + "'.");
+          get_error_index<T>();
+        }
+        return std::get<T>(value);
+      }
+      
+      template<typename T>
+      T internal_get(NormalArrayTag) const
+      {
+        if (!is<Array>())
+        {
+          get_error_index<T>();
         }
         auto &varr = std::get<Array>(value);
         T ret;
@@ -122,7 +263,7 @@ namespace czh
         {
           if (auto pval = std::get_if<typename T::value_type>(&r))
           {
-            ret.emplace_back(*pval);
+            ret.insert(std::end(ret), *pval);
           }
           else
           {
@@ -132,25 +273,33 @@ namespace czh
         }
         return std::move(ret);
       }
-  
-      Array get_any_array() const
+      
+      template<typename T>
+      T internal_get(ErrorTag) const
       {
-        if (std::type_index(typeid(Array)) != value_type)
+        get_error_index<T>();
+        return T();
+      }
+      
+      template<typename T>
+      Array internal_get(AnyArrayTag) const
+      {
+        if (!is<Array>())
         {
-          throw error::Error(LIBCZH_ERROR_LOCATION, __func__,
-                             "The value is '" + get_type_str(type()) + "', not '"
-                             + get_type_str(typeid(Array)) + "'.");
+          get_error_index<T>();
         }
         return std::get<Array>(value);
       }
+      
+      template<typename T>
+      void get_error_index() const
+      {
+        throw error::Error(LIBCZH_ERROR_LOCATION, __func__,
+                           "Get wrong type.[wrong T = '" + VTstr(IndexOf<T, VTList>::value)
+                           + "', correct T = '" + VTstr(value.index())
+                           + "']");
+      }
     };
     
-    template<>
-    Value &Value::operator=(const Value &v)
-    {
-      value = v.value;
-      value_type = typeid(Value *);
-      return *this;
-    }
   }
 }

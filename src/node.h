@@ -100,32 +100,18 @@ namespace czh::node
     return colorify(("\"" + val + "\""), color, Type::STR);
   }
   
-  template<typename Ty>
-  std::string to_czhstr(const std::vector<Ty> &v, Color color)
-  {
-    std::string result = "{";
-    for (auto it = v.cbegin(); it != (v.cend() - 1); ++it)
-    {
-      result += to_czhstr(*it, color);
-      result += ", ";
-    }
-    result += to_czhstr(*(v.cend() - 1), color);
-    result += "}";
-    return result;
-  }
-  
   template<>
   std::string to_czhstr(const value::Array &v, Color color)
   {
     auto visitor = [&color](auto &&v) -> std::string
     { return to_czhstr(v, color); };
     std::string result = "{";
-    for (auto it = v.cbegin(); it != (v.cend() - 1); ++it)
+    for (auto it = v.cbegin(); it != std::prev(v.cend()); ++it)
     {
       result += std::visit(visitor, *it);
       result += ", ";
     }
-    result += std::visit(visitor, *(v.cend() - 1));
+    result += std::visit(visitor, *std::prev(v.cend()));
     result += "}";
     return result;
   }
@@ -217,7 +203,7 @@ namespace czh::node
     { data.emplace<NodeData>(); }
   
     Node(Node *node_ptr, std::string node_name, Value val)
-        : name(std::move(node_name)), last_node(node_ptr), data(val)
+        : name(std::move(node_name)), last_node(node_ptr), data(std::move(val))
     {}
     
     Node() : name("/"), last_node(nullptr)
@@ -359,16 +345,16 @@ namespace czh::node
       }
       return value::Value(this);
     }
-    
+  
     template<typename T>
-    Node &add(const std::string &add_name, const T &_value, const std::string &before = "")
+    Node &add(const std::string &add_name, T _value, const std::string &before = "")
     {
       if (!is_node())
       {
         throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not add Value to Value");
       }
       auto &nd = std::get<NodeData>(data);
-      return nd.add(Node(this, add_name, Value(_value)));
+      return nd.add(Node(this, add_name, Value(std::move(_value))));
     }
     
     Node &add_node(const std::string &add_name, const std::string &before = "")
@@ -381,15 +367,6 @@ namespace czh::node
       return nd.add(Node(this, add_name));
     }
     
-    [[nodiscard]] auto type() const
-    {
-      if (is_node())
-      {
-        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Node not get type.");
-      }
-      return std::get<Value>(data).type();
-    }
-  
     template<typename T>
     std::map<std::string, T> value_map()
     {
@@ -459,13 +436,24 @@ namespace czh::node
         throw Error(LIBCZH_ERROR_LOCATION, __func__, "This Node does not contain not Value.");
       }
       auto &value = std::get<Value>(data);
-      if (type() == typeid(Node *))
+      if (value.is<Node *>())
       {
         *value.get<Node *>() = std::forward<T>(v);
       }
       else
+      {
         value = std::forward<T>(v);
+      }
       return *this;
+    }
+  
+    Value &get_value()
+    {
+      if (is_node())
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not get value from a Node.");
+      }
+      return std::get<Value>(data);
     }
   
     template<typename T>
@@ -476,22 +464,11 @@ namespace czh::node
         throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not get value from a Node.");
       }
       auto &value = std::get<Value>(data);
-      if (type() == typeid(Node *))
+      if (value.is<Node *>())
       {
         return value.get<Node *>()->get<T>();
       }
       return value.get<T>();
-    }
-  
-    template<typename T>
-    std::vector<T> get_array() const
-    {
-      if (is_node())
-      {
-        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not get value from a Node.");
-      }
-      auto &value = std::get<Value>(data);
-      return value.get_array<T>();
     }
   
     [[nodiscard]] std::unique_ptr<std::vector<std::string>> get_path() const
