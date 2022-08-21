@@ -48,10 +48,10 @@ int main()
   }
   //edit
   node["czh"]["double"] = "edit example";
-  node["czh"]["int_array"].get_value() = {1, 2, 3};//braced initializer list
-  node["czh"]["int_array"].get_value() = std::vector{1, 2, 3};
-  node["czh"]["int_array"].get_value() = std::set{1, 2, 3};
-  node["czh"]["any_array"].get_value() = czh::value::Array{1, "2", 3.0};
+  node["czh"]["int_array"] = {1, 2, 3};//braced initializer list
+  node["czh"]["int_array"] = std::vector{1, 2, 3};
+  node["czh"]["int_array"] = std::set{1, 2, 3};
+  node["czh"]["any_array"] = czh::value::Array{1, "2", 3.0};
   //containers that have begin() and end()
   
   //edit ref

@@ -103,8 +103,7 @@ namespace czh::node
   template<>
   std::string to_czhstr(const value::Array &v, Color color)
   {
-    auto visitor = [&color](auto &&v) -> std::string
-    { return to_czhstr(v, color); };
+    auto visitor = [&color](auto &&v) -> std::string { return to_czhstr(v, color); };
     std::string result = "{";
     for (auto it = v.cbegin(); it != std::prev(v.cend()); ++it)
     {
@@ -130,12 +129,10 @@ namespace czh::node
       std::list<Node> nodes;
     public:
       NodeData() = default;
-      
-      [[nodiscard]]const auto &get_nodes() const
-      { return nodes; }
-      
-      auto &get_nodes()
-      { return nodes; }
+  
+      [[nodiscard]]const auto &get_nodes() const { return nodes; }
+  
+      auto &get_nodes() { return nodes; }
       
       Node &add(Node node)
       {
@@ -199,15 +196,12 @@ namespace czh::node
     std::variant<NodeData, Value> data;
   public:
     Node(Node *node_ptr, std::string node_name)
-        : name(std::move(node_name)), last_node(node_ptr)
-    { data.emplace<NodeData>(); }
+        : name(std::move(node_name)), last_node(node_ptr) { data.emplace<NodeData>(); }
   
     Node(Node *node_ptr, std::string node_name, Value val)
-        : name(std::move(node_name)), last_node(node_ptr), data(std::move(val))
-    {}
-    
-    Node() : name("/"), last_node(nullptr)
-    { data.emplace<NodeData>(); }
+        : name(std::move(node_name)), last_node(node_ptr), data(std::move(val)) {}
+  
+    Node() : name("/"), last_node(nullptr) { data.emplace<NodeData>(); }
   
     Node(const Node &) = delete;
   
@@ -447,6 +441,18 @@ namespace czh::node
       return *this;
     }
   
+    template<typename T>
+    Node &operator=(std::initializer_list<T> &&il)
+    {
+      if (is_node())
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "This Node does not contain not Value.");
+      }
+      auto &value = std::get<Value>(data);
+      value = std::forward<std::initializer_list<T>>(il);
+      return *this;
+    }
+  
     Value &get_value()
     {
       if (is_node())
@@ -537,8 +543,7 @@ namespace czh::node
       auto &value = std::get<Value>(data);
       std::string valuestr = std::visit(
           utils::overloaded{
-              [&with_color](auto &&i) -> std::string
-              { return czh::node::to_czhstr(i, with_color); },
+              [&with_color](auto &&i) -> std::string { return czh::node::to_czhstr(i, with_color); },
               [&with_color, this](Node *n) -> std::string
               {
                 std::string res;
@@ -548,7 +553,9 @@ namespace czh::node
                                                      this_path.rbegin(), this_path.rend());
                 if (itpath == path.rend() && itthis == this_path.rend()) res += "::";
                 for (; itpath < path.rend() - 1; ++itpath)
+                {
                   res += colorify(*itpath, with_color, Type::REF_ID) + "::";
+                }
                 res += colorify(path[0], with_color, Type::REF_ID);
                 return res;
               }

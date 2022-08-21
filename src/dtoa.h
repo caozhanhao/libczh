@@ -323,14 +323,12 @@ namespace czh::utils
   public:
     uint64_t f;
     int e;
-    
-    DiyFp() : f(0), e(0)
-    {};
-    
+  
+    DiyFp() : f(0), e(0) {};
+  
     DiyFp(uint64_t f_, int e_)
-        : f(f_), e(e_)
-    {}
-    
+        : f(f_), e(e_) {}
+  
     explicit DiyFp(const double &d)
     {
       uint64_t d64;
@@ -536,7 +534,7 @@ namespace czh::utils
       buffer += static_cast<char>(static_cast<int>('0') + K);
   }
   
-  std::string prettify_string(const std::string& buffer, int k)
+  std::string prettify_string(const std::string &buffer, int k)
   {
     std::string ret;
     int end_pos = static_cast<int>(buffer.size());

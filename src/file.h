@@ -24,8 +24,7 @@ namespace czh::file
     std::string filename;
     
     explicit File(std::string name)
-        : filename(std::move(name))
-    {}
+        : filename(std::move(name)) {}
     
     [[nodiscard]] virtual std::string
     get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize) const = 0;
@@ -154,8 +153,7 @@ namespace czh::file
     std::size_t codepos;
   public:
     NonStreamFile(std::string name, std::string code_)
-        : File(std::move(name)), code(std::move(code_)), codepos(0)
-    {}
+        : File(std::move(name)), code(std::move(code_)), codepos(0) {}
     
     [[nodiscard]] std::string get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize) const override
     {

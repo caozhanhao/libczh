@@ -46,8 +46,7 @@ namespace czh::lexer
     State state;
     State last_state;
   public:
-    Match() : state(State::INIT), last_state(State::UNEXPECTED)
-    {}
+    Match() : state(State::INIT), last_state(State::UNEXPECTED) {}
     
     std::string error_correct()
     {
@@ -279,8 +278,7 @@ namespace czh::lexer
     State state;
     bool _is_double;
   public:
-    NumberMatch() : state(State::INIT), _is_double(false)
-    {}
+    NumberMatch() : state(State::INIT), _is_double(false) {}
     
     bool match(const std::string &s)
     {
@@ -484,8 +482,7 @@ namespace czh::lexer
         : code(nullptr),
           codepos(nullptr),
           is_eof(false),
-          buffer(token::TokenType::UNEXPECTED, 0, codepos)
-    {}
+          buffer(token::TokenType::UNEXPECTED, 0, codepos) {}
     
     void set_czh(std::string filename, std::unique_ptr<std::ifstream> fs)
     {

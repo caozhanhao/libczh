@@ -30,8 +30,7 @@ namespace czh::error
   public:
     CzhError(std::string location_, const std::string &detail_)
         : runtime_error(detail_), location(std::move(location_)),
-          detail(detail_)
-    {}
+          detail(detail_) {}
     
     [[nodiscard]] std::string get_content() const
     {
@@ -48,8 +47,7 @@ namespace czh::error
   public:
     Error(std::string location_, const std::string &func_name_, const std::string &detail_)
         : logic_error(detail_), location(std::move(location_) + ":" + func_name_ + "()"),
-          detail(detail_)
-    {}
+          detail(detail_) {}
     
     [[nodiscard]] std::string get_detail() const
     {

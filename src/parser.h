@@ -34,8 +34,7 @@ namespace czh::parser
   public:
     explicit Parser(lexer::Lexer *lex_)
         : lex(lex_), node(std::make_unique<node::Node>()), curr_node(node.get()),
-          curr_tok(token::TokenType::UNEXPECTED, 0, token::Pos(0))
-    {}
+          curr_tok(token::TokenType::UNEXPECTED, 0, token::Pos(0)) {}
     
     std::shared_ptr<node::Node> parse()
     {
