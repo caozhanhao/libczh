@@ -1,7 +1,6 @@
 #include "../../src/czh.hpp"
 #include "example.hpp"
 #include <iostream>
-#include <vector>
 #include <string>
 
 int main()
