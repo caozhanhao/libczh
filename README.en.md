@@ -14,7 +14,7 @@
 
 ## Tutorial
 
-- czh and libczh are simple to use, you can directly see the examples in [example.cpp](examples/example.cpp), which
+- czh and libczh are simple to use, you can directly see the examples in [example.cpp](examples/cpp/example.cpp), which
   covers most of the contents of libczh.
 
 ### Syntax

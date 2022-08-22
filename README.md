@@ -14,7 +14,7 @@
 
 ## 使用方法
 
-- czh和libczh的用法比较简单，你也可以直接看[example.cpp](examples/example.cpp)中的例子，它们涵盖了libczh的大部分内容。
+- czh和libczh的用法比较简单，你也可以直接看[example.cpp](examples/cpp/example.cpp)中的例子，它们涵盖了libczh的大部分内容。
 
 ### 语法
 
