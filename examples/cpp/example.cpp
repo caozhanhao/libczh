@@ -24,20 +24,26 @@ int main()
    *   Get value
    *
    */
-  auto str = node["czh"]["😀UTF示例"].get<std::string>();
-  // array
-  auto arr1 = node["czh"]["any_array"].get<czh::value::Array>();
-  // czh::value::Array is a std::vector contains std::variant
-  auto arr2 = node["czh"]["int_array"].get<EgContainer>();
-  // The T must be a container that has insert(), end(), default constructor and value_type.
-  // Most containers in STL can be used directly.
-  // EgContainer is defined in example.hpp
   
-  // value_map
+  // Node::get<T>
+  auto str = node["czh"]["😀UTF示例"].get<std::string>();
+  // When Value is an Array,
+  // the T must be a container that has insert(), end(),
+  // default constructor and value_type which is in
+  // int, long long, double, std::string, bool [aka. BasicVTList(value.hpp)]
+  // For example, EgContainer in example.hpp and
+  // most containers in STL can meet these requirements.
+  auto arr1 = node["czh"]["int_array"].get<EgContainer>();
+  // When the elements in the Array are not of the same type,
+  // Use czh::value::Array (std::vector<std::variant<BasicVTList(see above)>>)
+  auto arr2 = node["czh"]["any_array"].get<czh::value::Array>();
+  
+  // Node::value_map<T>
   // When the values under the same Node are of the same type,
   // you can use value_map() to get a std::map consisting of all
   // keys and values.
-  auto vmap = node["czh"]["value_array_map"].value_map<std::vector<int>>();
+  // T is consistent with the requirements of Array above
+  auto vmap = node["czh"]["value_array_map"].value_map<EgContainer>();
   
   //iterator
   std::cout << "\n";
@@ -52,19 +58,20 @@ int main()
    *
    */
   node["czh"]["double"] = "edit example";    // const char[] -> std::string
+  node["czh"]["block"]["d"] = "d changed";   // modify Reference
   node["czh"]["int_array"] = {1, 2, 3};      // braced initializer list
   node["czh"]["int_array"] = EgRange(1, 10); // containers that have begin(), end() and value_type
-  // When the type of Array is not unique, use czh::value::Array
+  // When the type of Array is not unique, use czh::value::Array(see above)
   node["czh"]["any_array"] = czh::value::Array{false, 1, "2", 3.0};
   
-  // modify Reference
-  node["czh"]["block"]["d"] = "d changed";
-  // add Reference
-  node["czh"].add("ref", node["czh"]["int"].make_ref());
-  // add Node
+  // Add Node
+  // Node::add_node(name, before) will add a Node before "before"
   node["czh"].add_node("ref", "block");
-  // add Value, add(name, value, before)
+  // Add Value
+  // Node::add(name, value, before)
   node["czh"].add("add_test", EgRange(10, 15), "int");
+  node["czh"].add("ref", node["czh"]["int"].make_ref());// Reference
+  
   // rename
   node["czh"]["double"].rename("edit");
   // remove
