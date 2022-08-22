@@ -1,8 +1,8 @@
 #include "../../src/czh.h"
+#include "example.h"
 #include <iostream>
 #include <vector>
 #include <set>
-#include <list>
 #include <string>
 
 int main()
@@ -22,13 +22,10 @@ int main()
   auto arr = node["czh"]["any_array"].get<czh::value::Array>();
   for (auto &r: arr)
   {
-    visit([](auto &&i)
-          { std::cout << czh::node::to_czhstr(i, czh::node::Color::no_color) << ", "; }, r);
+    visit([](auto &&i) { std::cout << czh::node::to_czhstr(i, czh::node::Color::no_color) << ", "; }, r);
   }
-  auto arr1 = node["czh"]["int_array"].get<std::vector<int>>();
-  auto arr3 = node["czh"]["int_array"].get<std::list<int>>();
-  auto arr2 = node["czh"]["int_array"].get<std::set<int>>();
-  //containers that have insert() and end()
+  auto arr1 = node["czh"]["int_array"].get<EgContainer>();
+  //containers that have insert() and end() and default constructor
   //value_map
   std::cout << "\nvalue map: ";
   auto vmap = node["czh"]["value_array_map"].value_map<std::set<int>>();
@@ -48,11 +45,9 @@ int main()
   }
   //edit
   node["czh"]["double"] = "edit example";
-  node["czh"]["int_array"] = {1, 2, 3};//braced initializer list
-  node["czh"]["int_array"] = std::vector{1, 2, 3};
-  node["czh"]["int_array"] = std::set{1, 2, 3};
-  node["czh"]["any_array"] = czh::value::Array{1, "2", 3.0};
-  //containers that have begin() and end()
+  node["czh"]["int_array"] = {1, 2, 3};    //braced initializer list
+  node["czh"]["int_array"] = EgRange(1, 10); // containers that have begin() and end()
+  node["czh"]["any_array"] = czh::value::Array{false, 1, "2", 3.0};
   
   //edit ref
   node["czh"]["block"]["d"] = "d changed";

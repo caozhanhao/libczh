@@ -11,7 +11,8 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#pragma once
+#ifndef LIBCZH_LEXER_H
+#define LIBCZH_LEXER_H
 
 #include "value.h"
 #include "token.h"
@@ -578,7 +579,7 @@ namespace czh::lexer
         }
         if (notes != 0 && !check_char())
         {
-          token::Token tmp(token::TokenType::UNEXPECTED, '<', bak);
+          token::Token tmp(token::TokenType::UNEXPECTED, static_cast<int>('<'), bak);
           tmp.error("Unexpected note begin.");
         }
         if (ch == '>')
@@ -590,7 +591,7 @@ namespace czh::lexer
     
     token::Token get_tok()
     {
-      static std::map<char, token::TokenType> marks =
+      static std::map<int, token::TokenType> marks =
           {
               {'=', token::TokenType::EQUAL},
               {'{', token::TokenType::ARR_LP},
@@ -760,3 +761,4 @@ namespace czh::lexer
     }
   };
 }
+#endif

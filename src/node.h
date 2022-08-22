@@ -11,7 +11,8 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#pragma once
+#ifndef LIBCZH_NODE_H
+#define LIBCZH_NODE_H
 
 #include "value.h"
 #include "err.h"
@@ -588,3 +589,4 @@ namespace czh::node
     return os;
   }
 }
+#endif

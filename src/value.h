@@ -11,13 +11,20 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#pragma once
+#ifndef LIBCZH_VALUE_H
+#define LIBCZH_VALUE_H
+
 #include "err.h"
 #include <variant>
 #include <string>
 #include <vector>
 #include <typeinfo>
 #include <type_traits>
+#include <ostream>
+#include <deque>
+#include <set>
+#include <queue>
+#include <list>
 
 namespace czh
 {
@@ -28,9 +35,7 @@ namespace czh
   namespace value
   {
     template<typename... List>
-    struct TypeList
-    {
-    };
+    struct TypeList {};
     
     template<typename... List>
     std::variant<List...> as_variant(TypeList<List...>);
@@ -43,20 +48,16 @@ namespace czh
       using type = TypeList<Args1..., Args2...>;
     };
     
-    template<typename T, typename... List>
-    struct Contains : std::true_type
-    {
-    };
-    
+    template<typename T, typename List>
+    struct Contains : std::true_type {};
     template<typename T, typename First, typename... Rest>
     struct Contains<T, TypeList<First, Rest...>>
-        : std::conditional<std::is_same<T, First>::value, std::true_type, Contains<T, Rest...>>::type
+        : std::conditional<std::is_same<T, First>::value, std::true_type,
+            Contains<T, TypeList<Rest...>>>::type
     {
     };
     template<typename T>
-    struct Contains<T> : std::false_type
-    {
-    };
+    struct Contains<T, TypeList<>> : std::false_type {};
     
     template<typename T, typename List>
     struct IndexOf;
@@ -92,81 +93,89 @@ namespace czh
     using HighVTList = TypeList<node::Node *, Array>;
     using VTList = Link<BasicVTList, HighVTList>::type;
     using VT = decltype(as_variant(VTList{}));
+
+#define LIBCZH_HasMMaker(MEMBER, ...)\
+template <class T, class = std::void_t<>>\
+    struct HasM##MEMBER : std::false_type {};\
+    template <class T>\
+    struct HasM##MEMBER<T, std::void_t<decltype(std::declval<T>().MEMBER(__VA_ARGS__))>> : std::true_type {};\
+
+    LIBCZH_HasMMaker(insert, std::declval<T>().end(), 0)
+    LIBCZH_HasMMaker(begin)
+    LIBCZH_HasMMaker(cbegin)
+    LIBCZH_HasMMaker(end)
+    LIBCZH_HasMMaker(cend)
+#undef LIBCZH_HasMMaker
     
-    struct ValueTag
-    {
-    };
-    struct NormalArrayTag
-    {
-    };
-    struct AnyArrayTag
-    {
-    };
-    struct ErrorTag
-    {
-    };
-    
-    template<typename T, typename = void>
-    struct is_normal_array
-    {
-      static constexpr bool value = !std::is_same_v<T, std::string>
-                                    && Contains<typename T::value_type, BasicVTList>::value;
-    };
-    
+    template<typename T, typename U = void>
+    struct IsNormalArray : public std::false_type {};
     template<typename T>
-    struct is_normal_array<T, std::enable_if_t<(std::is_fundamental_v<T> || std::is_same_v<T, node::Node *>)>>
+    struct IsNormalArray<T, std::enable_if_t<!std::is_same_v<T, std::string>
+                                             && Contains<typename T::value_type, BasicVTList>::value>>
+        : public std::true_type
     {
-      static constexpr bool value = false;
     };
     
+    
+    struct ValueTag {};
+    struct NormalArrayTag {};
+    struct AnyArrayTag {};
     template<typename T>
     struct TagDispatch
     {
       using tag = std::conditional_t<
           std::is_same_v<T, Array>, AnyArrayTag,
-          std::conditional_t<is_normal_array<T>::value, NormalArrayTag,
-              std::conditional_t<(Contains<T, BasicVTList>::value || std::is_same_v<T, node::Node *>), ValueTag,
-                  ErrorTag>>>;
+          std::conditional_t<IsNormalArray<T>::value, NormalArrayTag, ValueTag>>;
     };
+    
+    class E { public: using value_type = int; };
     
     class Value
     {
     private:
       VT value;
     public:
-      template<typename T, typename = typename std::enable_if_t<
-          Contains<T, BasicVTList>::value || std::is_same_v<T, node::Node *>>>
+      template<typename T, typename = std::enable_if_t<IsNormalArray<E>::value>>
       explicit Value(T &&data)
-          : value(std::forward<T>(data))
-      {}
-      
-      template<typename T, typename = typename std::enable_if_t<
-          Contains<typename T::value_type, BasicVTList>::value && !std::is_same_v<T, std::string>>>
-      explicit Value(const T &data)
       {
-        value.emplace<Array>();
-        auto &arr = std::get<Array>(value);
-        for (auto &r: arr)
-        {
-          arr.insert(arr.end(), r);
-        }
+        value = data;
       }
-      
-      explicit Value(const char *v)
-          : value(std::string(v))
-      {}
       
       Value(Value &&) = default;
       
       Value(const Value &) = default;
       
-      Value() : value(0)
-      {}
+      Value() : value(0) {}
       
       template<typename T>
       T get() const
       {
+        static_assert(Contains<T, VTList>::value || IsNormalArray<T>::value,
+                      "T must be in VTList(value.h, BasicVTList + HighVTList),"
+                      " or a container that stores Type in BasicVTList(value.h).");
+        if constexpr(IsNormalArray<T>::value)
+        {
+          static_assert((HasMend<T>::value || HasMcend<T>::value)
+                        && HasMinsert<T>::value && std::is_default_constructible_v<T>,
+                        "The container must have end() (or cend()) and insert() and is default constructible.");
+        }
         return internal_get<T>(typename TagDispatch<T>::tag{});
+      }
+      
+      template<typename T>
+      Value &operator=(T &&v)
+      {
+        static_assert(Contains<T, VTList>::value || IsNormalArray<T>::value,
+                      "T must be in VTList(value.h, BasicVTList + HighVTList),"
+                      " or a container that stores Type in BasicVTList(value.h).");
+        if constexpr(IsNormalArray<T>::value)
+        {
+          static_assert((HasMbegin<T>::value || HasMcbegin<T>::value) &&
+                        (HasMend<T>::value || HasMcend<T>::value) && HasMend<T>::value,
+                        "The container must have begin() (or cbegin()) and end() (or cend()).");
+        }
+        internal_equal<T>(std::forward<T>(v), typename TagDispatch<T>::tag{});
+        return *this;
       }
       
       template<typename T>
@@ -179,67 +188,35 @@ namespace czh
       {
         return value;
       }
-      
-      template<typename T>
-      std::enable_if_t<Contains<T, BasicVTList>::value, Value &> operator=(const T &v)
-      {
-        value = v;
-        return *this;
-      }
-      
-      template<typename T>
-      std::enable_if_t<std::is_same_v<T, Array>
-                       || Contains<typename T::value_type, BasicVTList>::value, Value &>
-      operator=(T &&v)
-      {
-        if constexpr(std::is_same_v<Array, T>)
-        {
-          value = v;
-        }
-        else
-        {
-          Array tmp;
-          for (auto &r: v)
-          {
-            tmp.insert(tmp.end(), r);
-          }
-        }
-        return *this;
-      }
-      
-      template<typename T, typename =  std::enable_if_t<
-          Contains<T, BasicVTList>::value>>
-      Value &operator=(const std::initializer_list<T> &data)
-      {
-        Array tmp;
-        for (auto &r: data)
-        {
-          tmp.insert(tmp.end(), r);
-        }
-        value = tmp;
-        return *this;
-      }
-      
-      template<typename T>
-      Value &operator=(Array &&data)
-      {
-        value = std::forward<T>(data);
-        return *this;
-      }
-      
-      Value &operator=(const Value &v)
-      {
-        value = v.value;
-        return *this;
-      }
-      
+  
+  
+      Value &operator=(Value &&v) = default;
+  
       Value &operator=(const char *v)
       {
         value = std::string(v);
         return *this;
       }
-    
+
     private:
+      template<typename T>
+      void internal_equal(T &&v, ValueTag) { value = std::forward<T>(v); }
+  
+      template<typename T>
+      void internal_equal(T &&v, AnyArrayTag) { value = std::forward<T>(v); }
+  
+      template<typename T>
+      void internal_equal(T &&v, NormalArrayTag)
+      {
+        Array tmp;
+        auto arr = std::forward<T>(v);
+        for (auto r: arr)
+        {
+          tmp.insert(tmp.end(), r);
+        }
+        value = std::move(tmp);
+      }
+  
       template<typename T>
       T internal_get(ValueTag) const
       {
@@ -249,7 +226,7 @@ namespace czh
         }
         return std::get<T>(value);
       }
-      
+  
       template<typename T>
       T internal_get(NormalArrayTag) const
       {
@@ -275,13 +252,6 @@ namespace czh
       }
       
       template<typename T>
-      T internal_get(ErrorTag) const
-      {
-        get_error_index<T>();
-        return T();
-      }
-      
-      template<typename T>
       Array internal_get(AnyArrayTag) const
       {
         if (!is<Array>())
@@ -303,3 +273,4 @@ namespace czh
     
   }
 }
+#endif

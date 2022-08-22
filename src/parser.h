@@ -11,7 +11,8 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#pragma once
+#ifndef LIBCZH_PARSER_H
+#define LIBCZH_PARSER_H
 
 #include "lexer.h"
 #include "token.h"
@@ -20,7 +21,7 @@
 
 #include <vector>
 #include <string>
-#include <memory>  
+#include <memory>
 
 namespace czh::parser
 {
@@ -239,3 +240,4 @@ namespace czh::parser
     }
   };
 }
+#endif

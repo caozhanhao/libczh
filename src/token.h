@@ -11,13 +11,16 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#pragma once
+#ifndef LIBCZH_TOKEN_H
+#define LIBCZH_TOKEN_H
+
 #include "file.h"
 #include "utils.h"
 #include "err.h"
 #include <string>
 #include <variant>
 #include <memory>
+
 namespace czh::token
 {
   enum class TokenType
@@ -165,3 +168,4 @@ namespace czh::token
     }
   };
 }
+#endif

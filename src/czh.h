@@ -11,13 +11,16 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#pragma once
+#ifndef LIBCZH_CZH_H
+#define LIBCZH_CZH_H
+
 #include "err.h"
 #include "node.h"
 #include "parser.h"
 #include <fstream>
 #include <iostream>
 #include <memory>
+
 using czh::parser::Parser;
 using czh::node::Node;
 using czh::lexer::Lexer;
@@ -65,3 +68,4 @@ namespace czh
     }
   };
 }
+#endif

@@ -15,7 +15,9 @@
 //   This is a C++ implementation of Grisu2 from:
 //   "Printing floating-point numbers quickly and accurately with integers." Florian Loitsch
 
-#pragma once
+#ifndef LIBCZH_DTOA_H
+#define LIBCZH_DTOA_H
+
 #include "err.h"
 #include <string>
 #include <cmath>
@@ -24,6 +26,7 @@
 #include <array>
 #include <tuple>
 #include <utility>
+
 namespace czh::utils
 {
   constexpr auto DP_SIGNIFICAND_SIZE = 52;
@@ -594,3 +597,4 @@ namespace czh::utils
     return std::move(buffer);
   }
 }
+#endif

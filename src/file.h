@@ -11,11 +11,14 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#pragma once
+#ifndef LIBCZH_FILE_H
+#define LIBCZH_FILE_H
+
 #include <memory>
 #include <string>
 #include <fstream>
 #include <limits>
+
 namespace czh::file
 {
   class File
@@ -244,3 +247,4 @@ namespace czh::file
     }
   };
 }
+#endif

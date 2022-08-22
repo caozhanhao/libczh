@@ -11,13 +11,16 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#pragma once
+#ifndef LIBCZH_UTILS_H
+#define LIBCZH_UTILS_H
+
 #include "dtoa.h"
 #include <cstdlib>
 #include <iomanip>
 #include <vector>
 #include <algorithm>
 #include <cmath>
+
 namespace czh::utils
 {
   template<class... Ts>
@@ -75,3 +78,4 @@ namespace czh::utils
     return D[n][m];
   }
 }
+#endif
