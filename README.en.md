@@ -10,7 +10,6 @@
 ## Introduction
 
 - czh is a simple data serialization format designed by caozhanhao.
-- It was created on March 27, 2021
 
 ## Tutorial
 
