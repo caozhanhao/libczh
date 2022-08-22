@@ -219,11 +219,3 @@ example["a"].rename("b");
 
 - Output `Node::to_string()` return value
 - Without highlight
-
-##### Demo
-
-- [libczh demo](https://gitee.com/cmvy2020/libczh/blob/master/examples/cpp/example.cpp)
-- [czh demo1](https://gitee.com/cmvy2020/libczh/blob/master/examples/czh/example.czh)
-- [czh demo2](https://gitee.com/cmvy2020/libczh/blob/master/examples/czh/czh.czh)
-- [czh demo3](https://gitee.com/cmvy2020/libczh/blob/master/examples/czh/onelinetest.czh)
-- [czh demo4](https://gitee.com/cmvy2020/wxserver/blob/main/config.czh)

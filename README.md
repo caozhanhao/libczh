@@ -214,11 +214,3 @@ example["a"].rename("b");
 
 - 输出`Node::to_string()`返回值
 - 无高亮
-
-##### 示例
-
-- [libczh示例](https://gitee.com/cmvy2020/libczh/blob/master/examples/cpp/example.cpp)
-- [czh示例1](https://gitee.com/cmvy2020/libczh/blob/master/examples/czh/example.czh)
-- [czh示例2](https://gitee.com/cmvy2020/libczh/blob/master/examples/czh/czh.czh)
-- [czh示例3](https://gitee.com/cmvy2020/libczh/blob/master/examples/czh/onelinetest.czh)
-- [czh示例4](https://gitee.com/cmvy2020/wxserver/blob/main/config.czh)
