@@ -1,8 +1,8 @@
 czh:
   int_array = {1, 2, 3, 4, 5, 6, 7, 8, 9}
   string_array = {"1", "2", "3"}
-  bool_array = {true, true, false}
-  any_array = {false, 1, "2", 3.0}
+  any_array = {false, 1, true, 3.0}
+  字符串 = "测试"
   edit = "edit example"
   bool = true
   int = "d changed"
@@ -25,7 +25,7 @@ czh:
   dt5 = -2.2250738585072014e-308
   dt6 = 1.7976931348623157e+308
   dt7 = -1.7976931348623157e+308
-  add_test = "123"
+  add_test = true
   ref:
     ref = edit
   end

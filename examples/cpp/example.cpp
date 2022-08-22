@@ -56,7 +56,7 @@ int main()
   //add Value
   node["czh"].add("add_test", "123", "edit");
   //remove Value
-  node["czh"]["字符串"].remove();
+  node["czh"]["bool_array"].remove();
   //clear Node
   node["czh"]["value_array_map"].clear();
   //add Node

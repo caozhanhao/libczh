@@ -104,7 +104,7 @@ namespace czh::token
         temp2 = code->get_spec_line(lineno + 1, lineno + actual_next + 1, linenosize);
       }
       std::string arrow("\n");
-      std::size_t arrowpos = code->get_arrowpos(pos) - size + linenosize + 1;
+      std::size_t arrowpos = code->get_arrowpos(pos) - size + linenosize;
       arrow += std::string(arrowpos, ' ');
       arrow += "\033[0;32;32m";
       arrow.insert(arrow.end(), size, '^');

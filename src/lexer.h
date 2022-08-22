@@ -559,10 +559,18 @@ namespace czh::lexer
     {
       return codepos;
     }
-  
+
+    std::size_t get_char_num()
+    {
+      if ((ch & 0x80) == 0x00) return 1;
+      if ((ch & 0xE0) == 0xC0) return 2;
+      if ((ch & 0xF0) == 0xE0) return 3;
+      if ((ch & 0xF8) == 0xF0) return 4;
+      return 0;
+    }
     void skip(char &ch)
     {
-      while (check_char() && isspace(ch))
+      while (check_char() && get_char_num() == 1 && isspace(ch))
       {
         ch = get_char();
       }
@@ -588,7 +596,7 @@ namespace czh::lexer
         }
       }
     }
-    
+
     token::Token get_tok()
     {
       static std::map<int, token::TokenType> marks =
@@ -601,13 +609,13 @@ namespace czh::lexer
               {',', token::TokenType::COMMA}
           };
       //space and note
-      while (check_char() && (isspace(ch) || ch == '<'))
+      while (check_char() && ((get_char_num() == 1 && isspace(ch)) || ch == '<'))
       {
         skip(ch);
       }
       //num
-      if (std::isdigit(ch) || ch == '.'
-          || ch == '+' || ch == '-')
+      if (get_char_num() == 1 &&( std::isdigit(ch) || ch == '.'
+          || ch == '+' || ch == '-'))
       {
         std::string temp;
         do
@@ -664,46 +672,45 @@ namespace czh::lexer
         return {token::TokenType::STRING, temp, get_pos().set_size(temp.size())};
       }
         //id = ...
-      else if (isalpha(ch) || ch == '_'
-               || (ch & 0xE0) == 0xC0
-               || (ch & 0xF0) == 0xE0
-               || (ch & 0xF8) == 0xF0)
+      else if (get_char_num() > 1 || isalpha(ch) || ch == '_')
       {
         std::string temp;
-        while (check_char())
+        while (check_char() && (get_char_num() > 1 || isalnum(ch) || ch == '_'))
         {
-          if ((ch & 0x80) == 0x00)
+          switch (get_char_num())
           {
+          case 1:
             if (!std::isalnum(ch) && ch != '_')
             {
               break;
             }
             temp += ch;
             ch = get_char();
-          }
-          else if ((ch & 0xE0) == 0xC0)
-          {
+            break;
+          case 2:
+            if (!std::isalnum(ch) && ch != '_')
+            {
+              break;
+            }
             temp += ch;
-            temp += ch = get_char();
             ch = get_char();
-          }
-          else if ((ch & 0xF0) == 0xE0)
-          {
-            temp += ch;
-            temp += ch = get_char();
-            temp += ch = get_char();
-            ch = get_char();
-          }
-          else if ((ch & 0xF8) == 0xF0)
-          {
+            break;
+          case 3:
             temp += ch;
             temp += ch = get_char();
             temp += ch = get_char();
+            ch = get_char();
+            break;
+          case 4:
+            temp += ch;
+            temp += ch = get_char();
+            temp += ch = get_char();
             temp += ch = get_char();
             ch = get_char();
+            break;
           }
         }
-  
+
         if (temp == "end")
         {
           return {token::TokenType::SCEND, temp, get_pos().set_size(3)};

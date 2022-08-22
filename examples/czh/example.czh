@@ -19,9 +19,9 @@ czh:
         d = c;           <d == +2e8>
     end;
    value_map:
-        k1 = 1;
-        k2 = 2;
-        k3 = 3;
+        k1 = 7;
+        k2 = 8;
+        k3 = 9;
     end;
     value_array_map:
         k1 = {1,2,3};
