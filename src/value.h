@@ -128,14 +128,12 @@ template <class T, class = std::void_t<>>\
           std::conditional_t<IsNormalArray<T>::value, NormalArrayTag, ValueTag>>;
     };
     
-    class E { public: using value_type = int; };
-    
     class Value
     {
     private:
       VT value;
     public:
-      template<typename T, typename = std::enable_if_t<IsNormalArray<E>::value>>
+      template<typename T>
       explicit Value(T &&data)
       {
         value = data;
