@@ -1,78 +1,67 @@
 # libczh
 
 ![example](examples/example.png)
+
 - [README zh](README.md)
 - [README en](README.en.md)
 - [简体中文主页](https://libczh.vercel.app/)
 - [English Page](https://libczh-en.vercel.app/)
+
 ## Introduction
 
 - czh is a simple data serialization format designed by caozhanhao.
 - It was created on March 27, 2021
 
-## Syntax
+## Tutorial
 
-### Data type
+- czh and libczh are simple to use, you can directly see the examples in [example.cpp](examples/example.cpp), which
+  covers most of the contents of libczh.
+
+### Syntax
+
+#### Data type
 
 - `int`,`double`,`string`,`bool`,`array`,`ref`
 
-### Statement
+#### Statement
 
 - Indentation is not required
 - The `;` after the statement is not required
-- Connect them with an equal sign
 
-### Note
+#### Note
 
 - `<xxxx>`
 
-### Node
+#### Node
 
-- Node names are not repeatable
+- We use Node to represent a node and Value to represent the value under the node
+- Node and Value names are not repeatable
 - Use `id: end` as a Node
-- Use `id = xxx` as a Node that contains Value
+- Use `id = xxx` as a Value
 
-### Array
+#### Array
 
-- Use `{}` as an Array.
-- Elements are connected by ','.
+- Use `{}` .
 
-### Reference
+#### Reference
 
 - Use `id = key` as a Reference
 - Use `id = key` as a Reference
 - The scope of the Reference is connected by '::'
-- `::` at the beginning represent the global scope
 - The Reference can only reference previously defined keys
-- 如下
 
-```
-example:
-a = 1
-end;
-block:
-    example:
-    a = 2;
-    end;    
-    b = 3
-    c = ::example::a <c == 1>
-    d = example::a   <d == 2>
-    e = b            <e == 3>
-end;
-```
+### Usage of libczh
 
-## Usage of libczh
+#### Compile
 
-### Compile
-
-- just `#include "czh.h"`
+- just `#include "czh.hpp"`
 - Requires C++ 17
 
-### Czh
+#### Czh
 
-#### Czh::Czh(str, mode)
+##### Czh::Czh(str, mode)
 
-##### mode
+###### mode
 
 - `czh::InputMode::stream` -> The first parameter is the file name
 - `czh::InputMode::nonstream` -> The first parameter is the file name
@@ -82,43 +71,64 @@ end;
   Czh("example: a = 1; end;", czh::InputMode::string);
 ```
 
-### Node
+#### Node
 
-##### Node::operator[str]
+###### Node::operator[str]
 
 - Returns a Node named str
 
-##### Node::get<T>()
+###### Node::get<T>()
 
-- Get the value
-- Use `Node::get<std::vector <T>>` when the value is Array.
-- Only Nodes that contains Value can call
-
+- Get the Value
+- Only Node can call
+- When the Value is Array, most containers in STL can be used directly.W
+- When T is a custom type, T meets the following requirements
+- have `insert()`, `end()` and default constructor
+- have a member named `value_type` to describe a type
+- The type inside the container is the czh type except Array and Reference
+- When the type of Array is not unique, T must be czh::value::Array
 ```c++
-int a = example["czh"]["this_is_a_int"].get<int>();
+auto arr = node["czh"]["any_array"].get<czh::value::Array>();
 ```
 
-### value_map
+#### value_map
 
 - When the values under the same Node are of the same type, you can use value_map() to get a std::map consisting of all
   keys and values.
 
-##### Node::value_map<T>()
+###### Node::value_map<T>()
 
 - Returns std::map<std::string, T>
-- Only Nodes that contains Value can call
+- Only Node can call
 
 ```c++
 auto vmap = example["example"]["valmap"].value_map<vector<int>>();
 ```
 
-### Modify
+#### Value
+
+###### Node::operator=(value)
+
+- Only Value can call
+- Like `Node::get<T>`， When Value is Array, T meets the following requirements
+- have member functions `begin()`、`end()`
+- have a member named `value_type` to describe a type
+- Can use `std::initializer_list` directly
+- When the type of Array is not unique, use `czh::value::Array`
+
+```c++
+node["czh"]["int_array"] = EgRange(1, 10);//begin() end() value_type
+node["czh"]["int_array"] = {1, 2, 3};      
+node["czh"]["any_array"] = czh::value::Array{false, 1, "2", 3.0};
+```
+
+#### Modify
 
 - After modification, you can use the `operator <<` or `Node::to_string()` to update the file
 
-#### Add
+##### Add
 
-##### Node::add(key, value, before)
+###### Node::add(key, value, before)
 
 - Add before Node named `before`
 - `before` defaults to empty, which will add at the end
@@ -133,7 +143,7 @@ add = 123
 edit = xxx
 ```
 
-##### Node::make_ref()
+###### Node::make_ref()
 
 - Get the "reference" of the Node to add a Reference in czh
 - Don't add the Reference before the referenced Node defined
@@ -147,7 +157,7 @@ i = 0
 ref = i
 ```
 
-##### Node::add_node(name, before)
+###### Node::add_node(name, before)
 
 - Add before Node named `before`
 - Returns a reference to the added Node(contains Node).
@@ -164,9 +174,9 @@ xxx
 end
 ```
 
-#### Remove
+##### Remove
 
-##### Node::remove()
+###### Node::remove()
 
 - Remove the Node
 
@@ -174,9 +184,9 @@ end
 example["example"].remove();
 ```
 
-#### Clear
+##### Clear
 
-##### Node::clear()
+###### Node::clear()
 
 - Clear all Nodes
 
@@ -184,9 +194,9 @@ example["example"].remove();
 example["example"].clear();
 ```
 
-#### Rename
+##### Rename
 
-##### Node::rename(name, newname)
+###### Node::rename(name, newname)
 
 - Rename the Node to `newname`
 
@@ -194,33 +204,23 @@ example["example"].clear();
 example["a"].rename("b");
 ```
 
-#### Change the value
-
-##### Node::operator=(value)
-
-- Only Nodes that contains Value can call
-
-```c++
-example["czh"]["edit"] = "edit example";
-```
-
-### Output
+#### Output
 
 - The output of czh does not contain any Notes.
 
-##### Node::to_string(with_color)
+###### Node::to_string(with_color)
 
 - Returns the formatted czh
-- `czh::node::Color::with_colo` -> with highlight
-- `czh::node::Color::no_color` -> without highlight
+- `czh::node::Color::with_color` -> with highlight
+- `czh::node::Color::no_color`   -> no highlight
 - Do not write highlighted czh to the file, otherwise it will not be able to be parsed.
 
-##### operator<<
+###### operator<<
 
 - Output `Node::to_string()` return value
 - Without highlight
 
-#### Demo
+##### Demo
 
 - [libczh demo](https://gitee.com/cmvy2020/libczh/blob/master/examples/cpp/example.cpp)
 - [czh demo1](https://gitee.com/cmvy2020/libczh/blob/master/examples/czh/example.czh)

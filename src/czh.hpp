@@ -11,12 +11,12 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#ifndef LIBCZH_CZH_H
-#define LIBCZH_CZH_H
+#ifndef LIBCZH_CZH_HPP
+#define LIBCZH_CZH_HPP
 
-#include "err.h"
-#include "node.h"
-#include "parser.h"
+#include "err.hpp"
+#include "node.hpp"
+#include "parser.hpp"
 #include <fstream>
 #include <iostream>
 #include <memory>

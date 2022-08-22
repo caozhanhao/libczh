@@ -11,10 +11,10 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#ifndef LIBCZH_UTILS_H
-#define LIBCZH_UTILS_H
+#ifndef LIBCZH_UTILS_HPP
+#define LIBCZH_UTILS_HPP
 
-#include "dtoa.h"
+#include "dtoa.hpp"
 #include <cstdlib>
 #include <iomanip>
 #include <vector>
@@ -36,15 +36,15 @@ namespace czh::utils
   }
   
   template<typename T>
-  std::string to_str(const T &a)
+  std::string to_str(T &&a)
   {
-    return std::to_string(a);
+    return std::to_string(std::forward<T>(a));
   }
   
   template<typename T>
-  std::string value_to_str(const T &a)
+  std::string value_to_str(T &&a)
   {
-    return std::to_string(a);
+    return std::to_string(std::forward<T>(a));
   }
   
   template<>

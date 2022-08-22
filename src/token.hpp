@@ -11,12 +11,12 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#ifndef LIBCZH_TOKEN_H
-#define LIBCZH_TOKEN_H
+#ifndef LIBCZH_TOKEN_HPP
+#define LIBCZH_TOKEN_HPP
 
-#include "file.h"
-#include "utils.h"
-#include "err.h"
+#include "file.hpp"
+#include "utils.hpp"
+#include "err.hpp"
 #include <string>
 #include <variant>
 #include <memory>
@@ -26,7 +26,7 @@ namespace czh::token
   enum class TokenType
   {
     ID,
-    INT, LONGLONG, DOUBLE, STRING, BOOL,
+    VALUE,
     EQUAL,//=
     ARR_LP, ARR_RP,//{}
     COMMA, COLON,
@@ -47,8 +47,7 @@ namespace czh::token
     std::shared_ptr<file::File> code;
   public:
     explicit Pos(std::shared_ptr<file::File> code_)
-        : pos(0), size(0), code(std::move(code_))
-    {}
+        : pos(0), size(0), code(std::move(code_)) {}
     
     Pos &operator+=(const std::size_t &p)
     {
@@ -116,20 +115,16 @@ namespace czh::token
   };
   
   template<typename T>
-  std::string to_token_str(const T &v)
-  { return utils::to_str(v); }
+  std::string to_token_str(T &&v) { return utils::to_str(std::forward<T>(v)); }
   
   template<>
-  std::string to_token_str(const std::string &v)
-  { return v; }
+  std::string to_token_str(std::string &v) { return v; }
   
   //not use
   template<>
-  std::string to_token_str(node::Node *const &v)
-  { return ""; }
+  std::string to_token_str(node::Node *&v) { return ""; }
   
-  std::string to_token_str(const value::Array &v)
-  { return ""; }
+  std::string to_token_str(value::Array &v) { return ""; }
   
   //end
   class Token
@@ -141,8 +136,7 @@ namespace czh::token
   public:
     template<typename T>
     Token(TokenType type_, T what_, Pos pos_)
-        :type(type_), what(std::move(what_)), pos(std::move(pos_))
-    {}
+        :type(type_), what(std::move(what_)), pos(std::move(pos_)) {}
   
     Token(const Token &) = delete;
   
@@ -156,14 +150,16 @@ namespace czh::token
                                             + *(pos.get_details_from_code()));
     }
   
-    [[nodiscard]] std::string get_string() const
+    [[nodiscard]] std::string to_string() const
     {
       return std::visit(
           utils::overloaded{
-              [](auto &&i) -> auto
-              { return czh::token::to_token_str(i); },
-              [](char i) -> auto
-              { return std::string(1, i); }
+              [](auto &&i) -> auto { return czh::token::to_token_str(i); },
+              [this](int i) -> auto
+              {
+                if (type == TokenType::VALUE) return czh::token::to_token_str(i);
+                return std::string(1, i);
+              }
           }, what.get_variant());
     }
   };

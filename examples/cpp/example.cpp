@@ -1,96 +1,94 @@
-#include "../../src/czh.h"
-#include "example.h"
+#include "../../src/czh.hpp"
+#include "example.hpp"
 #include <iostream>
 #include <vector>
-#include <set>
 #include <string>
 
 int main()
 {
+  /*
+   *
+   *   Parse
+   *
+   */
   czh::Czh e("examples/czh/example.czh", czh::InputMode::stream);
   // or czh::Czh e("example.czh", czh::InputMode::stream);
   // or czh::Czh e("example: a = 1; end;",  czh::InputMode::string);
-  auto nodeptr = e.parse();
+  auto nodeptr = e.parse();// returns nullptr when czh has errors.
   if (nodeptr == nullptr) return -1;
   auto &node = *nodeptr;
-  //get value
-  std::cout << "double: " << node["czh"]["double"].get<double>() << std::endl;
-  std::cout << "字符串: " << node["czh"]["字符串"].get<std::string>() << std::endl;
   
-  //array
-  std::cout << "\narray: ";
-  auto arr = node["czh"]["any_array"].get<czh::value::Array>();
-  for (auto &r: arr)
-  {
-    visit([](auto &&i) { std::cout << czh::node::to_czhstr(i, czh::node::Color::no_color) << ", "; }, r);
-  }
-  auto arr1 = node["czh"]["int_array"].get<EgContainer>();
-  //containers that have insert() and end() and default constructor
-  //value_map
-  std::cout << "\nvalue map: ";
-  auto vmap = node["czh"]["value_array_map"].value_map<std::set<int>>();
-  auto vmap1 = node["czh"]["value_array_map"].value_map<std::vector<int>>();
-  for (auto &r: vmap)
-  {
-    for (auto &a: r.second)
-    {
-      std::cout << a << ",";
-    }
-  }
+  
+  /*
+   *
+   *   Get value
+   *
+   */
+  auto str = node["czh"]["😀UTF示例"].get<std::string>();
+  // array
+  auto arr1 = node["czh"]["any_array"].get<czh::value::Array>();
+  // czh::value::Array is a std::vector contains std::variant
+  auto arr2 = node["czh"]["int_array"].get<EgContainer>();
+  // The T must be a container that has insert(), end(), default constructor and value_type.
+  // Most containers in STL can be used directly.
+  // EgContainer is defined in example.hpp
+  
+  // value_map
+  // When the values under the same Node are of the same type,
+  // you can use value_map() to get a std::map consisting of all
+  // keys and values.
+  auto vmap = node["czh"]["value_array_map"].value_map<std::vector<int>>();
+  
   //iterator
   std::cout << "\n";
   for (auto &r: node["czh"])
   {
-    std::cout << r.get_name() << " ";
+    // something
   }
-  //edit
-  node["czh"]["double"] = "edit example";
-  node["czh"]["int_array"] = {1, 2, 3};    //braced initializer list
-  node["czh"]["int_array"] = EgRange(1, 10); // containers that have begin() and end()
+  
+  /*
+   *
+   *   Modify
+   *
+   */
+  node["czh"]["double"] = "edit example";    // const char[] -> std::string
+  node["czh"]["int_array"] = {1, 2, 3};      // braced initializer list
+  node["czh"]["int_array"] = EgRange(1, 10); // containers that have begin(), end() and value_type
+  // When the type of Array is not unique, use czh::value::Array
   node["czh"]["any_array"] = czh::value::Array{false, 1, "2", 3.0};
   
-  //edit ref
+  // modify Reference
   node["czh"]["block"]["d"] = "d changed";
-  //rename
+  // add Reference
+  node["czh"].add("ref", node["czh"]["int"].make_ref());
+  // add Node
+  node["czh"].add_node("ref", "block");
+  // add Value, add(name, value, before)
+  node["czh"].add("add_test", EgRange(10, 15), "int");
+  // rename
   node["czh"]["double"].rename("edit");
-  //add Value
-  node["czh"].add("add_test", "123", "edit");
-  //remove Value
+  // remove
   node["czh"]["bool_array"].remove();
-  //clear Node
+  // clear
   node["czh"]["value_array_map"].clear();
-  //add Node
-  node["czh"].add_node("ref", "block")
-      .add("ref", node["czh"]["edit"].make_ref());
-  //remove Node
-  node["czh"]["value_map"].remove();
   
-  //output to file
-  std::fstream outputczh("examples/czh/output.czh", std::ios_base::in | std::ios_base::out | std::ios_base::trunc);
-  outputczh << node;
-  //output(hightlight)
-  czh::Czh czh("examples/czh/czh.czh", czh::InputMode::stream);
-  auto czhp = czh.parse();
-  if (czhp == nullptr) return -1;
-  std::cout << "\n" << czhp->to_string(czh::node::Color::with_color) << std::endl;
+  /*
+   *
+   *   Output
+   *
+   */
+  // operator<< or Node::to_string()
+  std::fstream output_file("examples/czh/output.czh", std::ios_base::out);
+  output_file << node;
+  // or output_file << node.to_string();
   
-  //test
-  //output.czh
-  if (czh::Czh("examples/czh/output.czh", czh::InputMode::nonstream).parse() == nullptr) return -1;
-  //output.czh -> onelinetest.czh
-  std::fstream onelineczh("examples/czh/onelinetest.czh", std::ios_base::out | std::ios_base::trunc);
-  std::string tmp;
-  outputczh.clear();
-  outputczh.seekg(std::ios_base::beg);
-  while (std::getline(outputczh, tmp))
-  {
-    onelineczh << tmp << " ";
-  }
-  onelineczh.close();
-  auto p = czh::Czh("examples/czh/onelinetest.czh", czh::InputMode::nonstream).parse();
-  if (p == nullptr) return -1;
-  //onelinetest.czh -> string
-  czh::Czh(p->to_string(), czh::InputMode::string).parse();
-  outputczh.close();
+  // prettify
+  czh::Czh preety_file("examples/czh/czh.czh", czh::InputMode::stream);
+  auto pretty_ptr = preety_file.parse();
+  if (pretty_ptr == nullptr) return -1;
+  std::cout << pretty_ptr->to_string(czh::node::Color::with_color) << std::endl;
+  // to_string(czh::node::Color::with_color) will use ANSI Escape Code to colorify the czh.
+  // So don't write this czh to the file, otherwise it won't be able to be parsed.
+  
   return 0;
 }

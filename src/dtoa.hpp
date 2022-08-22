@@ -15,10 +15,10 @@
 //   This is a C++ implementation of Grisu2 from:
 //   "Printing floating-point numbers quickly and accurately with integers." Florian Loitsch
 
-#ifndef LIBCZH_DTOA_H
-#define LIBCZH_DTOA_H
+#ifndef LIBCZH_DTOA_HPP
+#define LIBCZH_DTOA_HPP
 
-#include "err.h"
+#include "err.hpp"
 #include <string>
 #include <cmath>
 #include <cstdint>

@@ -2,7 +2,7 @@
 czh:
     int = +6e+2
     longlong = +6e+12
-    字符串 = "字符串"
+    😀 = "字符串"
     double = +6e-2
     ref = int
     array = {false, 1.0, "2", 3}

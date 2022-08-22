@@ -11,12 +11,12 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#ifndef LIBCZH_NODE_H
-#define LIBCZH_NODE_H
+#ifndef LIBCZH_NODE_HPP
+#define LIBCZH_NODE_HPP
 
-#include "value.h"
-#include "err.h"
-#include "utils.h"
+#include "value.hpp"
+#include "err.hpp"
+#include "utils.hpp"
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -134,16 +134,29 @@ namespace czh::node
       [[nodiscard]]const auto &get_nodes() const { return nodes; }
   
       auto &get_nodes() { return nodes; }
-      
-      Node &add(Node node)
+  
+      Node &add(Node node, const std::string &before, int &err)
       {
-        nodes.emplace_back(std::move(node));
-        auto a = nodes.rbegin();
+        NodeType::iterator inserted;
+        if (before != "")
+        {
+          auto it = std::find_if(nodes.begin(), nodes.end(), [&before](auto &&n) { return n.get_name() == before; });
+          if (it == nodes.end())
+          {
+            err = -1;
+            return *node.rbegin();
+          }
+          inserted = nodes.insert(it, std::move(node));
+        }
+        else
+        {
+          inserted = nodes.insert(nodes.end(), std::move(node));
+        }
         // rbegin() -> end()
-        index[nodes.rbegin()->name] = std::next(nodes.rbegin()).base();
-        return *nodes.rbegin();
+        index[inserted->name] = inserted;
+        return *inserted;
       }
-      
+  
       void erase(const std::string &tag)
       {
         auto it = index.find(tag);
@@ -328,6 +341,10 @@ namespace czh::node
         return *this;
       }
       auto &nd = std::get<NodeData>(last_node->data);
+      if (nd.index.find(newname) != nd.index.end())
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Node and Value names are not repeatable.");
+      }
       nd.rename(name, newname);
       return *this;
     }
@@ -342,26 +359,40 @@ namespace czh::node
     }
   
     template<typename T>
-    Node &add(const std::string &add_name, T _value, const std::string &before = "")
+    Node &add(std::string add_name, T &&_value, const std::string &before = "")
     {
       if (!is_node())
       {
         throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not add Value to Value");
       }
       auto &nd = std::get<NodeData>(data);
-      return nd.add(Node(this, add_name, Value(std::move(_value))));
+      int err = 0;
+      auto &ret = nd.add(Node(this, std::move(add_name), Value(std::move(_value))), before, err);
+      if (err != 0)
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__,
+                    "There is no node named '" + before + "'.Do you mean '" + error_correct(before) + "'?");
+      }
+      return ret;
     }
-    
-    Node &add_node(const std::string &add_name, const std::string &before = "")
+  
+    Node &add_node(std::string add_name, const std::string &before = "")
     {
       if (!is_node())
       {
         throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not add a Node to Value");
       }
       auto &nd = std::get<NodeData>(data);
-      return nd.add(Node(this, add_name));
+      int err = 0;
+      auto &ret = nd.add(Node(this, std::move(add_name)), before, err);
+      if (err != 0)
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__,
+                    "There is no node named '" + before + "'.Do you mean '" + error_correct(before) + "'?");
+      }
+      return ret;
     }
-    
+  
     template<typename T>
     std::map<std::string, T> value_map()
     {

@@ -1,5 +1,5 @@
-#ifndef LIBCZH_EXAMPLE_H
-#define LIBCZH_EXAMPLE_H
+#ifndef LIBCZH_EXAMPLE_HPP
+#define LIBCZH_EXAMPLE_HPP
 
 #include <vector>
 

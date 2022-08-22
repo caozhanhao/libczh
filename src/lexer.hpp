@@ -11,14 +11,14 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#ifndef LIBCZH_LEXER_H
-#define LIBCZH_LEXER_H
+#ifndef LIBCZH_LEXER_HPP
+#define LIBCZH_LEXER_HPP
 
-#include "value.h"
-#include "token.h"
-#include "file.h"
-#include "err.h"
-#include "utils.h"
+#include "value.hpp"
+#include "token.hpp"
+#include "file.hpp"
+#include "err.hpp"
+#include "utils.hpp"
 
 #include <memory>
 #include <limits>
@@ -27,6 +27,7 @@
 #include <string>
 #include <map>
 #include <algorithm>
+
 using czh::error::Error;
 using czh::error::CzhError;
 using czh::value::Value;
@@ -117,11 +118,7 @@ namespace czh::lexer
         case State::EQUAL:
           switch (token)
           {
-            case token::TokenType::INT:
-            case token::TokenType::LONGLONG:
-            case token::TokenType::DOUBLE:
-            case token::TokenType::STRING:
-            case token::TokenType::BOOL:
+            case token::TokenType::VALUE:
               state = State::END;
               break;
             case token::TokenType::ARR_LP:
@@ -142,11 +139,7 @@ namespace czh::lexer
         case State::ARR_LP:
           switch (token)
           {
-            case token::TokenType::INT:
-            case token::TokenType::LONGLONG:
-            case token::TokenType::DOUBLE:
-            case token::TokenType::STRING:
-            case token::TokenType::BOOL:
+            case token::TokenType::VALUE:
               state = State::ARR_VALUE;
               break;
             case token::TokenType::ARR_RP:
@@ -176,11 +169,7 @@ namespace czh::lexer
         case State::COMMA:
           switch (token)
           {
-            case token::TokenType::INT:
-            case token::TokenType::LONGLONG:
-            case token::TokenType::DOUBLE:
-            case token::TokenType::STRING:
-            case token::TokenType::BOOL:
+            case token::TokenType::VALUE:
               state = State::ARR_VALUE;
               break;
             default:
@@ -550,7 +539,7 @@ namespace czh::lexer
       match.match(token.type);
       if (!match.good())
       {
-        token.error("Unexpected token '" + token.get_string() + "'.Do you mean '"
+        token.error("Unexpected token '" + token.to_string() + "'.Do you mean '"
                     + match.error_correct() + "'?");
       }
     }
@@ -559,7 +548,7 @@ namespace czh::lexer
     {
       return codepos;
     }
-
+  
     std::size_t get_char_num()
     {
       if ((ch & 0x80) == 0x00) return 1;
@@ -568,6 +557,7 @@ namespace czh::lexer
       if ((ch & 0xF8) == 0xF0) return 4;
       return 0;
     }
+  
     void skip(char &ch)
     {
       while (check_char() && get_char_num() == 1 && isspace(ch))
@@ -596,7 +586,7 @@ namespace czh::lexer
         }
       }
     }
-
+  
     token::Token get_tok()
     {
       static std::map<int, token::TokenType> marks =
@@ -614,8 +604,8 @@ namespace czh::lexer
         skip(ch);
       }
       //num
-      if (get_char_num() == 1 &&( std::isdigit(ch) || ch == '.'
-          || ch == '+' || ch == '-'))
+      if (get_char_num() == 1 && (std::isdigit(ch) || ch == '.'
+                                  || ch == '+' || ch == '-'))
       {
         std::string temp;
         do
@@ -630,7 +620,7 @@ namespace czh::lexer
           if (nmatch.has_dot())
           {
             nmatch.reset();
-            return {token::TokenType::DOUBLE, utils::str_to_num(temp),
+            return {token::TokenType::VALUE, utils::str_to_num(temp),
                     get_pos().set_size(temp.size())};
           }
           else
@@ -639,16 +629,20 @@ namespace czh::lexer
             auto t = utils::str_to_num(temp);
             if (static_cast<double>(static_cast<long long>(t)) != t)//like -6e-2
             {
-              return {token::TokenType::DOUBLE, t,
+              return {token::TokenType::VALUE, t,
                       get_pos().set_size(temp.size())};
             }
             else
             {
               if (t < std::numeric_limits<int>::max())
-                return {token::TokenType::INT, (int) t, get_pos().set_size(temp.size())};
+              {
+                return {token::TokenType::VALUE, static_cast<int>(t), get_pos().set_size(temp.size())};
+              }
               else
-                return {token::TokenType::LONGLONG, (long long) t,
+              {
+                return {token::TokenType::VALUE, static_cast<long long>(t),
                         get_pos().set_size(temp.size())};
+              }
             }
           }
         }
@@ -669,7 +663,7 @@ namespace czh::lexer
           ch = get_char();
         }
         ch = get_char();
-        return {token::TokenType::STRING, temp, get_pos().set_size(temp.size())};
+        return {token::TokenType::VALUE, temp, get_pos().set_size(temp.size())};
       }
         //id = ...
       else if (get_char_num() > 1 || isalpha(ch) || ch == '_')
@@ -679,49 +673,49 @@ namespace czh::lexer
         {
           switch (get_char_num())
           {
-          case 1:
-            if (!std::isalnum(ch) && ch != '_')
-            {
+            case 1:
+              if (!std::isalnum(ch) && ch != '_')
+              {
+                break;
+              }
+              temp += ch;
+              ch = get_char();
               break;
-            }
-            temp += ch;
-            ch = get_char();
-            break;
-          case 2:
-            if (!std::isalnum(ch) && ch != '_')
-            {
+            case 2:
+              if (!std::isalnum(ch) && ch != '_')
+              {
+                break;
+              }
+              temp += ch;
+              ch = get_char();
               break;
-            }
-            temp += ch;
-            ch = get_char();
-            break;
-          case 3:
-            temp += ch;
-            temp += ch = get_char();
-            temp += ch = get_char();
-            ch = get_char();
-            break;
-          case 4:
-            temp += ch;
-            temp += ch = get_char();
-            temp += ch = get_char();
-            temp += ch = get_char();
-            ch = get_char();
-            break;
+            case 3:
+              temp += ch;
+              temp += ch = get_char();
+              temp += ch = get_char();
+              ch = get_char();
+              break;
+            case 4:
+              temp += ch;
+              temp += ch = get_char();
+              temp += ch = get_char();
+              temp += ch = get_char();
+              ch = get_char();
+              break;
           }
         }
-
+  
         if (temp == "end")
         {
           return {token::TokenType::SCEND, temp, get_pos().set_size(3)};
         }
         else if (temp == "true")
         {
-          return {token::TokenType::BOOL, true, get_pos().set_size(4)};
+          return {token::TokenType::VALUE, true, get_pos().set_size(4)};
         }
         else if (temp == "false")
         {
-          return {token::TokenType::BOOL, false, get_pos().set_size(5)};
+          return {token::TokenType::VALUE, false, get_pos().set_size(5)};
         }
         else
         {
@@ -738,7 +732,7 @@ namespace czh::lexer
           ch = get_char();
           return {token::TokenType::REF, "::", get_pos().set_size(2)};
         }
-        return {marks[bak], bak, get_pos().set_size(1)};
+        return {marks[bak], static_cast<int>(bak), get_pos().set_size(1)};
       }
         //end
       else if (!check_char()) return {token::TokenType::FEND, 0, get_pos().set_size(1)};

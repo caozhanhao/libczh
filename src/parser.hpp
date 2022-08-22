@@ -11,13 +11,13 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#ifndef LIBCZH_PARSER_H
-#define LIBCZH_PARSER_H
+#ifndef LIBCZH_PARSER_HPP
+#define LIBCZH_PARSER_HPP
 
-#include "lexer.h"
-#include "token.h"
-#include "node.h"
-#include "err.h"
+#include "lexer.hpp"
+#include "token.hpp"
+#include "node.hpp"
+#include "err.hpp"
 
 #include <vector>
 #include <string>
@@ -25,6 +25,17 @@
 
 namespace czh::parser
 {
+  template<typename T>
+  void add(value::Array &a, T &&v) { a.insert(a.end(), v); }
+  
+  //not use
+  template<>
+  void add(value::Array &a, node::Node *&v) {}
+  
+  template<>
+  void add(value::Array &a, value::Array &v) {}
+  
+  //
   class Parser
   {
   private:
@@ -102,13 +113,13 @@ namespace czh::parser
       }
       else if (curr_tok.type == token::TokenType::ARR_LP)// array id = [1,2,3]
       {
-        curr_node->add(id_name, *parse_array());
+        curr_node->add(id_name, parse_array());
         return;
       }
       curr_node->add(id_name, curr_tok.what);
       curr_tok = get();//eat value
     }
-  
+    
     node::Node *parse_ref()
     {
       if (!check()) return nullptr;
@@ -190,50 +201,31 @@ namespace czh::parser
       }
       return nullptr;
     }
-  
-    std::unique_ptr<value::Array> parse_array()
+    
+    
+    value::Array parse_array()
     {
-      std::unique_ptr<value::Array> ret = std::make_unique<value::Array>();
+      value::Array ret;
       curr_tok = get();//eat [
       for (; curr_tok.type != token::TokenType::ARR_RP; curr_tok = get())
       {
         if (curr_tok.type == token::TokenType::COMMA) continue;
-  
-        if (curr_tok.type == token::TokenType::INT)
-        {
-          ret->insert(ret->end(), curr_tok.what.get<int>());
-        }
-        else if (curr_tok.type == token::TokenType::LONGLONG)
-        {
-          ret->insert(ret->end(), curr_tok.what.get<long long>());
-        }
-        else if (curr_tok.type == token::TokenType::DOUBLE)
-        {
-          ret->insert(ret->end(), curr_tok.what.get<double>());
-        }
-        else if (curr_tok.type == token::TokenType::STRING)
-        {
-          ret->insert(ret->end(), curr_tok.what.get<std::string>());
-        }
-        else if (curr_tok.type == token::TokenType::BOOL)
-        {
-          ret->insert(ret->end(), curr_tok.what.get<bool>());
-        }
+        std::visit([&ret](auto &&v) { czh::parser::add(ret, v); }, curr_tok.what.get_variant());
       }
       curr_tok = get();//eat ]
       return ret;
     }
-  
+    
     bool check()
     {
       return !lex->eof();
     }
-  
+    
     token::Token &peek()
     {
       return lex->peek();
     }
-  
+    
     token::Token get()
     {
       return lex->get();

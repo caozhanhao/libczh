@@ -11,8 +11,8 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#ifndef LIBCZH_FILE_H
-#define LIBCZH_FILE_H
+#ifndef LIBCZH_FILE_HPP
+#define LIBCZH_FILE_HPP
 
 #include <memory>
 #include <string>
@@ -41,9 +41,9 @@ namespace czh::file
     [[nodiscard]] virtual std::size_t size() const = 0;
     
     [[nodiscard]] virtual char get() = 0;
-  
+    
     [[nodiscard]] virtual char peek() = 0;
-  
+    
     [[nodiscard]] virtual bool check() = 0;
   };
   

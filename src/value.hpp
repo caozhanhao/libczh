@@ -11,10 +11,10 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#ifndef LIBCZH_VALUE_H
-#define LIBCZH_VALUE_H
+#ifndef LIBCZH_VALUE_HPP
+#define LIBCZH_VALUE_HPP
 
-#include "err.h"
+#include "err.hpp"
 #include <variant>
 #include <string>
 #include <vector>
@@ -136,7 +136,7 @@ template <class T, class = std::void_t<>>\
       template<typename T>
       explicit Value(T &&data)
       {
-        value = data;
+        *this = std::forward<T>(data);
       }
       
       Value(Value &&) = default;
@@ -149,7 +149,7 @@ template <class T, class = std::void_t<>>\
       T get() const
       {
         static_assert(Contains<T, VTList>::value || IsNormalArray<T>::value,
-                      "T must be in VTList(value.h, BasicVTList + HighVTList),"
+                      "T must be in VTList(value.hpp, BasicVTList + HighVTList),"
                       " or a container that stores Type in BasicVTList(value.h).");
         if constexpr(IsNormalArray<T>::value)
         {
@@ -164,7 +164,7 @@ template <class T, class = std::void_t<>>\
       Value &operator=(T &&v)
       {
         static_assert(Contains<T, VTList>::value || IsNormalArray<T>::value,
-                      "T must be in VTList(value.h, BasicVTList + HighVTList),"
+                      "T must be in VTList(value.hpp, BasicVTList + HighVTList),"
                       " or a container that stores Type in BasicVTList(value.h).");
         if constexpr(IsNormalArray<T>::value)
         {
@@ -181,8 +181,8 @@ template <class T, class = std::void_t<>>\
       {
         return value.index() == IndexOf<T, VTList>::value;
       }
-      
-      [[nodiscard]] const auto &get_variant() const
+  
+      [[nodiscard]] auto get_variant() const
       {
         return value;
       }

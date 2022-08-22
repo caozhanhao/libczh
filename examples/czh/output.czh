@@ -1,12 +1,15 @@
 czh:
   int_array = {1, 2, 3, 4, 5, 6, 7, 8, 9}
   string_array = {"1", "2", "3"}
-  any_array = {false, 1, true, 3.0}
-  字符串 = "测试"
+  any_array = {false, 1, "2", 3.0}
+  😀UTF示例 = "测试📕"
   edit = "edit example"
   bool = true
+  add_test = {10, 11, 12, 13, 14}
   int = "d changed"
   long_long = 200000000000
+  ref:
+  end
   block:
     czh:
       int = 0
@@ -15,6 +18,11 @@ czh:
     b = czh::int
     c = int
     d = c
+  end
+  value_map:
+    k1 = 7
+    k2 = 8
+    k3 = 9
   end
   value_array_map:
   end
@@ -25,8 +33,5 @@ czh:
   dt5 = -2.2250738585072014e-308
   dt6 = 1.7976931348623157e+308
   dt7 = -1.7976931348623157e+308
-  add_test = true
-  ref:
-    ref = edit
-  end
+  ref = int
 end

@@ -4,7 +4,7 @@ czh:
     string_array = {"1", "2", "3"};
     bool_array = {true, true, false};
     any_array = {false, 1.0000000000000002, "2", 3, 4e11};
-    字符串 = "测试";
+    😀UTF示例 = "测试📕";
     double = -6e-2;
     bool = true;
     int = +2e8;
