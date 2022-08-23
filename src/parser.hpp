@@ -25,17 +25,7 @@
 
 namespace czh::parser
 {
-  template<typename T>
-  void add(value::Array &a, T &&v) { a.insert(a.end(), v); }
   
-  //not use
-  template<>
-  void add(value::Array &a, node::Node *&v) {}
-  
-  template<>
-  void add(value::Array &a, value::Array &v) {}
-  
-  //
   class Parser
   {
   private:
@@ -94,7 +84,7 @@ namespace czh::parser
       auto id_name = curr_tok.what.get<std::string>();
       if (curr_node->has_node(id_name))
       {
-        curr_tok.error("Node cannot be duplicated.");
+        curr_tok.error("Node and Value names are not repeatable.");
       }
       curr_tok = get();//eat name
       // id:
@@ -210,7 +200,11 @@ namespace czh::parser
       for (; curr_tok.type != token::TokenType::ARR_RP; curr_tok = get())
       {
         if (curr_tok.type == token::TokenType::COMMA) continue;
-        std::visit([&ret](auto &&v) { czh::parser::add(ret, v); }, curr_tok.what.get_variant());
+        std::visit(utils::overloaded{
+            [&ret](auto &&a) { ret.insert(ret.end(), a); },
+            [&ret](node::Node *) {},
+            [&ret](value::Array) {}
+        }, curr_tok.what.get_variant());
       }
       curr_tok = get();//eat ]
       return ret;

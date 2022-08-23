@@ -9,6 +9,7 @@ czh:
     bool = true;
     int = +2e8;
     long_long = +2e11;
+    null_example = null;
     block:
         czh:
             int = 0;

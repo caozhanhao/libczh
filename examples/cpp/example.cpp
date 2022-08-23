@@ -26,6 +26,10 @@ int main()
   
   // Node::get<T>
   auto str = node["czh"]["😀UTF示例"].get<std::string>();
+  if (!node["czh"]["null_example"].is<czh::value::Null>())
+  {
+    // node["czh"]["null_example"].get<xxx>();
+  }
   // When Value is an Array,
   // the T must be a container that has insert(), end(),
   // default constructor and value_type which is in

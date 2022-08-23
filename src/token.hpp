@@ -114,19 +114,6 @@ namespace czh::token
     }
   };
   
-  template<typename T>
-  std::string to_token_str(T &&v) { return utils::to_str(std::forward<T>(v)); }
-  
-  template<>
-  std::string to_token_str(std::string &v) { return v; }
-  
-  //not use
-  template<>
-  std::string to_token_str(node::Node *&v) { return ""; }
-  
-  std::string to_token_str(value::Array &v) { return ""; }
-  
-  //end
   class Token
   {
   public:
@@ -154,10 +141,11 @@ namespace czh::token
     {
       return std::visit(
           utils::overloaded{
-              [](auto &&i) -> auto { return czh::token::to_token_str(i); },
+              [](auto &&i) -> auto { return czh::utils::to_czhstr(i); },
+              [](node::Node *i) -> auto { return std::string(); },
               [this](int i) -> auto
               {
-                if (type == TokenType::VALUE) return czh::token::to_token_str(i);
+                if (type == TokenType::VALUE) return czh::utils::to_czhstr(i);
                 return std::string(1, i);
               }
           }, what.get_variant());

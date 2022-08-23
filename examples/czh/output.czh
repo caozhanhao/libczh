@@ -8,6 +8,7 @@ czh:
   add_test = {10, 11, 12, 13, 14}
   int = "d changed"
   long_long = 200000000000
+  null_example = null
   ref:
   end
   block:

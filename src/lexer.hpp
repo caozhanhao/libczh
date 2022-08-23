@@ -706,16 +706,16 @@ namespace czh::lexer
         }
   
         if (temp == "end")
-        {
           return {token::TokenType::SCEND, temp, get_pos().set_size(3)};
-        }
         else if (temp == "true")
-        {
           return {token::TokenType::VALUE, true, get_pos().set_size(4)};
-        }
         else if (temp == "false")
         {
           return {token::TokenType::VALUE, false, get_pos().set_size(5)};
+        }
+        else if (temp == "null")
+        {
+          return {token::TokenType::VALUE, value::Null(), get_pos().set_size(4)};
         }
         else
         {

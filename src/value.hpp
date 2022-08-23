@@ -34,6 +34,8 @@ namespace czh
   }
   namespace value
   {
+    class Null {};
+    
     template<typename... List>
     struct TypeList {};
     
@@ -81,11 +83,11 @@ namespace czh
     std::string VTstr(std::size_t index)
     {
       static std::vector<std::string>
-          types{"int", "long long", "double", "std::string", "bool", "czh::node::Node*", "czh::value::Array"};
+          types{"Null", "int", "long long", "double", "std::string", "bool", "czh::node::Node*", "czh::value::Array"};
       return types[index];
     }
     
-    using BasicVTList = TypeList<int, long long, double, std::string, bool>;
+    using BasicVTList = TypeList<Null, int, long long, double, std::string, bool>;
     using BasicVT = decltype(as_variant(BasicVTList{}));
     
     using Array = std::vector<BasicVT>;//insert() begin() end()
@@ -150,7 +152,7 @@ template <class T, class = std::void_t<>>\
       {
         static_assert(Contains<T, VTList>::value || IsNormalArray<T>::value,
                       "T must be in VTList(value.hpp, BasicVTList + HighVTList),"
-                      " or a container that stores Type in BasicVTList(value.h).");
+                      " or a container that stores ColorType in BasicVTList(value.h).");
         if constexpr(IsNormalArray<T>::value)
         {
           static_assert((HasMend<T>::value || HasMcend<T>::value)
@@ -165,7 +167,7 @@ template <class T, class = std::void_t<>>\
       {
         static_assert(Contains<T, VTList>::value || IsNormalArray<T>::value,
                       "T must be in VTList(value.hpp, BasicVTList + HighVTList),"
-                      " or a container that stores Type in BasicVTList(value.h).");
+                      " or a container that stores ColorType in BasicVTList(value.h).");
         if constexpr(IsNormalArray<T>::value)
         {
           static_assert((HasMbegin<T>::value || HasMcbegin<T>::value) &&

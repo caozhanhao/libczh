@@ -20,9 +20,67 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <map>
 
 namespace czh::utils
 {
+  enum class Color
+  {
+    with_color,
+    no_color
+  };
+  enum class ColorType
+  {
+    ID, REF_ID, NUM, STR, BOOL, BLOCK_BEG, BLOCK_END, NULL_TYPE
+  };
+  enum class CzhColor
+  {
+    BLUE, LIGHT_BLUE, GREEN, PURPLE, YELLOW, WHITE, RED
+  };
+  
+  static CzhColor get_color(ColorType a)
+  {
+    static std::map<ColorType, CzhColor> colors =
+        {
+            {ColorType::ID,        CzhColor::PURPLE},
+            {ColorType::REF_ID,    CzhColor::LIGHT_BLUE},
+            {ColorType::NUM,       CzhColor::BLUE},
+            {ColorType::STR,       CzhColor::GREEN},
+            {ColorType::BOOL,      CzhColor::BLUE},
+            {ColorType::NULL_TYPE, CzhColor::BLUE},
+            {ColorType::BLOCK_BEG, CzhColor::LIGHT_BLUE},
+            {ColorType::BLOCK_END, CzhColor::LIGHT_BLUE},
+        };
+    return colors.at(a);
+  }
+  
+  std::string colorify(const std::string &str, Color with_color, ColorType type)
+  {
+    if (with_color == Color::no_color)
+    {
+      return str;
+    }
+    switch (get_color(type))
+    {
+      case CzhColor::PURPLE:
+        return "\033[35m" + str + "\033[0m";
+      case CzhColor::LIGHT_BLUE:
+        return "\033[36m" + str + "\033[0m";
+      case CzhColor::BLUE:
+        return "\033[34m" + str + "\033[0m";
+      case CzhColor::GREEN:
+        return "\033[32m" + str + "\033[0m";
+      case CzhColor::YELLOW:
+        return "\033[33m" + str + "\033[0m";
+      case CzhColor::WHITE:
+        return "\033[37m" + str + "\033[0m";
+      case CzhColor::RED:
+        return "\033[31m" + str + "\033[0m";
+      default:
+        throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "Unexpected color");
+    }
+  }
+  
   template<class... Ts>
   struct overloaded : Ts ...
   {
@@ -53,6 +111,46 @@ namespace czh::utils
     return dtoa(a);
   }
   
+  
+  template<typename T>
+  std::string to_czhstr(const T &val, Color color = Color::no_color)
+  {
+    return colorify(value_to_str(val), color, ColorType::NUM);
+  }
+  
+  template<>
+  std::string to_czhstr(const bool &val, Color color)
+  {
+    return colorify((val ? "true" : "false"), color, ColorType::BOOL);
+  }
+  
+  template<>
+  std::string to_czhstr(const value::Null &val, Color color)
+  {
+    return colorify("null", color, ColorType::NULL_TYPE);
+  }
+  
+  template<>
+  std::string to_czhstr(const std::string &val, Color color)
+  {
+    return colorify(("\"" + val + "\""), color, ColorType::STR);
+  }
+  
+  template<>
+  std::string to_czhstr(const value::Array &v, Color color)
+  {
+    auto visitor = [&color](auto &&v) -> std::string { return to_czhstr(v, color); };
+    std::string result = "{";
+    for (auto it = v.cbegin(); it != std::prev(v.cend()); ++it)
+    {
+      result += std::visit(visitor, *it);
+      result += ", ";
+    }
+    result += std::visit(visitor, *std::prev(v.cend()));
+    result += "}";
+    return result;
+  }
+  
   int get_string_edit_distance(const std::string &s1, const std::string &s2)
   {
     std::size_t n = s1.size();
@@ -60,7 +158,9 @@ namespace czh::utils
     if (n * m == 0) return static_cast<int>(n + m);
     std::vector<std::vector<int>> D(n + 1, std::vector<int>(m + 1));
     for (int i = 0; i < n + 1; i++)
+    {
       D[i][0] = i;
+    }
     for (int j = 0; j < m + 1; j++)
       D[0][j] = j;
     
