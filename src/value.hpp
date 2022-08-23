@@ -140,13 +140,19 @@ template <class T, class = std::void_t<>>\
       {
         *this = std::forward<T>(data);
       }
-      
+  
       Value(Value &&) = default;
-      
+  
       Value(const Value &) = default;
-      
+  
       Value() : value(0) {}
-      
+  
+      template<typename T>
+      T as() const
+      {
+    
+      }
+  
       template<typename T>
       T get() const
       {
@@ -177,7 +183,15 @@ template <class T, class = std::void_t<>>\
         internal_equal<T>(std::forward<T>(v), typename TagDispatch<T>::tag{});
         return *this;
       }
-      
+  
+      Value &operator=(Value &&v) = default;
+  
+      Value &operator=(const char *v)
+      {
+        value = std::string(v);
+        return *this;
+      }
+  
       template<typename T>
       bool is() const
       {
@@ -187,15 +201,6 @@ template <class T, class = std::void_t<>>\
       [[nodiscard]] auto get_variant() const
       {
         return value;
-      }
-  
-  
-      Value &operator=(Value &&v) = default;
-  
-      Value &operator=(const char *v)
-      {
-        value = std::string(v);
-        return *this;
       }
 
     private:

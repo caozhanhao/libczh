@@ -118,7 +118,7 @@ auto vmap = example["example"]["valmap"].value_map<vector<int>>();
 ```c++
 node["czh"]["int_array"] = EgRange(1, 10);//begin() end() value_type
 node["czh"]["int_array"] = {1, 2, 3};      
-node["czh"]["any_array"] = czh::value::Array{false, 1, "2", 3.0};
+node["czh"]["any_array"] = {false, 1, "2", 3.0};//czh::value::Array
 ```
 
 #### Modify

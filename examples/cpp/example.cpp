@@ -60,12 +60,11 @@ int main()
    *   Modify
    *
    */
-  node["czh"]["double"] = "edit example";    // const char[] -> std::string
-  node["czh"]["block"]["d"] = "d changed";   // modify Reference
-  node["czh"]["int_array"] = {1, 2, 3};      // braced initializer list
-  node["czh"]["int_array"] = EgRange(1, 10); // containers that have begin(), end() and value_type
-  // When the type of Array is not unique, use czh::value::Array(see above)
-  node["czh"]["any_array"] = czh::value::Array{false, 1, "2", 3.0};
+  node["czh"]["double"] = "edit example";          // const char[] -> std::string
+  node["czh"]["block"]["d"] = "d changed";         // modify Reference
+  node["czh"]["int_array"] = {1, 2, 3};            // braced initializer list
+  node["czh"]["any_array"] = {false, 1, "2", 3.0}; // czh::value::Array(see above)
+  node["czh"]["int_array"] = EgRange(1, 10);       // containers that have begin(), end() and value_type
   
   // Add Node
   // Node::add_node(name, before) will add a Node before "before"

@@ -136,9 +136,71 @@ namespace czh::node
   
     Node(Node &&) = default;
   
+    // Node and Value
     [[nodiscard]]bool is_node() const
     {
       return data.index() == 0;
+    }
+  
+    std::string get_name() const
+    {
+      return name;
+    }
+  
+    Node &remove()
+    {
+      if (last_node == nullptr)
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not remove root.");
+      }
+      auto &nd = std::get<NodeData>(last_node->data);
+      nd.erase(name);
+      return *this;
+    }
+  
+    Node &rename(const std::string &newname)
+    {
+      if (last_node == nullptr)
+      {
+        name = newname;
+        return *this;
+      }
+      auto &nd = std::get<NodeData>(last_node->data);
+      if (nd.index.find(newname) != nd.index.end())
+      {
+        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Node and Value names are not repeatable.");
+      }
+      nd.rename(name, newname);
+      return *this;
+    }
+  
+    [[nodiscard]] Node *to_last_node() const
+    {
+      return last_node;
+    }
+  
+    [[nodiscard]] std::unique_ptr<std::vector<std::string>> get_path() const
+    {
+      auto n_ptr = to_last_node();
+      std::vector<std::string> res;
+      res.push_back(name);
+      while (n_ptr != nullptr)
+      {
+        if (n_ptr->name != "/")
+        {
+          res.push_back(n_ptr->name);
+        }
+        n_ptr = n_ptr->to_last_node();
+      }
+      return std::move(std::make_unique<decltype(res)>(res));
+    }
+  
+    // Node
+    [[nodiscard]] bool has_node(const std::string &tag) const
+    {
+      check_node();
+      auto &nd = std::get<NodeData>(data);
+      return (nd.find(tag) != nd.end());
     }
   
     [[nodiscard]]iterator begin()
@@ -197,20 +259,6 @@ namespace czh::node
       return nd.nodes.crend();
     }
   
-    std::string get_name() const
-    {
-      return name;
-    }
-  
-    Node &remove()
-    {
-      if (last_node == nullptr)
-        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not remove root.");
-      auto &nd = std::get<NodeData>(last_node->data);
-      nd.erase(name);
-      return *this;
-    }
-  
     Node &clear()
     {
       check_node();
@@ -219,28 +267,6 @@ namespace czh::node
       return *this;
     }
     
-    Node &rename(const std::string &newname)
-    {
-      if (last_node == nullptr)
-      {
-        name = newname;
-        return *this;
-      }
-      auto &nd = std::get<NodeData>(last_node->data);
-      if (nd.index.find(newname) != nd.index.end())
-      {
-        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Node and Value names are not repeatable.");
-      }
-      nd.rename(name, newname);
-      return *this;
-    }
-    
-    Value make_ref()
-    {
-      check_value();
-      return value::Value(this);
-    }
-  
     template<typename T>
     Node &add(std::string add_name, T &&_value, const std::string &before = "")
     {
@@ -290,18 +316,10 @@ namespace czh::node
       }
       return result;
     }
-    
-    [[nodiscard]] Node *to_last_node() const
-    {
-      return last_node;
-    }
-    
+  
     Node &operator[](const std::string &s)
     {
-      if (!is_node())
-      {
-        throw Error(LIBCZH_ERROR_LOCATION, __func__, "This Node is not a node.");
-      }
+      check_node();
       auto &nd = std::get<NodeData>(data);
       NodeData::IndexType::iterator it = nd.find(s);
       if (it == nd.end())
@@ -311,13 +329,10 @@ namespace czh::node
       }
       return *it->second;
     }
-    
+  
     const Node &operator[](const std::string &s) const
     {
-      if (!is_node())
-      {
-        throw Error(LIBCZH_ERROR_LOCATION, __func__, "This Node does not contain not Value.");
-      }
+      check_node();
       auto &nd = std::get<NodeData>(data);
       NodeData::IndexType::const_iterator it = nd.find(s);
       if (it == nd.end())
@@ -326,6 +341,25 @@ namespace czh::node
                     "There is no node named '" + s + "'.Do you mean '" + error_correct(s) + "'?");
       }
       return *it->second;
+    }
+  
+    //Value
+  
+    [[nodiscard]] std::string to_string
+        (Color with_color = Color::no_color, std::size_t indentation = 2, int n = -1) const
+    {
+      if (is_node())
+      {
+        if (name == "/")
+        {
+          return node_to_string(with_color, indentation, n);
+        }
+        else
+        {
+          return node_to_string(with_color, indentation, n + 1);
+        }
+      }
+      return value_to_string(with_color, indentation, n + 1);
     }
   
     template<typename T>
@@ -361,6 +395,20 @@ namespace czh::node
       return *this;
     }
   
+    Node &operator=(value::Array &&v)
+    {
+      check_value();
+      auto &value = std::get<Value>(data);
+      value = std::forward<value::Array>(v);
+      return *this;
+    }
+  
+    Value make_ref()
+    {
+      check_value();
+      return value::Value(this);
+    }
+  
     Value &get_value()
     {
       check_value();
@@ -378,46 +426,7 @@ namespace czh::node
       }
       return value.get<T>();
     }
-  
-    [[nodiscard]] std::unique_ptr<std::vector<std::string>> get_path() const
-    {
-      auto n_ptr = to_last_node();
-      std::vector<std::string> res;
-      res.push_back(name);
-      while (n_ptr != nullptr)
-      {
-        if (n_ptr->name != "/")
-        {
-          res.push_back(n_ptr->name);
-        }
-        n_ptr = n_ptr->to_last_node();
-      }
-      return std::move(std::make_unique<decltype(res)>(res));
-    }
-    
-    [[nodiscard]] bool has_node(const std::string &tag) const
-    {
-      check_node();
-      auto &nd = std::get<NodeData>(data);
-      return (nd.find(tag) != nd.end());
-    }
-    
-    [[nodiscard]] std::string
-    to_string(Color with_color = Color::no_color, std::size_t indentation = 2, int n = -1) const
-    {
-      if (is_node())
-      {
-        if (name == "/")
-        {
-          return node_to_string(with_color, indentation, n);
-        }
-        else
-        {
-          return node_to_string(with_color, indentation, n + 1);
-        }
-      }
-      return value_to_string(with_color, indentation, n + 1);
-    }
+
 
   private:
     void check_node() const
