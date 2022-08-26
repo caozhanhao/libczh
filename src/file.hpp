@@ -70,30 +70,27 @@ namespace czh::file
     [[nodiscard]] std::string get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize) const override
     {
       std::string ret;
-      if (linenosize == 0)
-        linenosize = utils::to_str(end).size();
-      
-      std::string tmp;
-      
-      std::string fbuffer;
       file->clear();
       file->seekg(std::ios::beg);
+      std::string tmp;
       for (int a = 1; std::getline(*file, tmp); a++)
       {
         if (beg <= a && a < end)
         {
           std::string addition = utils::to_str(a);
           if (addition.size() < linenosize)
-            fbuffer += std::string(linenosize - addition.size(), '0');
-          fbuffer += addition + "| ";
-          fbuffer += tmp;
-          fbuffer += "\n";
+          {
+            ret += std::string(linenosize - addition.size(), '0');
+          }
+          ret += addition + "| ";
+          ret += tmp;
+          ret += "\n";
         }
       }
-      fbuffer.pop_back();
-      return fbuffer;
+      ret.pop_back();
+      return ret;
     }
-    
+  
     [[nodiscard]] std::size_t get_lineno(std::size_t pos) const override
     {
       std::size_t lineno = 1;
@@ -160,13 +157,10 @@ namespace czh::file
     
     [[nodiscard]] std::string get_spec_line(std::size_t beg, std::size_t end, std::size_t linenosize) const override
     {
-      std::string ret;
-      if (linenosize == 0)
-        linenosize = utils::to_str(end).size();
       std::size_t lineno = 1;
       bool first_line_flag = true;
       bool first_line_no = true;
-      
+      std::string ret;
       for (std::size_t i = 0; i < code.size() && lineno < end; ++i)
       {
         if (code[i] == '\n')
