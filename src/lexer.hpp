@@ -472,6 +472,7 @@ namespace czh::lexer
         : code(nullptr),
           codepos(nullptr),
           is_eof(false),
+          ch(0),
           buffer(token::TokenType::UNEXPECTED, 0, codepos) {}
     
     void set_czh(std::string filename, std::unique_ptr<std::ifstream> fs)
@@ -543,13 +544,13 @@ namespace czh::lexer
                     + match.error_correct() + "'?");
       }
     }
-    
+  
     token::Pos get_pos()
     {
       return codepos;
     }
   
-    std::size_t get_char_num()
+    [[nodiscard]]std::size_t get_char_num() const
     {
       if ((ch & 0x80) == 0x00) return 1;
       if ((ch & 0xE0) == 0xC0) return 2;
@@ -558,7 +559,7 @@ namespace czh::lexer
       return 0;
     }
   
-    void skip(char &ch)
+    void skip()
     {
       while (check_char() && get_char_num() == 1 && isspace(ch))
       {
@@ -601,7 +602,7 @@ namespace czh::lexer
       //space and note
       while (check_char() && ((get_char_num() == 1 && isspace(ch)) || ch == '<'))
       {
-        skip(ch);
+        skip();
       }
       //num
       if (get_char_num() == 1 && (std::isdigit(ch) || ch == '.'
@@ -682,11 +683,8 @@ namespace czh::lexer
               ch = get_char();
               break;
             case 2:
-              if (!std::isalnum(ch) && ch != '_')
-              {
-                break;
-              }
               temp += ch;
+              temp += ch = get_char();
               ch = get_char();
               break;
             case 3:
@@ -754,11 +752,6 @@ namespace czh::lexer
     {
       ++codepos.pos;
       return code->get();
-    }
-  
-    char peek_char()
-    {
-      return code->peek();
     }
   };
 }

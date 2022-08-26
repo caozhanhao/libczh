@@ -36,7 +36,7 @@ namespace czh::parser
   public:
     explicit Parser(lexer::Lexer *lex_)
         : lex(lex_), node(std::make_unique<node::Node>()), curr_node(node.get()),
-          curr_tok(token::TokenType::UNEXPECTED, 0, token::Pos(0)) {}
+          curr_tok(token::TokenType::UNEXPECTED, 0, token::Pos(nullptr)) {}
     
     std::shared_ptr<node::Node> parse()
     {
@@ -168,31 +168,6 @@ namespace czh::parser
       return nullptr;
     }
     
-    node::Node *to_scope(const std::string &id, node::Node *ptr)
-    {
-      if (ptr == nullptr) ptr = node.get();
-      
-      if (id == ".") return ptr;
-      else if (id == "..") return ptr->to_last_node();
-      else
-      {
-        if (ptr->has_node(id))
-          return &(*ptr)[id];
-        else
-          ptr = node.get();
-        try
-        {
-          return &(*ptr)[id];
-        }
-        catch (Error &err)
-        {
-          curr_tok.error(err.get_detail());
-        }
-      }
-      return nullptr;
-    }
-    
-    
     value::Array parse_array()
     {
       value::Array ret;
@@ -202,8 +177,8 @@ namespace czh::parser
         if (curr_tok.type == token::TokenType::COMMA) continue;
         std::visit(utils::overloaded{
             [&ret](auto &&a) { ret.insert(ret.end(), a); },
-            [&ret](node::Node *) {},
-            [&ret](value::Array) {}
+            [](node::Node *) {},
+            [](value::Array) {}
         }, curr_tok.what.get_variant());
       }
       curr_tok = get();//eat ]
@@ -213,11 +188,6 @@ namespace czh::parser
     bool check()
     {
       return !lex->eof();
-    }
-    
-    token::Token &peek()
-    {
-      return lex->peek();
     }
     
     token::Token get()

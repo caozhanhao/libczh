@@ -34,9 +34,9 @@ int main()
   // the T must be a container that has insert(), end(),
   // default constructor and value_type which is in
   // int, long long, double, std::string, bool [aka. BasicVTList(value.hpp)]
-  // For example, EgContainer in example.hpp and
+  // For example, Container in example.hpp and
   // most containers in STL can meet these requirements.
-  auto arr1 = node["czh"]["int_array"].get<EgContainer>();
+  auto arr1 = node["czh"]["int_array"].get<Container>();
   // When the elements in the Array are not of the same type,
   // Use czh::value::Array (std::vector<std::variant<BasicVTList(see above)>>)
   auto arr2 = node["czh"]["any_array"].get<czh::value::Array>();
@@ -46,7 +46,7 @@ int main()
   // you can use value_map() to get a std::map consisting of all
   // keys and values.
   // T is consistent with the requirements of Array above
-  auto vmap = node["czh"]["value_array_map"].value_map<EgContainer>();
+  auto vmap = node["czh"]["value_array_map"].value_map<Container>();
   
   //iterator
   std::cout << "\n";
@@ -64,15 +64,15 @@ int main()
   node["czh"]["block"]["d"] = "d changed";         // modify Reference
   node["czh"]["int_array"] = {1, 2, 3};            // braced initializer list
   node["czh"]["any_array"] = {false, 1, "2", 3.0}; // czh::value::Array(see above)
-  node["czh"]["int_array"] = EgRange(1, 10);       // containers that have begin(), end() and value_type
+  node["czh"]["int_array"] = Range(1, 10);         // containers that have begin(), end() and value_type
   
   // Add Node
   // Node::add_node(name, before) will add a Node before "before"
   node["czh"].add_node("ref", "block");
   // Add Value
   // Node::add(name, value, before)
-  node["czh"].add("add_test", EgRange(10, 15), "int");
-  node["czh"].add("ref", node["czh"]["int"].make_ref());// Reference
+  node["czh"].add("add_test", Range(10, 15), "int");
+  node["czh"].add("ref", node["czh"]["int"]);
   
   // rename
   node["czh"]["double"].rename("edit");

@@ -116,7 +116,7 @@ auto vmap = example["example"]["valmap"].value_map<vector<int>>();
 -   When the type of Array is not unique, use `czh::value::Array`
 
 ```c++
-node["czh"]["int_array"] = EgRange(1, 10);//begin() end() value_type
+node["czh"]["int_array"] = Range(1, 10);//begin() end() value_type
 node["czh"]["int_array"] = {1, 2, 3};      
 node["czh"]["any_array"] = {false, 1, "2", 3.0};//czh::value::Array
 ```
@@ -135,27 +135,14 @@ node["czh"]["any_array"] = {false, 1, "2", 3.0};//czh::value::Array
 
 ```c++
 example["add"].add("add", "123", "edit");
+example["add"].add("ref", example["add"]["edit"]);
 ```
 
 ```
 add = 123
 edit = xxx
+i = edit
 ```
-
-###### Node::make_ref()
-
--   Get the "reference" of the Node to add a Reference in czh
--   Don't add the Reference before the referenced Node defined
-
-```c++
- example["example"].add("ref", example["example"]["i"].make_ref());
-```
-
-```
-i = 0
-ref = i
-```
-
 ###### Node::add_node(name, before)
 
 -   Add before Node named `before`

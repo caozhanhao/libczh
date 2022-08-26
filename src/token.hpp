@@ -146,7 +146,7 @@ namespace czh::token
               [this](int i) -> auto
               {
                 if (type == TokenType::VALUE) return czh::utils::to_czhstr(i);
-                return std::string(1, i);
+                return std::string(1, static_cast<char>(i));
               }
           }, what.get_variant());
     }

@@ -114,7 +114,7 @@ auto vmap = example["example"]["valmap"].value_map<vector<int>>();
 -   当Array存储的类型不唯一时，使用`czh::value::Array`
 
 ```c++
-node["czh"]["int_array"] = EgRange(1, 10);//begin() end() value_type
+node["czh"]["int_array"] = Range(1, 10);//begin() end() value_type
 node["czh"]["int_array"] = {1, 2, 3};      
 node["czh"]["any_array"] = {false, 1, "2", 3.0};//czh::value::Array
 ```
@@ -133,23 +133,13 @@ node["czh"]["any_array"] = {false, 1, "2", 3.0};//czh::value::Array
 
 ```c++
 example["add"].add("add", "123", "edit");
+example["add"].add("ref", example["add"]["edit"]);
 ```
 
 ```
 add = 123
 edit = xxx
-```
-
-###### Node::make_ref()
-
--   获取该Node的”引用“，用以在czh中添加引用
--   不可在被引用对象之前添加
-```c++
- example["example"].add("ref",example["example"]["i"].make_ref());
-```
-```
-i = 0
-ref = i
+i = edit
 ```
 
 ###### Node::add_node(name, before)

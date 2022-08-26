@@ -52,10 +52,9 @@ namespace czh::file
   public:
     std::unique_ptr<std::ifstream> file;
     std::size_t file_size;
-    std::size_t bufferpos;
   public:
     StreamFile(std::string name_, std::unique_ptr<std::ifstream> fs_)
-        : File(std::move(name_)), file(std::move(fs_)), bufferpos(0)
+        : File(std::move(name_)), file(std::move(fs_))
     {
       if (!file->good())
       {
@@ -130,12 +129,12 @@ namespace czh::file
   
     [[nodiscard]] char get() override
     {
-      return file->get();
+      return static_cast<char>(file->get());
     }
   
     [[nodiscard]] char peek() override
     {
-      return file->peek();
+      return static_cast<char>(file->peek());
     }
   
     [[nodiscard]] bool check() override
@@ -205,7 +204,7 @@ namespace czh::file
     
     [[nodiscard]] std::size_t get_arrowpos(std::size_t pos) const override
     {
-      int i = pos;
+      int i = static_cast<int>(pos);
       if (pos != 1)
         --i;
       while (code[i] != '\n' && i >= 0)

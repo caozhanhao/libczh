@@ -135,7 +135,7 @@ template <class T, class = std::void_t<>>\
     private:
       VT value;
     public:
-      template<typename T>
+      template<typename T, typename = std::enable_if_t<!std::is_base_of_v<Value, std::decay_t<T>>>>
       explicit Value(T &&data)
       {
         *this = std::forward<T>(data);
@@ -148,13 +148,7 @@ template <class T, class = std::void_t<>>\
       Value() : value(0) {}
   
       template<typename T>
-      T as() const
-      {
-    
-      }
-  
-      template<typename T>
-      T get() const
+      [[nodiscard]]T get() const
       {
         static_assert(Contains<T, VTList>::value || IsNormalArray<T>::value,
                       "T must be in VTList(value.hpp, BasicVTList + HighVTList),"
@@ -193,7 +187,7 @@ template <class T, class = std::void_t<>>\
       }
   
       template<typename T>
-      bool is() const
+      [[nodiscard]]bool is() const
       {
         return value.index() == IndexOf<T, VTList>::value;
       }
@@ -223,7 +217,7 @@ template <class T, class = std::void_t<>>\
       }
   
       template<typename T>
-      T internal_get(ValueTag) const
+      [[nodiscard]]T internal_get(ValueTag) const
       {
         if (!is<T>())
         {
@@ -233,7 +227,7 @@ template <class T, class = std::void_t<>>\
       }
   
       template<typename T>
-      T internal_get(NormalArrayTag) const
+      [[nodiscard]]T internal_get(NormalArrayTag) const
       {
         if (!is<Array>())
         {
@@ -255,9 +249,9 @@ template <class T, class = std::void_t<>>\
         }
         return std::move(ret);
       }
-      
+  
       template<typename T>
-      Array internal_get(AnyArrayTag) const
+      [[nodiscard]]Array internal_get(AnyArrayTag) const
       {
         if (!is<Array>())
         {

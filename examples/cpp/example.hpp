@@ -3,12 +3,12 @@
 
 #include <vector>
 
-class EgContainer
+class Container
 {
 public:
   using value_type = int;
 public:
-  EgContainer() = default;
+  Container() = default;
   
   std::vector<int> c;
   
@@ -17,39 +17,39 @@ public:
   auto insert(typename std::vector<int>::iterator it, int i) { return c.insert(it, i); }
 };
 
-class EgRange
+class Range
 {
 public:
   using value_type = int;
 public:
-  class EgIterator
+  class Iterator
   {
   private:
     int i;
   public:
-    explicit EgIterator(int position = 0) : i{position} {}
+    explicit Iterator(int position = 0) : i{position} {}
     
     int operator*() const { return i; }
     
-    EgIterator &operator++()
+    Iterator &operator++()
     {
       ++i;
       return *this;
     }
     
-    bool operator!=(const EgIterator &other) const { return i != other.i; }
+    bool operator!=(const Iterator &other) const { return i != other.i; }
   };
 
 private:
   int a;
   int b;
 public:
-  EgRange(int from, int to)
+  Range(int from, int to)
       : a{from}, b{to} {}
   
-  EgIterator begin() const { return EgIterator{a}; }
+  Iterator begin() const { return Iterator{a}; }
   
-  EgIterator end() const { return EgIterator{b}; }
+  Iterator end() const { return Iterator{b}; }
 };
 
 #endif

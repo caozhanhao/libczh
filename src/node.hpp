@@ -53,7 +53,7 @@ namespace czh::node
       Node &add(Node node, const std::string &before, int &err)
       {
         NodeType::iterator inserted;
-        if (before != "")
+        if (!before.empty())
         {
           auto it = std::find_if(nodes.begin(), nodes.end(), [&before](auto &&n) { return n.get_name() == before; });
           if (it == nodes.end())
@@ -142,7 +142,7 @@ namespace czh::node
       return data.index() == 0;
     }
   
-    std::string get_name() const
+    [[nodiscard]]std::string get_name() const
     {
       return name;
     }
@@ -266,20 +266,25 @@ namespace czh::node
       nd.clear();
       return *this;
     }
-    
-    template<typename T>
+  
+    template<typename T, typename = std::enable_if_t<!std::is_base_of_v<Node, std::decay_t<T>>>>
     Node &add(std::string add_name, T &&_value, const std::string &before = "")
     {
       check_node();
       auto &nd = std::get<NodeData>(data);
       int err = 0;
-      auto &ret = nd.add(Node(this, std::move(add_name), Value(std::move(_value))), before, err);
+      auto &ret = nd.add(Node(this, std::move(add_name), Value(std::forward<T>(_value))), before, err);
       if (err != 0)
       {
         throw Error(LIBCZH_ERROR_LOCATION, __func__,
                     "There is no node named '" + before + "'.Do you mean '" + error_correct(before) + "'?");
       }
       return ret;
+    }
+  
+    Node &add(std::string add_name, Node &_value, std::string before = "")
+    {
+      return add(std::move(add_name), &_value, std::move(before));
     }
   
     Node &add_node(std::string add_name, const std::string &before = "")
@@ -363,7 +368,7 @@ namespace czh::node
     }
   
     template<typename T>
-    bool is() const
+    [[nodiscard]]bool is() const
     {
       check_value();
       auto &val = std::get<Value>(data);
@@ -403,12 +408,6 @@ namespace czh::node
       return *this;
     }
   
-    Value make_ref()
-    {
-      check_value();
-      return value::Value(this);
-    }
-  
     Value &get_value()
     {
       check_value();
@@ -433,7 +432,7 @@ namespace czh::node
     {
       if (!is_node())
       {
-        throw "This Node is not a node.";
+        throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "This Node is not a node.");
       }
     }
   
@@ -441,7 +440,7 @@ namespace czh::node
     {
       if (is_node())
       {
-        throw "This Node is not a value.";
+        throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "This Node is not a value.");
       }
     }
   
