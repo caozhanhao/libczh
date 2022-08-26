@@ -1,4 +1,6 @@
-# libczh
+# libczh [![](https://img.shields.io/github/license/caozhanhao/libczh?style=flat-square)](LICENSE)  ![](https://img.shields.io/github/v/release/caozhanhao/libczh?style=flat-square)
+
+![example](examples/example.png)
 
 ![example](examples/example.png)
 
