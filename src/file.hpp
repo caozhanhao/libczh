@@ -79,9 +79,7 @@ namespace czh::file
         {
           std::string addition = utils::to_str(a);
           if (addition.size() < linenosize)
-          {
             ret += std::string(linenosize - addition.size(), '0');
-          }
           ret += addition + "| ";
           ret += tmp;
           ret += "\n";
