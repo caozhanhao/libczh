@@ -99,19 +99,19 @@ namespace czh::utils
     return std::to_string(std::forward<T>(a));
   }
   
-  template<typename T, typename = std::enable_if_t<!std::is_same_v<value::Double, std::decay_t<T>>
-                                                   && !std::is_same_v<value::Boolean, std::decay_t<T>>>>
+  template<typename T, typename = std::enable_if_t<!std::is_same_v<double, std::decay_t<T>>
+                                                   && !std::is_same_v<bool, std::decay_t<T>>>>
   std::string value_to_str(T &&a)
   {
     return std::to_string(std::forward<T>(a));
   }
   
-  std::string value_to_str(const value::Boolean &a)
+  std::string value_to_str(const bool &a)
   {
-    return a.value ? "true" : "false";
+    return a ? "true" : "false";
   }
   
-  std::string value_to_str(const value::Double &a)
+  std::string value_to_str(const double &a)
   {
     return dtoa(a);
   }
@@ -139,6 +139,12 @@ namespace czh::utils
   std::string to_czhstr(const std::string &val, Color color)
   {
     return colorify(("\"" + val + "\""), color, ColorType::STR);
+  }
+  
+  template<>
+  std::string to_czhstr(const char *const &val, Color color)
+  {
+    return to_czhstr(std::string(val), color);
   }
   
   template<>

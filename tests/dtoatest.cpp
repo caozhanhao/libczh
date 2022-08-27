@@ -14,7 +14,7 @@
 #include "tests.hpp"
 TEST(libczh, dtoa)
 {
-auto f = [](czh::value::Double a) { return utils::value_to_str(a); };
+auto f = [](double a) { return utils::value_to_str(a); };
 EXPECT_EQ(f(0.0), "0.0");
 EXPECT_EQ(f(-0.0), "-0.0");
 EXPECT_EQ(f(1.23456789), "1.23456789");

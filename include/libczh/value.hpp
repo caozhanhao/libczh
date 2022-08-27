@@ -36,58 +36,6 @@ namespace czh
   {
     class Null {};
     
-    class Boolean
-    {
-    public:
-      bool value;
-      
-      Boolean(bool v) : value(v) {}
-      
-      Boolean(const char *v) = delete;
-      
-      Boolean(int v) = delete;
-      
-      operator bool() const { return value; }
-    };
-    
-    class Int
-    {
-    public:
-      int value;
-      
-      Int(int v) : value(v) {}
-      
-      Int(bool v) = delete;
-      
-      operator int() const { return value; }
-    };
-    
-    class Longlong
-    {
-    public:
-      long long value;
-      
-      Longlong(long long v) : value(v) {}
-      
-      Longlong(bool v) = delete;
-      
-      Longlong(int v) = delete;
-      
-      operator long long() const { return value; }
-    };
-    
-    class Double
-    {
-    public:
-      double value;
-      
-      Double(double v) : value(v) {}
-      
-      Double(int v) = delete;
-      
-      operator double() const { return value; }
-    };
-    
     template<typename... List>
     struct TypeList {};
     
@@ -132,49 +80,22 @@ namespace czh
       const static int value = temp == -1 ? -1 : temp + 1;
     };
     
-    template<int index, typename List>
-    struct AtIndex;
-    template<typename First, typename ... Rest>
-    struct AtIndex<0, TypeList<First, Rest...>>
-    {
-      using type = First;
-    };
-    template<int index, typename First, typename ... Rest>
-    struct AtIndex<index, TypeList<First, Rest...>>
-    {
-      using type = typename AtIndex<index - 1, TypeList<Rest...>>::type;
-    };
-    
     std::string VTstr(std::size_t index)
     {
       static std::vector<std::string>
-          types{"Null", "int", "long long", "double", "bool", "std::string", "czh::node::Node*", "czh::value::Array"};
+          types{"Null", "int", "long long", "double", "bool", "const char*", "std::string", "czh::node::Node*",
+                "czh::value::Array"};
       return types[index];
     }
     
-    using BasicVTList = TypeList<Null, Int, Longlong, Double, Boolean, std::string>;
-    using MoreBasicVTList = TypeList<int, long long, double, bool>;
-    using FullBasicVTList = Link<BasicVTList, MoreBasicVTList>::type;
+    using BasicVTList = TypeList<Null, int, long long, double, bool, const char *, std::string>;
     using BasicVT = decltype(as_variant(BasicVTList{}));
     
     using Array = std::vector<BasicVT>;//insert() begin() end()
     
     using HighVTList = TypeList<node::Node *, Array>;
     using VTList = Link<BasicVTList, HighVTList>::type;
-    using FullVTList = Link<FullBasicVTList, HighVTList>::type;
     using VT = decltype(as_variant(VTList{}));
-    
-    template<typename T, typename U = void>
-    struct GetRealT
-    {
-      using type = typename AtIndex<IndexOf<T, MoreBasicVTList>::value + 1, BasicVTList>::type;
-    };
-    template<typename T>
-    struct GetRealT<T, std::enable_if_t<!Contains<T, MoreBasicVTList>::value>>
-    {
-      using type = T;
-    };
-
 
 #define LIBCZH_HasMMaker(MEMBER, ...)\
 template <class T, class = std::void_t<>>\
@@ -193,7 +114,7 @@ template <class T, class = std::void_t<>>\
     struct IsNormalArray : public std::false_type {};
     template<typename T>
     struct IsNormalArray<T, std::enable_if_t<!std::is_same_v<T, std::string>
-                                             && Contains<typename T::value_type, FullBasicVTList>::value>>
+                                             && Contains<typename T::value_type, BasicVTList>::value>>
         : public std::true_type
     {
     };
@@ -230,32 +151,31 @@ template <class T, class = std::void_t<>>\
       template<typename T>
       [[nodiscard]]T get() const
       {
-        static_assert(Contains<T, FullVTList>::value || IsNormalArray<T>::value,
-                      "T must be a czh type,"
-                      " or a container that stores czh type.");
+        static_assert(Contains<T, VTList>::value || IsNormalArray<T>::value,
+                      "T must be in VTList(value.hpp, BasicVTList + HighVTList),"
+                      " or a container that stores Type in BasicVTList(value.h).");
         if constexpr(IsNormalArray<T>::value)
         {
           static_assert((HasMend<T>::value || HasMcend<T>::value)
                         && HasMinsert<T>::value && std::is_default_constructible_v<T>,
                         "The container must have end() (or cend()) and insert() and is default constructible.");
         }
-        return internal_get<typename GetRealT<T>::type>(typename TagDispatch<typename GetRealT<T>::type>::tag{});
+        return internal_get<T>(typename TagDispatch<T>::tag{});
       }
       
       template<typename T>
       Value &operator=(T &&v)
       {
-        static_assert(Contains<T, FullVTList>::value || IsNormalArray<T>::value,
-                      "T must must be a czh type,"
-                      " or a container that stores czh type.");
+        static_assert(Contains<T, VTList>::value || IsNormalArray<T>::value,
+                      "T must be in VTList(value.hpp, BasicVTList + HighVTList),"
+                      " or a container that stores Type in BasicVTList(value.h).");
         if constexpr(IsNormalArray<T>::value)
         {
           static_assert((HasMbegin<T>::value || HasMcbegin<T>::value) &&
                         (HasMend<T>::value || HasMcend<T>::value) && HasMend<T>::value,
                         "The container must have begin() (or cbegin()) and end() (or cend()).");
         }
-        internal_equal<typename GetRealT<T>::type>(std::forward<typename GetRealT<T>::type>(v),
-                                                   typename TagDispatch<typename GetRealT<T>::type>::tag{});
+        internal_equal<T>(std::forward<T>(v), typename TagDispatch<T>::tag{});
         return *this;
       }
       
@@ -318,7 +238,7 @@ template <class T, class = std::void_t<>>\
         T ret;
         for (auto &r: varr)
         {
-          if (auto pval = std::get_if<typename GetRealT<typename T::value_type>::type>(&r))
+          if (auto pval = std::get_if<typename T::value_type>(&r))
           {
             ret.insert(std::end(ret), *pval);
           }
@@ -351,12 +271,6 @@ template <class T, class = std::void_t<>>\
       }
     };
     
-    template<>
-    Value &Value::operator=(bool &&v)
-    {
-      value = v;
-      return *this;
-    }
   }
 }
 #endif

@@ -94,7 +94,7 @@ namespace czh::token
       {
         --actual_next;
       }
-  
+      
       std::string temp1, temp2;
       //lineno - actual_last is impossible to be equal lineno + 1
       temp1 = code->get_spec_line(lineno - actual_last, lineno + 1, linenosize);//[beg, end)
@@ -108,7 +108,7 @@ namespace czh::token
       arrow += "\033[0;32;32m";
       arrow.insert(arrow.end(), size, '^');
       arrow += "\033[m\n";
-  
+      
       std::string errorstring = temp1 + arrow + temp2;
       return std::make_unique<std::string>(errorstring);
     }
@@ -124,25 +124,26 @@ namespace czh::token
     template<typename T>
     Token(TokenType type_, T what_, Pos pos_)
         :type(type_), what(std::move(what_)), pos(std::move(pos_)) {}
-  
+    
     Token(const Token &) = delete;
-  
+    
     Token(Token &&) = default;
-  
+    
     Token &operator=(Token &&) = default;
-  
+    
     void error(const std::string &details) const
     {
       throw error::CzhError(pos.location(), details + ": \n"
                                             + *(pos.get_details_from_code()));
     }
-  
+    
     [[nodiscard]] std::string to_string() const
     {
       return std::visit(
           utils::overloaded{
               [](auto &&i) -> auto { return czh::utils::to_czhstr(i); },
               [](node::Node *i) -> auto { return std::string(); },
+              [](const char *i) -> auto { return std::string(); },
               [this](int i) -> auto
               {
                 if (type == TokenType::VALUE) return czh::utils::to_czhstr(i);
