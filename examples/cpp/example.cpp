@@ -1,4 +1,4 @@
-#include "../../src/czh.hpp"
+#include "../../include/libczh/czh.hpp"
 #include "example.hpp"
 #include <iostream>
 #include <string>
