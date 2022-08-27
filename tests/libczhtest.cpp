@@ -82,4 +82,5 @@ node["czh"].add("ref", node["czh"]["int"]);
 node["czh"]["double"].rename("edit");
 node["czh"]["bool_array"].remove();
 node["czh"]["value_array_map"].clear();
+EXPECT_EQ(node.to_string(), "czh:\n  int_array = {1, 2, 3, 4, 5, 6, 7, 8, 9}\n  string_array = {\"1\", \"2\", \"3\"}\n  any_array = {false, 1, \"2\", 3.0}\n  \xF0\x9F\x98\x80UTF\xE7\xA4\xBA\xE4\xBE\x8B = \"\xE6\xB5\x8B\xE8\xAF\x95\xF0\x9F\x93\x95\"\n  edit = \"edit example\"\n  bool = true\n  add_test = {10, 11, 12, 13, 14}\n  int = \"d changed\"\n  long_long = 200000000000\n  null_example = null\n  ref:\n  end\n  block:\n    czh:\n      int = 0\n    end\n    a = int\n    b = czh::int\n    c = int\n    d = c\n  end\n  value_map:\n    k1 = 7\n    k2 = 8\n    k3 = 9\n  end\n  value_array_map:\n  end\n  dt1 = 1.0000000000000002\n  dt2 = 2.225073858507201e-308\n  dt3 = -2.225073858507201e-308\n  dt4 = 2.2250738585072014e-308\n  dt5 = -2.2250738585072014e-308\n  dt6 = 1.7976931348623157e+308\n  dt7 = -1.7976931348623157e+308\n  dt8 = 0.0\n  dt9 = -0.0\n  ref = int\nend\n");
 }

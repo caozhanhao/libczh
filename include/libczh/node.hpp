@@ -45,11 +45,11 @@ namespace czh::node
       std::list<Node> nodes;
     public:
       NodeData() = default;
-  
+      
       [[nodiscard]]const auto &get_nodes() const { return nodes; }
-  
+      
       auto &get_nodes() { return nodes; }
-  
+      
       Node &add(Node node, const std::string &before, int &err)
       {
         NodeType::iterator inserted;
@@ -71,7 +71,7 @@ namespace czh::node
         index[inserted->name] = inserted;
         return *inserted;
       }
-  
+      
       void erase(const std::string &tag)
       {
         auto it = index.find(tag);
@@ -107,13 +107,13 @@ namespace czh::node
       {
         return index.find(str);
       }
-  
+      
       [[nodiscard]]auto end() const
       {
         return index.end();
       }
     };
-
+  
   public:
     using iterator = NodeData::NodeType::iterator;
     using const_iterator = NodeData::NodeType::const_iterator;
@@ -126,27 +126,27 @@ namespace czh::node
   public:
     Node(Node *node_ptr, std::string node_name)
         : name(std::move(node_name)), last_node(node_ptr) { data.emplace<NodeData>(); }
-  
+    
     Node(Node *node_ptr, std::string node_name, Value val)
         : name(std::move(node_name)), last_node(node_ptr), data(std::move(val)) {}
-  
+    
     Node() : name("/"), last_node(nullptr) { data.emplace<NodeData>(); }
-  
+    
     Node(const Node &) = delete;
-  
+    
     Node(Node &&) = default;
-  
+    
     // Node and Value
     [[nodiscard]]bool is_node() const
     {
       return data.index() == 0;
     }
-  
+    
     [[nodiscard]]std::string get_name() const
     {
       return name;
     }
-  
+    
     Node &remove()
     {
       if (last_node == nullptr)
@@ -157,7 +157,7 @@ namespace czh::node
       nd.erase(name);
       return *this;
     }
-  
+    
     Node &rename(const std::string &newname)
     {
       if (last_node == nullptr)
@@ -173,12 +173,12 @@ namespace czh::node
       nd.rename(name, newname);
       return *this;
     }
-  
+    
     [[nodiscard]] Node *to_last_node() const
     {
       return last_node;
     }
-  
+    
     [[nodiscard]] std::unique_ptr<std::vector<std::string>> get_path() const
     {
       auto n_ptr = to_last_node();
@@ -194,7 +194,7 @@ namespace czh::node
       }
       return std::move(std::make_unique<decltype(res)>(res));
     }
-  
+    
     // Node
     [[nodiscard]] bool has_node(const std::string &tag) const
     {
@@ -202,63 +202,63 @@ namespace czh::node
       auto &nd = std::get<NodeData>(data);
       return (nd.find(tag) != nd.end());
     }
-  
+    
     [[nodiscard]]iterator begin()
     {
       check_node();
       auto &nd = std::get<NodeData>(data);
       return nd.nodes.begin();
     }
-  
+    
     [[nodiscard]]iterator end()
     {
       check_node();
       auto &nd = std::get<NodeData>(data);
       return nd.nodes.end();
     }
-  
+    
     [[nodiscard]]reverse_iterator rbegin()
     {
       check_node();
       auto &nd = std::get<NodeData>(data);
       return nd.nodes.rbegin();
     }
-  
+    
     [[nodiscard]]reverse_iterator rend()
     {
       check_node();
       auto &nd = std::get<NodeData>(data);
       return nd.nodes.rend();
     }
-  
+    
     [[nodiscard]]const_iterator cbegin() const
     {
       check_node();
       auto &nd = std::get<NodeData>(data);
       return nd.nodes.cbegin();
     }
-  
+    
     [[nodiscard]]const_iterator cend() const
     {
       check_node();
       auto &nd = std::get<NodeData>(data);
       return nd.nodes.cend();
     }
-  
+    
     [[nodiscard]]const_reverse_iterator crbegin() const
     {
       check_node();
       auto &nd = std::get<NodeData>(data);
       return nd.nodes.crbegin();
     }
-  
+    
     [[nodiscard]]const_reverse_iterator crend() const
     {
       check_node();
       auto &nd = std::get<NodeData>(data);
       return nd.nodes.crend();
     }
-  
+    
     Node &clear()
     {
       check_node();
@@ -266,7 +266,7 @@ namespace czh::node
       nd.clear();
       return *this;
     }
-  
+    
     template<typename T, typename = std::enable_if_t<!std::is_base_of_v<Node, std::decay_t<T>>>>
     Node &add(std::string add_name, T &&_value, const std::string &before = "")
     {
@@ -281,12 +281,12 @@ namespace czh::node
       }
       return ret;
     }
-  
-    Node &add(std::string add_name, Node &_value, std::string before = "")
+    
+    Node &add(std::string add_name, Node &node_, std::string before = "")
     {
-      return add(std::move(add_name), &_value, std::move(before));
+      return add(std::move(add_name), &node_, std::move(before));
     }
-  
+    
     Node &add_node(std::string add_name, const std::string &before = "")
     {
       check_node();
@@ -300,7 +300,7 @@ namespace czh::node
       }
       return ret;
     }
-  
+    
     template<typename T>
     std::map<std::string, T> value_map()
     {
@@ -321,7 +321,7 @@ namespace czh::node
       }
       return result;
     }
-  
+    
     Node &operator[](const std::string &s)
     {
       check_node();
@@ -334,7 +334,7 @@ namespace czh::node
       }
       return *it->second;
     }
-  
+    
     const Node &operator[](const std::string &s) const
     {
       check_node();
@@ -347,9 +347,9 @@ namespace czh::node
       }
       return *it->second;
     }
-  
+    
     //Value
-  
+    
     [[nodiscard]] std::string to_string
         (Color with_color = Color::no_color, std::size_t indentation = 2, int n = -1) const
     {
@@ -366,7 +366,7 @@ namespace czh::node
       }
       return value_to_string(with_color, indentation, n + 1);
     }
-  
+    
     template<typename T>
     [[nodiscard]]bool is() const
     {
@@ -374,7 +374,7 @@ namespace czh::node
       auto &val = std::get<Value>(data);
       return val.is<T>();
     }
-  
+    
     template<typename T>
     Node &operator=(T &&v)
     {
@@ -390,7 +390,7 @@ namespace czh::node
       }
       return *this;
     }
-  
+    
     template<typename T>
     Node &operator=(std::initializer_list<T> &&il)
     {
@@ -399,7 +399,7 @@ namespace czh::node
       value = std::forward<std::initializer_list<T>>(il);
       return *this;
     }
-  
+    
     Node &operator=(value::Array &&v)
     {
       check_value();
@@ -407,13 +407,13 @@ namespace czh::node
       value = std::forward<value::Array>(v);
       return *this;
     }
-  
+    
     Value &get_value()
     {
       check_value();
       return std::get<Value>(data);
     }
-  
+    
     template<typename T>
     T get() const
     {
@@ -425,8 +425,8 @@ namespace czh::node
       }
       return value.get<T>();
     }
-
-
+  
+  
   private:
     void check_node() const
     {
@@ -435,7 +435,7 @@ namespace czh::node
         throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "This Node is not a node.");
       }
     }
-  
+    
     void check_value() const
     {
       if (is_node())
@@ -443,7 +443,7 @@ namespace czh::node
         throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "This Node is not a value.");
       }
     }
-  
+    
     [[nodiscard]]std::string node_to_string(Color with_color, std::size_t indentation, int n) const
     {
       auto &nd = std::get<NodeData>(data);
