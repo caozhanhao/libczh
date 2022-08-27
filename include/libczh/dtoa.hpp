@@ -38,6 +38,7 @@ namespace czh::utils
   constexpr auto DIY_SIGNIFICAND_SIZE = 64;
   constexpr auto D_1_LOG2_10 = 0.30102999566398114; //  1 / log2(10)
   constexpr auto TEN9 = 1000000000;
+  constexpr auto SIGN_MASK = ((static_cast<uint64_t>(0x80000000) << 32) | static_cast<uint64_t>(0x00000000));
   const std::array<uint64_t, 687> powers_ten{0xbf29dcaba82fdeae, 0xeef453d6923bd65a, 0x9558b4661b6565f8,
                                              0xbaaee17fa23ebf76, 0xe95a99df8ace6f54, 0x91d8a02bb6c10594,
                                              0xb64ec836a47146fa, 0xe3e27a444d8d98b8, 0x8e6d8c6ab0787f73,
@@ -320,7 +321,12 @@ namespace czh::utils
                                              986, 990, 993, 996, 1000, 1003, 1006, 1009, 1013, 1016, 1019, 1023, 1026,
                                              1029, 1033, 1036, 1039, 1043, 1046, 1049, 1053, 1056, 1059, 1063, 1066,
                                              1069, 1073, 1076};
-  
+  inline uint64_t double_to_uint64(const double &d)
+  {
+    uint64_t d64;
+    std::memcpy(&d64, &d, sizeof(d));
+    return d64;
+  }
   class DiyFp
   {
   public:
@@ -334,8 +340,7 @@ namespace czh::utils
   
     explicit DiyFp(const double &d)
     {
-      uint64_t d64;
-      std::memcpy(&d64, &d, sizeof(d));
+      auto d64 = double_to_uint64(d);
       int biased_e = static_cast<int>((d64 & DP_EXPONENT_MASK) >> DP_SIGNIFICAND_SIZE);
       uint64_t significand = (d64 & DP_SIGNIFICAND_MASK);
       if (biased_e != 0)
@@ -587,6 +592,7 @@ namespace czh::utils
   
   std::string dtoa(const double &value)
   {
+    if(value == 0 && ((double_to_uint64(value) & SIGN_MASK) != 0)) return "-0.0";
     std::string buffer;
     if (value == 0)
       buffer = "0.0";

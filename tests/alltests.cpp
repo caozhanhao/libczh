@@ -12,4 +12,10 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 #include "tests.hpp"
-//TODO
+#include "dtoatest.cpp"
+#include "libczhtest.cpp"
+int main(int argc, char **argv)
+{
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

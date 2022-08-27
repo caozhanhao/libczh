@@ -99,13 +99,12 @@ namespace czh::utils
     return std::to_string(std::forward<T>(a));
   }
   
-  template<typename T>
+  template<typename T, typename = std::enable_if_t<!std::is_same_v<double, std::decay_t<T>>>>
   std::string value_to_str(T &&a)
   {
     return std::to_string(std::forward<T>(a));
   }
   
-  template<>
   std::string value_to_str(const double &a)
   {
     return dtoa(a);

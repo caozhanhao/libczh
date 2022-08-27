@@ -13,5 +13,7 @@
 //   limitations under the License.
 #ifndef LIBCZH_TESTS_HPP
 #define LIBCZH_TESTS_HPP
-
+#include "../thirdparty/googletest/googletest/include/gtest/gtest.h"
+#include "../include/libczh/czh.hpp"
+using namespace czh;
 #endif
