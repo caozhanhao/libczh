@@ -1,4 +1,5 @@
-# libczh [![](https://img.shields.io/github/license/caozhanhao/libczh?style=flat-square)](LICENSE)  ![](https://img.shields.io/github/v/release/caozhanhao/libczh?style=flat-square)
+# libczh  [![Unit Test](https://img.shields.io/github/workflow/status/caozhanhao/libczh/Unit%20Test?label=Unit%20Test&style=flat-square)](https://github.com/caozhanhao/libczh/actions/workflows/tests.yml) [![License](https://img.shields.io/github/license/caozhanhao/libczh?label=License&style=flat-square)](LICENSE) ![](https://img.shields.io/github/v/release/caozhanhao/libczh?label=Release&style=flat-square) 
+
 ![example](examples/example.png)
 
 -   [README zh](README.md)
