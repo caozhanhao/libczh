@@ -1,4 +1,4 @@
-//   Copyright 2021-2022 libczh - caozhanhao
+//   Copyright 2021-2023 libczh - caozhanhao
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 #ifndef LIBCZH_DTOA_HPP
 #define LIBCZH_DTOA_HPP
 
-#include "err.hpp"
+#include "error.hpp"
 #include <string>
 #include <cmath>
 #include <cstdint>
@@ -327,17 +327,18 @@ namespace czh::utils
     std::memcpy(&d64, &d, sizeof(d));
     return d64;
   }
+  
   class DiyFp
   {
   public:
     uint64_t f;
     int e;
-  
+    
     DiyFp() : f(0), e(0) {};
-  
+    
     DiyFp(uint64_t f_, int e_)
         : f(f_), e(e_) {}
-  
+    
     explicit DiyFp(const double &d)
     {
       auto d64 = double_to_uint64(d);
@@ -357,10 +358,7 @@ namespace czh::utils
     
     DiyFp operator-(const DiyFp &x) const
     {
-      if (e != x.e || f < x.f)
-      {
-        throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "These DiyFps can not minus.");
-      }
+      error::czh_assert(e == x.e && f >= x.f, "These DiyFps can not minus.");
       return {f - x.f, e};
     }
     
@@ -407,7 +405,7 @@ namespace czh::utils
       return res;
     }
     
-    [[nodiscard]]std::tuple<DiyFp, DiyFp> normalized_boundaries() const
+    [[nodiscard]] std::tuple<DiyFp, DiyFp> normalized_boundaries() const
     {
       DiyFp pl, mi;
       bool significand_is_zero = f == DP_HIDDEN_BIT;
@@ -522,8 +520,7 @@ namespace czh::utils
       buffer += '-';
       K = -K;
     }
-    else
-      buffer += '+';
+  
     if (K >= 100)
     {
       buffer += static_cast<char>(static_cast<int>('0') + K / 100);
@@ -592,14 +589,23 @@ namespace czh::utils
   
   std::string dtoa(const double &value)
   {
-    if(value == 0 && ((double_to_uint64(value) & SIGN_MASK) != 0)) return "-0.0";
+    if (value == 0 && ((double_to_uint64(value) & SIGN_MASK) != 0))
+    {
+      return "-0.0";
+    }
     std::string buffer;
     if (value == 0)
+    {
       buffer = "0.0";
+    }
     else
+    {
       buffer = fill_double(std::abs(value));
+    }
     if (value < 0)
+    {
       return "-" + buffer;
+    }
     return std::move(buffer);
   }
 }

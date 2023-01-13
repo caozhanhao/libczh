@@ -1,4 +1,4 @@
-﻿//   Copyright 2021-2022 libczh - caozhanhao
+﻿//   Copyright 2021-2023 libczh - caozhanhao
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 #include "value.hpp"
 #include "token.hpp"
 #include "file.hpp"
-#include "err.hpp"
+#include "error.hpp"
 #include "utils.hpp"
 
 #include <memory>
@@ -28,9 +28,6 @@
 #include <map>
 #include <algorithm>
 
-using czh::error::Error;
-using czh::error::CzhError;
-using czh::value::Value;
 namespace czh::lexer
 {
   enum class State
@@ -70,7 +67,7 @@ namespace czh::lexer
         case State::REF_ID:
           return "'::'";
         default:
-          throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "Unexpected state.");
+          error::czh_unreachable();
       }
       return "";
     }
@@ -210,18 +207,14 @@ namespace czh::lexer
         case State::ARR_RP:
         case State::SC_COLON:
         case State::UNEXPECTED:
-          throw error::Error(LIBCZH_ERROR_LOCATION, __func__,
-                             "Unexpected state can not match.");
+          error::czh_unreachable();
         case State::END:
-          if (token != token::TokenType::SEND && token != token::TokenType::FEND)
-          {
-            throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "Unexpected end.");
-          }
-          else
-            reset();
+          error::czh_assert(token == token::TokenType::SEND || token == token::TokenType::FEND,
+                            "Unexpected end of file.");
+          reset();
           break;
         default:
-          throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "Unexpected state.");
+          error::czh_unreachable();
       }
     }
     
@@ -245,10 +238,7 @@ namespace czh::lexer
   std::string get_string_from_file(const std::string &path)
   {
     std::ifstream file{path, std::ios::binary};
-    if (!file.good())
-    {
-      throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "Failed loading file.");
-    }
+    error::czh_assert(file.good(), error::czh_invalid_file);
     std::stringstream ss;
     ss << file.rdbuf();
     return ss.str();
@@ -477,10 +467,7 @@ namespace czh::lexer
     
     void set_czh(std::string filename, std::unique_ptr<std::ifstream> fs)
     {
-      if (!fs->good())
-      {
-        throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "Failed loading file.");
-      }
+      error::czh_assert(fs->good(), error::czh_invalid_file);
       code = std::make_shared<file::StreamFile>(std::move(filename), std::move(fs));
       codepos = token::Pos(code);
       ch = get_char();

@@ -1,4 +1,4 @@
-//   Copyright 2021-2022 libczh - caozhanhao
+//   Copyright 2021-2023 libczh - caozhanhao
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 #ifndef LIBCZH_VALUE_HPP
 #define LIBCZH_VALUE_HPP
 
-#include "err.hpp"
+#include "error.hpp"
 #include <variant>
 #include <string>
 #include <vector>
@@ -238,15 +238,9 @@ template <class T, class = std::void_t<>>\
         T ret;
         for (auto &r: varr)
         {
-          if (auto pval = std::get_if<typename T::value_type>(&r))
-          {
-            ret.insert(std::end(ret), *pval);
-          }
-          else
-          {
-            throw error::Error(LIBCZH_ERROR_LOCATION, __func__,
-                               "This array contains different types.");
-          }
+          auto pval = std::get_if<typename T::value_type>(&r);
+          error::czh_assert(pval, "This array contains different types.");
+          ret.insert(std::end(ret), *pval);
         }
         return std::move(ret);
       }
@@ -264,8 +258,7 @@ template <class T, class = std::void_t<>>\
       template<typename T>
       void get_error_index() const
       {
-        throw error::Error(LIBCZH_ERROR_LOCATION, __func__,
-                           "Get wrong type.[wrong T = '" + VTstr(IndexOf<T, VTList>::value)
+        throw error::Error("Get wrong type.[wrong T = '" + VTstr(IndexOf<T, VTList>::value)
                            + "', correct T = '" + VTstr(value.index())
                            + "']");
       }

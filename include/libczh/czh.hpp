@@ -1,4 +1,4 @@
-//   Copyright 2021-2022 libczh - caozhanhao
+//   Copyright 2021-2023 libczh - caozhanhao
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 #ifndef LIBCZH_CZH_HPP
 #define LIBCZH_CZH_HPP
 
-#include "err.hpp"
+#include "error.hpp"
 #include "node.hpp"
 #include "parser.hpp"
 #include <fstream>
@@ -58,7 +58,7 @@ namespace czh
       }
       catch (czh::error::Error &err)
       {
-        std::cout << "internal:\n" << err.get_content() << std::endl;
+        std::cout << "Internal:\n" << err.get_content() << std::endl;
       }
       catch (czh::error::CzhError &err)
       {

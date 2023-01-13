@@ -1,4 +1,4 @@
-//   Copyright 2021-2022 libczh - caozhanhao
+//   Copyright 2021-2023 libczh - caozhanhao
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 #include "lexer.hpp"
 #include "token.hpp"
 #include "node.hpp"
-#include "err.hpp"
+#include "error.hpp"
 
 #include <vector>
 #include <string>
@@ -155,7 +155,7 @@ namespace czh::parser
         {
           call = &(*call)[curr_tok.what.get<std::string>()];
         }
-        catch (Error &err)
+        catch (error::Error &err)
         {
           curr_tok.error(err.get_detail());
         }

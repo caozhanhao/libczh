@@ -1,4 +1,4 @@
-//   Copyright 2021-2022 libczh - caozhanhao
+//   Copyright 2021-2023 libczh - caozhanhao
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -11,9 +11,25 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#ifndef LIBCZH_TESTS_HPP
-#define LIBCZH_TESTS_HPP
-#include "../thirdparty/googletest/googletest/include/gtest/gtest.h"
-#include "../include/libczh/czh.hpp"
-using namespace czh;
-#endif
+#include "unittest.hpp"
+#include "dtoa_test.hpp"
+#include "czh_test.hpp"
+
+int main()
+{
+  int ret = 0;
+  try
+  {
+    auto &test = czh::test::get_test();
+    czh::test::czh_test();
+    czh::test::dtoa_test();
+    ret = test.run_tests();
+    test.print_results();
+  }
+  catch (Error &e)
+  {
+    std::cerr << e.get_content() << std::endl;
+    return -1;
+  }
+  return ret;
+}

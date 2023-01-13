@@ -1,4 +1,4 @@
-//   Copyright 2021-2022 libczh - caozhanhao
+//   Copyright 2021-2023 libczh - caozhanhao
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -11,15 +11,12 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#ifndef LIBCZH_ERR_HPP
-#define LIBCZH_ERR_HPP
+#ifndef LIBCZH_ERROR_HPP
+#define LIBCZH_ERROR_HPP
 
 #include <stdexcept>
 #include <string>
-
-#define _LIBCZH_STRINGFY(x) #x
-#define LIBCZH_STRINGFY(x) _LIBCZH_STRINGFY(x)
-#define LIBCZH_ERROR_LOCATION  __FILE__ ":line " LIBCZH_STRINGFY(__LINE__)
+#include <experimental/source_location>
 
 namespace czh::error
 {
@@ -45,21 +42,49 @@ namespace czh::error
   private:
     std::string location;
     std::string detail;
+  
   public:
-    Error(std::string location_, const std::string &func_name_, const std::string &detail_)
-        : logic_error(detail_), location(std::move(location_) + ":" + func_name_ + "()"),
+    Error(const std::string &detail_, const std::experimental::source_location &l =
+    std::experimental::source_location::current())
+        : logic_error(detail_),
+          location(std::string(l.file_name()) + ":" + std::to_string(l.line()) +
+                   ":" + l.function_name() + "()"),
           detail(detail_) {}
+    
+    [[nodiscard]] std::string get_content() const
+    {
+      return "\033[0;32;31mError: \033[1;37m" + location + ":\033[m " + detail;
+    }
     
     [[nodiscard]] std::string get_detail() const
     {
       return detail;
     }
     
-    [[nodiscard]] std::string get_content() const
+    //For Unit Test
+    bool operator==(const Error &e) const
     {
-      return {"\033[1;37m" + location + ":"
-              + "\033[0;32;31m error : \033[m" + detail};
+      return detail == e.detail;
     }
   };
+  
+  constexpr auto czh_invalid_file = "Invalid file";
+  
+  auto czh_unreachable(const std::string &detail_ = "", const std::experimental::source_location &l =
+  std::experimental::source_location::current())
+  {
+    throw Error("Unreachable code: " + detail_, l);
+  }
+  
+  void czh_assert(bool b,
+                  const std::string &detail_ = "Assertion failed.",
+                  const std::experimental::source_location &l =
+                  std::experimental::source_location::current())
+  {
+    if (!b)
+    {
+      throw Error(detail_, l);
+    }
+  }
 }
 #endif

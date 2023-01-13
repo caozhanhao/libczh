@@ -1,4 +1,4 @@
-//   Copyright 2021-2022 libczh - caozhanhao
+//   Copyright 2021-2023 libczh - caozhanhao
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -56,10 +56,7 @@ namespace czh::utils
   
   std::string colorify(const std::string &str, Color with_color, ColorType type)
   {
-    if (with_color == Color::no_color)
-    {
-      return str;
-    }
+    if (with_color == Color::no_color) return str;
     switch (get_color(type))
     {
       case CzhColor::PURPLE:
@@ -77,8 +74,10 @@ namespace czh::utils
       case CzhColor::RED:
         return "\033[31m" + str + "\033[0m";
       default:
-        throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "Unexpected color");
+        error::czh_unreachable();
     }
+    error::czh_unreachable();
+    return "";
   }
   
   template<class... Ts>

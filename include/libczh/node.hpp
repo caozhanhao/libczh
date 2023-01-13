@@ -1,4 +1,4 @@
-//   Copyright 2021-2022 libczh - caozhanhao
+//   Copyright 2021-2023 libczh - caozhanhao
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 #define LIBCZH_NODE_HPP
 
 #include "value.hpp"
-#include "err.hpp"
+#include "error.hpp"
 #include "utils.hpp"
 #include <algorithm>
 #include <string>
@@ -26,7 +26,6 @@
 #include <variant>
 
 using czh::value::Value;
-using czh::error::Error;
 namespace czh::node
 {
   using Color = utils::Color;
@@ -131,8 +130,8 @@ namespace czh::node
         : name(std::move(node_name)), last_node(node_ptr), data(std::move(val)) {}
     
     Node() : name("/"), last_node(nullptr) { data.emplace<NodeData>(); }
-    
-    Node(const Node &) = delete;
+  
+    Node(const Node &node) : name(node.name), last_node(node.last_node), data(node.data) {}
     
     Node(Node &&) = default;
     
@@ -149,10 +148,7 @@ namespace czh::node
     
     Node &remove()
     {
-      if (last_node == nullptr)
-      {
-        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Can not remove root.");
-      }
+      error::czh_assert(last_node, "Can not remove root.");
       auto &nd = std::get<NodeData>(last_node->data);
       nd.erase(name);
       return *this;
@@ -166,10 +162,7 @@ namespace czh::node
         return *this;
       }
       auto &nd = std::get<NodeData>(last_node->data);
-      if (nd.index.find(newname) != nd.index.end())
-      {
-        throw Error(LIBCZH_ERROR_LOCATION, __func__, "Node and Value names are not repeatable.");
-      }
+      error::czh_assert(nd.index.find(newname) == nd.index.end(), "Node and Value names are not repeatable.");
       nd.rename(name, newname);
       return *this;
     }
@@ -198,70 +191,70 @@ namespace czh::node
     // Node
     [[nodiscard]] bool has_node(const std::string &tag) const
     {
-      check_node();
+      assert_node();
       auto &nd = std::get<NodeData>(data);
       return (nd.find(tag) != nd.end());
     }
     
     [[nodiscard]]iterator begin()
     {
-      check_node();
+      assert_node();
       auto &nd = std::get<NodeData>(data);
       return nd.nodes.begin();
     }
     
     [[nodiscard]]iterator end()
     {
-      check_node();
+      assert_node();
       auto &nd = std::get<NodeData>(data);
       return nd.nodes.end();
     }
     
     [[nodiscard]]reverse_iterator rbegin()
     {
-      check_node();
+      assert_node();
       auto &nd = std::get<NodeData>(data);
       return nd.nodes.rbegin();
     }
     
     [[nodiscard]]reverse_iterator rend()
     {
-      check_node();
+      assert_node();
       auto &nd = std::get<NodeData>(data);
       return nd.nodes.rend();
     }
     
     [[nodiscard]]const_iterator cbegin() const
     {
-      check_node();
+      assert_node();
       auto &nd = std::get<NodeData>(data);
       return nd.nodes.cbegin();
     }
     
     [[nodiscard]]const_iterator cend() const
     {
-      check_node();
+      assert_node();
       auto &nd = std::get<NodeData>(data);
       return nd.nodes.cend();
     }
     
     [[nodiscard]]const_reverse_iterator crbegin() const
     {
-      check_node();
+      assert_node();
       auto &nd = std::get<NodeData>(data);
       return nd.nodes.crbegin();
     }
     
     [[nodiscard]]const_reverse_iterator crend() const
     {
-      check_node();
+      assert_node();
       auto &nd = std::get<NodeData>(data);
       return nd.nodes.crend();
     }
     
     Node &clear()
     {
-      check_node();
+      assert_node();
       auto &nd = std::get<NodeData>(data);
       nd.clear();
       return *this;
@@ -270,15 +263,12 @@ namespace czh::node
     template<typename T, typename = std::enable_if_t<!std::is_base_of_v<Node, std::decay_t<T>>>>
     Node &add(std::string add_name, T &&_value, const std::string &before = "")
     {
-      check_node();
+      assert_node();
       auto &nd = std::get<NodeData>(data);
       int err = 0;
       auto &ret = nd.add(Node(this, std::move(add_name), Value(std::forward<T>(_value))), before, err);
-      if (err != 0)
-      {
-        throw Error(LIBCZH_ERROR_LOCATION, __func__,
-                    "There is no node named '" + before + "'.Do you mean '" + error_correct(before) + "'?");
-      }
+      error::czh_assert(err == 0,
+                        "There is no node named '" + before + "'.Do you mean '" + error_correct(before) + "'?");
       return ret;
     }
     
@@ -289,62 +279,45 @@ namespace czh::node
     
     Node &add_node(std::string add_name, const std::string &before = "")
     {
-      check_node();
+      assert_node();
       auto &nd = std::get<NodeData>(data);
       int err = 0;
       auto &ret = nd.add(Node(this, std::move(add_name)), before, err);
-      if (err != 0)
-      {
-        throw Error(LIBCZH_ERROR_LOCATION, __func__,
-                    "There is no node named '" + before + "'.Do you mean '" + error_correct(before) + "'?");
-      }
+      error::czh_assert(err == 0,
+                        "There is no node named '" + before + "'.Do you mean '" + error_correct(before) + "'?");
       return ret;
     }
     
     template<typename T>
     std::map<std::string, T> value_map()
     {
-      check_node();
+      assert_node();
       std::map<std::string, T> result;
       auto &nd = std::get<NodeData>(data);
       for (auto &r: nd.get_nodes())
       {
-        if (auto pval = std::get_if<value::Value>(&r.data))
-        {
-          result[r.name] = pval->get<T>();
-        }
-        else
-        {
-          throw error::Error(LIBCZH_ERROR_LOCATION, __func__,
-                             "This Node must only contain value.");
-        }
+        auto pval = std::get_if<value::Value>(&r.data);
+        error::czh_assert(pval, "This Node must only contain value.");
+        result[r.name] = pval->get<T>();
       }
       return result;
     }
     
     Node &operator[](const std::string &s)
     {
-      check_node();
+      assert_node();
       auto &nd = std::get<NodeData>(data);
       NodeData::IndexType::iterator it = nd.find(s);
-      if (it == nd.end())
-      {
-        throw Error(LIBCZH_ERROR_LOCATION, __func__,
-                    "There is no node named '" + s + "'.Do you mean '" + error_correct(s) + "'?");
-      }
+      error::czh_assert(it != nd.end(), "There is no node named '" + s + "'.Do you mean '" + error_correct(s) + "'?");
       return *it->second;
     }
     
     const Node &operator[](const std::string &s) const
     {
-      check_node();
+      assert_node();
       auto &nd = std::get<NodeData>(data);
       NodeData::IndexType::const_iterator it = nd.find(s);
-      if (it == nd.end())
-      {
-        throw Error(LIBCZH_ERROR_LOCATION, __func__,
-                    "There is no node named '" + s + "'.Do you mean '" + error_correct(s) + "'?");
-      }
+      error::czh_assert(it != nd.end(), "There is no node named '" + s + "'.Do you mean '" + error_correct(s) + "'?");
       return *it->second;
     }
     
@@ -370,7 +343,7 @@ namespace czh::node
     template<typename T>
     [[nodiscard]]bool is() const
     {
-      check_value();
+      assert_value();
       auto &val = std::get<Value>(data);
       return val.is<T>();
     }
@@ -378,7 +351,7 @@ namespace czh::node
     template<typename T>
     Node &operator=(T &&v)
     {
-      check_value();
+      assert_value();
       auto &value = std::get<Value>(data);
       if (value.is<Node *>())
       {
@@ -394,7 +367,7 @@ namespace czh::node
     template<typename T>
     Node &operator=(std::initializer_list<T> &&il)
     {
-      check_value();
+      assert_value();
       auto &value = std::get<Value>(data);
       value = std::forward<std::initializer_list<T>>(il);
       return *this;
@@ -402,7 +375,7 @@ namespace czh::node
     
     Node &operator=(value::Array &&v)
     {
-      check_value();
+      assert_value();
       auto &value = std::get<Value>(data);
       value = std::forward<value::Array>(v);
       return *this;
@@ -410,14 +383,14 @@ namespace czh::node
     
     Value &get_value()
     {
-      check_value();
+      assert_value();
       return std::get<Value>(data);
     }
     
     template<typename T>
     T get() const
     {
-      check_value();
+      assert_value();
       auto &value = std::get<Value>(data);
       if (value.is<Node *>())
       {
@@ -425,25 +398,19 @@ namespace czh::node
       }
       return value.get<T>();
     }
-  
-  
+
+
   private:
-    void check_node() const
+    void assert_node() const
     {
-      if (!is_node())
-      {
-        throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "This Node is not a node.");
-      }
+      error::czh_assert(is_node(), "This Node is not a node.");
     }
-    
-    void check_value() const
+  
+    void assert_value() const
     {
-      if (is_node())
-      {
-        throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "This Node is not a value.");
-      }
+      error::czh_assert(!is_node(), "This Node is not a value.");
     }
-    
+  
     [[nodiscard]]std::string node_to_string(Color with_color, std::size_t indentation, int n) const
     {
       auto &nd = std::get<NodeData>(data);

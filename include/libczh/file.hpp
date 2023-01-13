@@ -1,4 +1,4 @@
-//   Copyright 2021-2022 libczh - caozhanhao
+//   Copyright 2021-2023 libczh - caozhanhao
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -56,10 +56,7 @@ namespace czh::file
     StreamFile(std::string name_, std::unique_ptr<std::ifstream> fs_)
         : File(std::move(name_)), file(std::move(fs_))
     {
-      if (!file->good())
-      {
-        throw error::Error(LIBCZH_ERROR_LOCATION, __func__, "Error File.");
-      }
+      error::czh_assert(file->good(), error::czh_invalid_file);
       file->ignore(std::numeric_limits<std::streamsize>::max());
       file_size = file->gcount();
       file->clear();
