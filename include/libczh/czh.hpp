@@ -25,6 +25,7 @@ using czh::parser::Parser;
 using czh::node::Node;
 using czh::lexer::Lexer;
 using czh::error::Error;
+using czh::error::CzhError;
 namespace czh
 {
   enum class InputMode
@@ -42,16 +43,29 @@ namespace czh
         : parser(&lexer)
     {
       if (mode == InputMode::nonstream)
+      {
         lexer.set_czh(path, path);
+      }
       else if (mode == InputMode::stream)
+      {
         lexer.set_czh(path, std::make_unique<std::ifstream>(path));
+      }
       else
+      {
         lexer.set_czh(path);
+      }
     }
-    
-    std::shared_ptr<Node> parse()
+  
+    Node parse()
     {
-      std::shared_ptr<Node> ret;
+      auto ret = parser.parse();
+      error::czh_assert(ret != nullptr, "Unexpected nullptr from Parser::parse");
+      return std::move(*ret.release());
+    }
+  
+    std::unique_ptr<Node> try_parse()
+    {
+      std::unique_ptr<Node> ret;
       try
       {
         ret = parser.parse();
@@ -64,6 +78,7 @@ namespace czh
       {
         std::cout << err.get_content() << std::endl;
       }
+      error::czh_assert(ret != nullptr, "Unexpected nullptr from Parser::parse");
       return ret;
     }
   };

@@ -54,11 +54,9 @@
 -   `#include "czh.hpp"`即可
 -   需要C++20
 
-#### Czh
+#### Czh::Czh(str, mode)
 
-##### Czh::Czh(str, mode)
-
-###### mode
+##### mode
 
 -   `czh::InputMode::stream` -> 第一个参数为文件名
 -   `czh::InputMode::nonstream`->第一个参数为文件名
@@ -68,22 +66,24 @@
   Czh("example: a = 1; end;", czh::InputMode::string);
 ```
 
-#### Node
-
-###### Node::operator[str]
+#### Node::operator[str]
 
 -   返回名为str的Node
 
-###### Node::get<T>()
+#### Node::operator(str)
+
+-   与`Node::operator[str]`相似，但提供更好的错误提示。
+
+#### Node::get<T>()
 
 -   获取Value
--   仅Node可调用
 -   当Value为Array时, STL中的大部分容器都可以直接使用
 -   当T为自定义类型时，满足如下要求
 -   有`insert()`、`end()`和默认构造函数的容器
 -   有一个`value_type`的成员来表明类型
 -   容器内部的类型为除Array和Reference的czh类型
 -   当Array存储的类型不唯一时，T必须是czh::value::Array
+
 ```c++
 auto arr = node["czh"]["any_array"].get<czh::value::Array>();
 ```
@@ -92,30 +92,25 @@ auto arr = node["czh"]["any_array"].get<czh::value::Array>();
 
 -   同一Node下的值的类型相同时时，可以使用value_map()获取所有key和value组成的map
 
-###### Node::value_map<T>()
-
+#### Node::value_map<T>()
 -   返回std::map<std::string, T>
--   仅Node可调用
 
 ```c++
 auto vmap = example["example"]["valmap"].value_map<vector<int>>();
 ```
 
-#### Value
+#### Node::operator=(value)
 
-###### Node::operator=(value)
-
--   仅Value可调用
 -   与`Node::get<T>`类似， 当Value为Array时,T满足如下要求
 -   有`begin()`、`end()`
 -   有一个`value_type`的成员来表明类型
 -   容器内部的类型为除Array和Reference的czh类型
--   可以直接使用`std::initializer_list`
+-   可以直接使用`brace-enclosed initializer list`
 -   当Array存储的类型不唯一时，使用`czh::value::Array`
 
 ```c++
-node["czh"]["int_array"] = Range(1, 10);//begin() end() value_type
-node["czh"]["int_array"] = {1, 2, 3};      
+node["czh"]["int_array"] = Range(1, 10);        //begin() end() value_type
+node["czh"]["int_array"] = {1, 2, 3};           //brace-enclosed initializer list
 node["czh"]["any_array"] = {false, 1, "2", 3.0};//czh::value::Array
 ```
 
@@ -123,9 +118,9 @@ node["czh"]["any_array"] = {false, 1, "2", 3.0};//czh::value::Array
 
 -   修改后可使用`operator<<`或`Node::to_string()`以更新文件
 
-##### 添加
+#### 添加
 
-###### Node::add(key, value, before)
+#### Node::add(key, value, before)
 
 -   在名为`before`的Node前添加
 -   `before`默认为空，此时添加在末尾
@@ -142,8 +137,7 @@ edit = xxx
 i = edit
 ```
 
-###### Node::add_node(name, before)
-
+#### Node::add_node(name, before)
 -   在名为'before'的Node前添加
 -   返回添加的Node的引用
 
@@ -159,9 +153,9 @@ xxx
 end
 ```
 
-##### 删除
+#### 删除
 
-###### Node::remove()
+#### Node::remove()
 
 -   删除该Node
 
@@ -169,9 +163,9 @@ end
 example["example"].remove();
 ```
 
-##### 清除
+#### 清除
 
-###### Node::clear()
+#### Node::clear()
 
 -   清除该Node下所有的Node
 
@@ -179,9 +173,9 @@ example["example"].remove();
 example["example"].clear();
 ```
 
-##### 重命名
+#### 重命名
 
-###### Node::rename(name, newname)
+#### Node::rename(name, newname)
 
 -   将该Node改为`newname`
 
@@ -193,14 +187,14 @@ example["a"].rename("b");
 
 -   输出的czh不保留注释
 
-###### Node::to_string(with_color)
+#### Node::to_string(with_color)
 
 -   返回格式化后的czh
 -   `czh::node::Color::with_color` 有高亮
 -   `czh::node::Color::no_color` 无高亮(默认)
 -   不要将高亮的czh写入文件，否则无法解析
 
-###### operator<<
+#### operator<<
 
 -   输出`Node::to_string()`返回值
 -   无高亮

@@ -56,11 +56,9 @@
 -   just `#include "czh.hpp"`
 -   Requires C++ 20
 
-#### Czh
+#### Czh::Czh(str, mode)
 
-##### Czh::Czh(str, mode)
-
-###### mode
+##### mode
 
 -   `czh::InputMode::stream` -> The first parameter is the file name
 -   `czh::InputMode::nonstream` -> The first parameter is the file name
@@ -70,22 +68,24 @@
   Czh("example: a = 1; end;", czh::InputMode::string);
 ```
 
-#### Node
+#### Node::operator[str]
 
-###### Node::operator[str]
+- Returns a Node named str
 
--   Returns a Node named str
+##### Node::operator(str)
 
-###### Node::get<T>()
+- Similar with `Node::operator[str]`, but it provides a better error message.
+
+##### Node::get<T>()
 
 -   Get the Value
--   Only Node can call
 -   When the Value is Array, most containers in STL can be used directly.W
 -   When T is a custom type, T meets the following requirements
 -   have `insert()`, `end()` and default constructor
 -   have a member named `value_type` to describe a type
 -   The type inside the container is the czh type except Array and Reference
 -   When the type of Array is not unique, T must be czh::value::Array
+
 ```c++
 auto arr = node["czh"]["any_array"].get<czh::value::Array>();
 ```
@@ -95,29 +95,25 @@ auto arr = node["czh"]["any_array"].get<czh::value::Array>();
 -   When the values under the same Node are of the same type, you can use value_map() to get a std::map consisting of
     all keys and values.
 
-###### Node::value_map<T>()
+##### Node::value_map<T>()
 
 -   Returns std::map<std::string, T>
--   Only Node can call
 
 ```c++
 auto vmap = example["example"]["valmap"].value_map<vector<int>>();
 ```
 
-#### Value
+#### Node::operator=(value)
 
-###### Node::operator=(value)
-
--   Only Value can call
 -   Like `Node::get<T>`， When Value is Array, T meets the following requirements
 -   have member functions `begin()`、`end()`
 -   have a member named `value_type` to describe a type
--   Can use `std::initializer_list` directly
+-   You can use `brace-enclosed initializer list` directly
 -   When the type of Array is not unique, use `czh::value::Array`
 
 ```c++
-node["czh"]["int_array"] = Range(1, 10);//begin() end() value_type
-node["czh"]["int_array"] = {1, 2, 3};      
+node["czh"]["int_array"] = Range(1, 10);        //begin() end() value_type
+node["czh"]["int_array"] = {1, 2, 3};           //brace-enclosed initializer list
 node["czh"]["any_array"] = {false, 1, "2", 3.0};//czh::value::Array
 ```
 
@@ -125,9 +121,9 @@ node["czh"]["any_array"] = {false, 1, "2", 3.0};//czh::value::Array
 
 -   After modification, you can use the `operator <<` or `Node::to_string()` to update the file
 
-##### Add
+#### Add
 
-###### Node::add(key, value, before)
+#### Node::add(key, value, before)
 
 -   Add before Node named `before`
 -   `before` defaults to empty, which will add at the end
@@ -143,7 +139,8 @@ add = 123
 edit = xxx
 i = edit
 ```
-###### Node::add_node(name, before)
+
+#### Node::add_node(name, before)
 
 -   Add before Node named `before`
 -   Returns a reference to the added Node(contains Node).
@@ -160,9 +157,9 @@ xxx
 end
 ```
 
-##### Remove
+#### Remove
 
-###### Node::remove()
+#### Node::remove()
 
 -   Remove the Node
 
@@ -170,9 +167,9 @@ end
 example["example"].remove();
 ```
 
-##### Clear
+#### Clear
 
-###### Node::clear()
+#### Node::clear()
 
 -   Clear all Nodes
 
@@ -182,7 +179,7 @@ example["example"].clear();
 
 ##### Rename
 
-###### Node::rename(name, newname)
+#### Node::rename(name, newname)
 
 -   Rename the Node to `newname`
 
@@ -194,14 +191,14 @@ example["a"].rename("b");
 
 -   The output of czh does not contain any Notes.
 
-###### Node::to_string(with_color)
+#### Node::to_string(with_color)
 
 -   Returns the formatted czh
 -   `czh::node::Color::with_color` -> with highlight
 -   `czh::node::Color::no_color`   -> no highlight
 -   Do not write highlighted czh to the file, otherwise it will not be able to be parsed.
 
-###### operator<<
+#### operator<<
 
 -   Output `Node::to_string()` return value
 -   Without highlight

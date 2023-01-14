@@ -24,6 +24,7 @@
 #include <deque>
 #include <set>
 #include <queue>
+#include <memory>
 #include <list>
 
 namespace czh
@@ -92,23 +93,22 @@ namespace czh
     using BasicVT = decltype(as_variant(BasicVTList{}));
     
     using Array = std::vector<BasicVT>;//insert() begin() end()
-    
+  
     using HighVTList = TypeList<node::Node *, Array>;
     using VTList = Link<BasicVTList, HighVTList>::type;
     using VT = decltype(as_variant(VTList{}));
 
-#define LIBCZH_HasMMaker(MEMBER, ...)\
+#define LIBCZH_HasMMaker(name, MEMBER, ...)\
 template <class T, class = std::void_t<>>\
-    struct HasM##MEMBER : std::false_type {};\
+    struct HasM##name : std::false_type {};\
     template <class T>\
-    struct HasM##MEMBER<T, std::void_t<decltype(std::declval<T>().MEMBER(__VA_ARGS__))>> : std::true_type {};\
+    struct HasM##name<T, std::void_t<decltype(std::declval<T>().MEMBER(__VA_ARGS__))>> : std::true_type {};\
 
-    LIBCZH_HasMMaker(insert, std::declval<T>().end(), 0)
-    LIBCZH_HasMMaker(begin)
-    LIBCZH_HasMMaker(cbegin)
-    LIBCZH_HasMMaker(end)
-    LIBCZH_HasMMaker(cend)
-#undef LIBCZH_HasMMaker
+    LIBCZH_HasMMaker(insert, insert, std::declval<T>().end(), 0)
+    LIBCZH_HasMMaker(begin, begin)
+    LIBCZH_HasMMaker(cbegin, cbegin)
+    LIBCZH_HasMMaker(end, end)
+    LIBCZH_HasMMaker(cend, cend)
     
     template<typename T, typename U = void>
     struct IsNormalArray : public std::false_type {};
@@ -162,7 +162,22 @@ template <class T, class = std::void_t<>>\
         }
         return internal_get<T>(typename TagDispatch<T>::tag{});
       }
-      
+  
+      template<typename T>
+      [[nodiscard]]std::unique_ptr<T> try_get() const
+      {
+        static_assert(Contains<T, VTList>::value || IsNormalArray<T>::value,
+                      "T must be in VTList(value.hpp, BasicVTList + HighVTList),"
+                      " or a container that stores Type in BasicVTList(value.h).");
+        if constexpr(IsNormalArray<T>::value)
+        {
+          static_assert((HasMend<T>::value || HasMcend<T>::value)
+                        && HasMinsert<T>::value && std::is_default_constructible_v<T>,
+                        "The container must have end() (or cend()) and insert() and is default constructible.");
+        }
+        return internal_try_get<T>(typename TagDispatch<T>::tag{});
+      }
+  
       template<typename T>
       Value &operator=(T &&v)
       {
@@ -192,12 +207,13 @@ template <class T, class = std::void_t<>>\
       {
         return value.index() == IndexOf<T, VTList>::value;
       }
-      
+  
       [[nodiscard]] auto get_variant() const
       {
         return value;
       }
-    
+  
+      std::string get_typename() const { return VTstr(value.index()); }
     private:
       template<typename T>
       void internal_equal(T &&v, ValueTag) { value = std::forward<T>(v); }
@@ -210,51 +226,69 @@ template <class T, class = std::void_t<>>\
       {
         Array tmp;
         auto arr = std::forward<T>(v);
-        for (auto r: arr)
-        {
-          tmp.insert(tmp.end(), r);
-        }
+        for (auto r: arr) tmp.insert(tmp.end(), r);
         value = std::move(tmp);
       }
-      
+  
       template<typename T>
       [[nodiscard]]T internal_get(ValueTag) const
       {
-        if (!is<T>())
-        {
-          get_error_index<T>();
-        }
+        if (!is<T>()) get_error_index<T>();
         return std::get<T>(value);
       }
-      
+  
       template<typename T>
-      [[nodiscard]]T internal_get(NormalArrayTag) const
+      void narrow_transfrom_to_container(const Array &from, T &to) const
       {
-        if (!is<Array>())
-        {
-          get_error_index<T>();
-        }
-        auto &varr = std::get<Array>(value);
-        T ret;
-        for (auto &r: varr)
+        for (auto &r: from)
         {
           auto pval = std::get_if<typename T::value_type>(&r);
           error::czh_assert(pval, "This array contains different types.");
-          ret.insert(std::end(ret), *pval);
+          to.insert(std::end(to), *pval);
         }
+      }
+  
+      template<typename T>
+      [[nodiscard]]T internal_get(NormalArrayTag) const
+      {
+        if (!is<Array>()) get_error_index<T>();
+        auto &varr = std::get<Array>(value);
+        T ret;
+        narrow_transfrom_to_container(varr, ret);
         return std::move(ret);
       }
-      
+  
       template<typename T>
       [[nodiscard]]Array internal_get(AnyArrayTag) const
       {
-        if (!is<Array>())
-        {
-          get_error_index<T>();
-        }
+        if (!is<Array>()) get_error_index<T>();
         return std::get<Array>(value);
       }
-      
+  
+      template<typename T>
+      [[nodiscard]]std::unique_ptr<T> internal_try_get(ValueTag) const
+      {
+        if (!is<T>()) return nullptr;
+        return std::make_unique<T>(std::get<T>(value));
+      }
+  
+      template<typename T>
+      [[nodiscard]]std::unique_ptr<T> internal_try_get(NormalArrayTag) const
+      {
+        if (!is<Array>()) return nullptr;
+        auto &varr = std::get<Array>(value);
+        T ret;
+        narrow_transfrom_to_container(varr, ret);
+        return std::make_unique<T>(ret);
+      }
+  
+      template<typename T>
+      [[nodiscard]]std::unique_ptr<Array> internal_try_get(AnyArrayTag) const
+      {
+        if (!is<Array>()) return nullptr;
+        return std::make_unique<T>(std::get<Array>(value));
+      }
+  
       template<typename T>
       void get_error_index() const
       {

@@ -12,24 +12,13 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 #include "unittest.hpp"
-#include "dtoa_test.hpp"
-#include "czh_test.hpp"
+#include "dtoa_test.cpp"
+#include "czh_test.cpp"
 
 int main()
 {
-  int ret = 0;
-  try
-  {
-    auto &test = czh::test::get_test();
-    czh::test::czh_test();
-    czh::test::dtoa_test();
-    ret = test.run_tests();
-    test.print_results();
-  }
-  catch (Error &e)
-  {
-    std::cerr << e.get_content() << std::endl;
-    return -1;
-  }
+  auto &test = czh::test::get_test();
+  int ret = test.run_tests();
+  test.print_results();
   return ret;
 }

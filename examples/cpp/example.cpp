@@ -10,13 +10,11 @@ int main()
    *   Parse
    *
    */
-  czh::Czh e("examples/czh/example.czh", czh::InputMode::stream);
+  czh::Czh e("examples/czh/example.czh", czh::InputMode::nonstream);
   // or czh::Czh e("example.czh", czh::InputMode::stream);
   // or czh::Czh e("example: a = 1; end;",  czh::InputMode::string);
-  auto nodeptr = e.parse();// returns nullptr when czh has errors.
-  if (nodeptr == nullptr) return -1;
-  auto &node = *nodeptr;
-  
+  auto node = e.parse();
+  //auto node = e.try_parse();// returns nullptr when czh has errors.
   
   /*
    *
@@ -24,7 +22,9 @@ int main()
    *
    */
   
-  // Node::get<T>
+  // Node::operator[]/() and Node::get<T>
+  // operator() is similar with operator[], but it provides a better error message.
+  
   auto str = node["czh"]["😀UTF示例"].get<std::string>();
   if (!node["czh"]["null_example"].is<czh::value::Null>())
   {
@@ -94,8 +94,7 @@ int main()
   // prettify
   czh::Czh preety_file("examples/czh/czh.czh", czh::InputMode::stream);
   auto pretty_ptr = preety_file.parse();
-  if (pretty_ptr == nullptr) return -1;
-  std::cout << pretty_ptr->to_string(czh::node::Color::with_color) << std::endl;
+  std::cout << pretty_ptr.to_string(czh::node::Color::with_color) << std::endl;
   // to_string(czh::node::Color::with_color) will use ANSI Escape Code to colorify the czh.
   // So don't write this czh to the file, otherwise it won't be able to be parsed.
   

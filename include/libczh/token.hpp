@@ -48,13 +48,15 @@ namespace czh::token
   public:
     explicit Pos(std::shared_ptr<file::File> code_)
         : pos(0), size(0), code(std::move(code_)) {}
-    
+  
+    explicit Pos() = default;
+  
     Pos &operator+=(const std::size_t &p)
     {
       pos += p;
       return *this;
     }
-    
+  
     Pos &operator-=(const std::size_t &p)
     {
       pos -= p;
@@ -77,15 +79,15 @@ namespace czh::token
       size = s;
       return *this;
     }
-    
-    [[nodiscard]] std::unique_ptr<std::string> get_details_from_code() const
+  
+    [[nodiscard]] std::string get_code() const
     {
       std::size_t lineno = code->get_lineno(pos);
       std::size_t linenosize = utils::to_str(lineno + next).size();
       std::size_t actual_last = last;
       std::size_t actual_next = next;
       std::size_t total_line = code->get_lineno(code->size() - 1);
-      
+    
       while (static_cast<int>(lineno) - static_cast<int>(actual_last) <= 0 && actual_last > 0)
       {
         --actual_last;
@@ -108,9 +110,7 @@ namespace czh::token
       arrow += "\033[0;32;32m";
       arrow.insert(arrow.end(), size, '^');
       arrow += "\033[m\n";
-      
-      std::string errorstring = temp1 + arrow + temp2;
-      return std::make_unique<std::string>(errorstring);
+      return temp1 + arrow + temp2;
     }
   };
   
@@ -118,23 +118,31 @@ namespace czh::token
   {
   public:
     TokenType type;
-    Value what;
+    value::Value what;
     Pos pos;
   public:
     template<typename T>
     Token(TokenType type_, T what_, Pos pos_)
         :type(type_), what(std::move(what_)), pos(std::move(pos_)) {}
     
-    Token(const Token &) = delete;
+    explicit Token() = default;
+    
+    Token(const Token &) = default;
     
     Token(Token &&) = default;
     
     Token &operator=(Token &&) = default;
     
-    void error(const std::string &details) const
+    void report_error(const std::string &details) const
     {
-      throw error::CzhError(pos.location(), details + ": \n"
-                                            + *(pos.get_details_from_code()));
+      if (pos.code != nullptr)
+      {
+        throw error::CzhError(pos.location(), details + ": \n" + pos.get_code());
+      }
+      else
+      {
+        throw error::CzhError("", details);
+      }
     }
     
     [[nodiscard]] std::string to_string() const

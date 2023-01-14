@@ -29,13 +29,19 @@ namespace czh::error
     CzhError(std::string location_, const std::string &detail_)
         : runtime_error(detail_), location(std::move(location_)),
           detail(detail_) {}
-    
+  
     [[nodiscard]] std::string get_content() const
     {
       return {"\033[1;37m" + location + ":"
-              + "\033[0;32;31m error : \033[m" + detail};
+              + "\033[0;32;31m report_error : \033[m" + detail};
     }
   };
+  
+  std::string location_to_str(const std::experimental::source_location &l)
+  {
+    return std::string(l.file_name()) + ":" + std::to_string(l.line()) +
+           ":" + l.function_name() + "()";
+  }
   
   class Error : public std::logic_error
   {
@@ -47,8 +53,7 @@ namespace czh::error
     Error(const std::string &detail_, const std::experimental::source_location &l =
     std::experimental::source_location::current())
         : logic_error(detail_),
-          location(std::string(l.file_name()) + ":" + std::to_string(l.line()) +
-                   ":" + l.function_name() + "()"),
+          location(location_to_str(l)),
           detail(detail_) {}
     
     [[nodiscard]] std::string get_content() const

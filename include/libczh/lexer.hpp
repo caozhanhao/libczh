@@ -67,8 +67,9 @@ namespace czh::lexer
         case State::REF_ID:
           return "'::'";
         default:
-          error::czh_unreachable();
+          error::czh_unreachable("Unexpected token");
       }
+      error::czh_unreachable("Unexpected token");
       return "";
     }
     
@@ -520,15 +521,17 @@ namespace czh::lexer
         if (match.get_state() == State::END || match.get_state() == State::INIT)
           return;
         else
-          token.error("Unexpected end of file.");
+        {
+          token.report_error("Unexpected end of file.");
+        }
       }
       if (match.end() && token.type != token::TokenType::SEND)
         match.match(token::TokenType::SEND);
       match.match(token.type);
       if (!match.good())
       {
-        token.error("Unexpected token '" + token.to_string() + "'.Do you mean '"
-                    + match.error_correct() + "'?");
+        token.report_error("Unexpected token '" + token.to_string() + "'.Do you mean '"
+                           + match.error_correct() + "'?");
       }
     }
   
@@ -566,7 +569,7 @@ namespace czh::lexer
         if (notes != 0 && !check_char())
         {
           token::Token tmp(token::TokenType::UNEXPECTED, static_cast<int>('<'), bak);
-          tmp.error("Unexpected note begin.");
+          tmp.report_error("Unexpected note begin.");
         }
         if (ch == '>')
         {
@@ -637,7 +640,7 @@ namespace czh::lexer
         else
         {
           token::Token tmp(token::TokenType::UNEXPECTED, 0, get_pos().set_size(temp.size()));
-          tmp.error("Unexpected token '" + temp + "'.Is this a number?");
+          tmp.report_error("Unexpected token '" + temp + "'. Is this a number?");
         }
       }
         //string
@@ -659,34 +662,21 @@ namespace czh::lexer
         std::string temp;
         while (check_char() && (get_char_num() > 1 || isalnum(ch) || ch == '_'))
         {
-          switch (get_char_num())
+          auto nchar = get_char_num();
+          if (nchar == 1)
           {
-            case 1:
-              if (!std::isalnum(ch) && ch != '_')
-              {
-                break;
-              }
-              temp += ch;
-              ch = get_char();
-              break;
-            case 2:
-              temp += ch;
+            if (!std::isalnum(ch) && ch != '_') continue;
+            temp += ch;
+            ch = get_char();
+          }
+          else
+          {
+            temp += ch;
+            for (int i = 0; i < nchar - 1; ++i)
+            {
               temp += ch = get_char();
-              ch = get_char();
-              break;
-            case 3:
-              temp += ch;
-              temp += ch = get_char();
-              temp += ch = get_char();
-              ch = get_char();
-              break;
-            case 4:
-              temp += ch;
-              temp += ch = get_char();
-              temp += ch = get_char();
-              temp += ch = get_char();
-              ch = get_char();
-              break;
+            }
+            ch = get_char();
           }
         }
   
@@ -725,7 +715,7 @@ namespace czh::lexer
       {
         char bak = get_char();
         token::Token(token::TokenType::UNEXPECTED, 0, get_pos().set_size(1))
-            .error(std::string("Unexpected token '" + std::string(1, bak) + "'."));
+            .report_error(std::string("Unexpected token '" + std::string(1, bak) + "'."));
       }
       return {token::TokenType::UNEXPECTED, 0, get_pos().set_size(1)};
     }
