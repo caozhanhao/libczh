@@ -23,11 +23,13 @@ namespace czh::test
     using value_type = int;
   public:
     ContainerTest() = default;
-    
+  
     std::vector<int> c;
-    
+  
+    auto begin() { return c.begin(); }
+  
     auto end() { return c.end(); }
-    
+  
     auto insert(typename std::vector<int>::iterator it, int i) { return c.insert(it, i); }
   };
   
@@ -80,12 +82,15 @@ namespace czh::test
     LIBCZH_EXPECT_EQ(nodetest("czh")("dt7").get<double>(), -1.7976931348623157e308);
     LIBCZH_EXPECT_EQ(utils::dtoa(nodetest("czh")("dt8").get<double>()), "0.0");
     LIBCZH_EXPECT_EQ(utils::dtoa(nodetest("czh")("dt9").get<double>()), "-0.0");
-    bool a = nodetest("czh")("int_array").get<ContainerTest>().c ==
-             std::vector<int>{-600, 2, -9000};
+    bool a = nodetest("czh")("int_array").get<ContainerTest>().c == (std::vector<int>{-600, 2, -9000});
     LIBCZH_EXPECT_TRUE(a);
-    nodetest("czh")("double") = "edit example";
+    std::string edit_example{"edit example"};
+    nodetest("czh")("double") = edit_example;
     nodetest("czh")("block")("d") = "d changed";
+    static_assert(czh::value::details::is_czh_basic_type_v<uint64_t>);
     nodetest("czh")("int_array") = {1, 2, 3};
+    int arr_modify[] = {1, 2, 3};
+    nodetest("czh")("int_array") = arr_modify;
     nodetest("czh")("any_array") = {false, 1, "2", 3.0};
     nodetest("czh")("int_array") = RangeTest(1, 10);
     nodetest("czh").add_node("ref", "block");

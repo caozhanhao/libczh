@@ -12,6 +12,8 @@ public:
   
   std::vector<int> c;
   
+  auto begin() { return c.begin(); }
+  
   auto end() { return c.end(); }
   
   auto insert(typename std::vector<int>::iterator it, int i) { return c.insert(it, i); }

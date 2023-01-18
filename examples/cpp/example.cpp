@@ -31,9 +31,9 @@ int main()
     // node["czh"]["null_example"].get<xxx>();
   }
   // When Value is an Array,
-  // the T must be a container that has insert(), end(),
-  // default constructor and value_type which is in
-  // int, long long, double, std::string, bool [aka. BasicVTList(value.hpp)]
+  // the T must be a container whose value is convertible to
+  // the czh type (except Array and Reference)
+  // (aka. int, long long, double, std::string, bool)
   // For example, Container in example.hpp and
   // most containers in STL can meet these requirements.
   auto arr1 = node["czh"]["int_array"].get<Container>();

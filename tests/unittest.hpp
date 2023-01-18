@@ -85,8 +85,6 @@ namespace czh::test
   
   namespace test_internal
   {
-    LIBCZH_HasMMaker(func, operator());
-    
     template<typename F>
     auto is_callable(F f)
     -> decltype(f(), std::true_type()) { return std::true_type(); }

@@ -80,10 +80,8 @@
 
 -   Get the Value
 -   When the Value is Array, most containers in STL can be used directly.W
--   When T is a custom type, T meets the following requirements
--   have `insert()`, `end()` and default constructor
--   have a member named `value_type` to describe a type
--   The type inside the container is the czh type except Array and Reference
+-   When T is a custom type, its value needs to be convertible to the czh type (except Array and Reference, (
+    除Array和Reference, int, long long, double, std::string, bool)
 -   When the type of Array is not unique, T must be czh::value::Array
 
 ```c++

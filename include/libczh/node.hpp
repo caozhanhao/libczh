@@ -232,11 +232,11 @@ namespace czh::node
       return *this;
     }
   
-    Node &operator=(value::Array &&v)
+    Node &operator=(const value::Array &v)
     {
       if (is_node()) data.template emplace<Value>();
       auto &value = std::get<Value>(data);
-      value = std::forward<value::Array>(v);
+      value = v;
       return *this;
     }
   
