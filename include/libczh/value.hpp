@@ -173,18 +173,24 @@ namespace czh
       };
       template<typename T>
       constexpr size_t size_of_array_v = size_of_array<T>::value;
-      
-      
+  
+  
       using BasicVTList = TypeList<Null, int, long long, double, bool, std::string>;
       using BasicVT = decltype(as_variant(BasicVTList{}));
+      // In some older compilers, const char* will implicitly convert to bool when
+      // constructing a std::variant<std::string, bool>.
+      // IOW, BasicVT{"1"} stored a bool previously.
+      // Now this clearly unwanted conversion is fixed:
+      // https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0608r3.html#Problems-to-solve
+  
       constexpr size_t basic_vtlist_size = size_of_v<BasicVTList>;
-      
+  
       using Array = std::vector<BasicVT>;//insert() begin() end()
-      
+  
       using HighVTList = TypeList<node::Node *, Array>;
       using VTList = link_t<BasicVTList, HighVTList>;
       using VT = decltype(as_variant(VTList{}));
-      
+  
       template<typename T>
       consteval std::string_view nameof()
       {
