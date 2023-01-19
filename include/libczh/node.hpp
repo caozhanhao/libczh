@@ -416,21 +416,20 @@ namespace czh::node
     T get(const std::experimental::source_location &l =
     std::experimental::source_location::current()) const
     {
+      value::check_type<T>();
       assert_value(l);
       auto &value = std::get<Value>(data);
       if (value.is<Node *>())
       {
         return value.get<Node *>()->get<T>();
       }
-    
-      auto ptr = value.template try_get<T>();
-      if (ptr == nullptr)
+  
+      if (!value.can_get<T>())
       {
-        report_error("The value is not '" + std::string(typeid(T).name()) + "'.[T should be '"
+        report_error("The value is not '" + std::string(value::details::nameof<T>()) + "'.[Actual T = '"
                      + value.get_typename() + "'].", czh_token, l);
       }
-      auto n = *ptr;
-      return n;
+      return value.get<T>();
     }
 
 
