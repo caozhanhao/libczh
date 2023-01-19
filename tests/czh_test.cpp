@@ -87,11 +87,11 @@ namespace czh::test
     std::string edit_example{"edit example"};
     nodetest("czh")("double") = edit_example;
     nodetest("czh")("block")("d") = "d changed";
-    static_assert(czh::value::details::is_czh_basic_type_v<uint64_t>);
     nodetest("czh")("int_array") = {1, 2, 3};
     int arr_modify[] = {1, 2, 3};
     nodetest("czh")("int_array") = arr_modify;
     nodetest("czh")("any_array") = {false, 1, "2", 3.0};
+    LIBCZH_EXPECT_EQ(std::get<std::string>(nodetest("czh")("any_array").get<czh::value::Array>()[2]), "2");
     nodetest("czh")("int_array") = RangeTest(1, 10);
     nodetest("czh").add_node("ref", "block");
     nodetest("czh").add("add_test", RangeTest(10, 15), "int");
