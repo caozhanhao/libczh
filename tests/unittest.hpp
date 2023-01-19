@@ -26,9 +26,18 @@
 #define _LIBCZH_STRINGFY(x) #x
 #define LIBCZH_STRINGFY(x) _LIBCZH_STRINGFY(x)
 
-#define LIBCZH_EXPECT_EQ(v1, v2) ::czh::test::get_test().expect_eq(v1, v2);
-#define LIBCZH_EXPECT_TRUE(v1) ::czh::test::get_test().expect_eq(v1, true);
-#define LIBCZH_EXPECT_FALSE(v1) ::czh::test::get_test().expect_eq(v1, false);
+#define LIBCZH_EXPECT_EQ(v1, v2) \
+try{::czh::test::get_test().expect_eq(v1, v2);} \
+catch(Error& e){throw czh::test::UnitTestError(e);} \
+catch(CzhError& e){throw czh::test::UnitTestError(e);}
+#define LIBCZH_EXPECT_TRUE(v1) \
+try{::czh::test::get_test().expect_eq(v1, true);} \
+catch(Error& e){throw czh::test::UnitTestError(e);} \
+catch(CzhError& e){throw czh::test::UnitTestError(e);}
+#define LIBCZH_EXPECT_FALSE(v1) \
+try{::czh::test::get_test().expect_eq(v1, false);} \
+catch(Error& e){throw czh::test::UnitTestError(e);} \
+catch(CzhError& e){throw czh::test::UnitTestError(e);}
 #define LIBCZH_TEST(name) \
 void libczh_test_##name(); \
 int libczh_test_pos_##name = ::czh::test::get_test().add(LIBCZH_STRINGFY(name), libczh_test_##name); \
@@ -36,6 +45,26 @@ void libczh_test_##name()
 
 namespace czh::test
 {
+  class UnitTestError
+  {
+  private:
+    std::string test_location;
+    std::string content;
+  
+  public:
+    UnitTestError(const Error &err, const std::experimental::source_location &l =
+    std::experimental::source_location::current())
+        : content(err.get_content()), test_location(error::location_to_str(l)) {}
+    
+    UnitTestError(const CzhError &err, const std::experimental::source_location &l =
+    std::experimental::source_location::current())
+        : content(err.get_content()), test_location(error::location_to_str(l)) {}
+    
+    const std::string &get_content() const { return content; }
+    
+    const std::string &get_location() const { return test_location; }
+  };
+  
   class Test;
   
   Test &get_test();
@@ -224,16 +253,11 @@ namespace czh::test
           all_tests[curr_test].second();
           e = timer.get_microseconds();
         }
-        catch (error::Error &e)
+        catch (UnitTestError &e)
         {
-          results += ("[\033[0;32;31mEXCEPTION\033[m] Test " +
-                      std::to_string(curr_test) + " | " + e.get_content() + "\n");
-          exceptions.emplace_back(curr_test);
-        }
-        catch (error::CzhError &e)
-        {
-          results += ("[\033[0;32;31mEXCEPTION\033[m] Test " +
-                      std::to_string(curr_test) + " | " + e.get_content() + "\n");
+          results += ("[\033[0;32;31mEXCEPTION\033[m] Test "
+                      + std::to_string(curr_test) + " at " + e.get_location()
+                      + ":\n" + e.get_content() + "\n");
           exceptions.emplace_back(curr_test);
         }
         if (failure.size() != last_failure || exceptions.size() != last_exception)
