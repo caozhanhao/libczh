@@ -5,7 +5,8 @@ czh:
   😀UTF示例 = "测试📕"
   edit = "edit example"
   bool = true
-  add_test = {10, 11, 12, 13, 14}
+  add_test1 = {10, 11, 12, 13, 14}
+  add_test2 = {15, 16, 17, 18, 19}
   int = "d changed"
   long_long = 200000000000
   null_example = null

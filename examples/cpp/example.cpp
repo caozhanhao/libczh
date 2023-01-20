@@ -2,6 +2,7 @@
 #include "example.hpp"
 #include <iostream>
 #include <string>
+#include <ranges>
 
 int main()
 {
@@ -71,7 +72,9 @@ int main()
   node["czh"].add_node("ref", "block");
   // Add Value
   // Node::add(name, value, before)
-  node["czh"].add("add_test", Range(10, 15), "int");
+  node["czh"].add("add_test1", Range(10, 15), "int");
+  //ranges
+  node["czh"].add("add_test2", std::ranges::views::iota(15, 20), "int");
   node["czh"].add("ref", node["czh"]["int"]);
   
   // rename
