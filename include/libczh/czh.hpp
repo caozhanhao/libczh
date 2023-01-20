@@ -56,14 +56,7 @@ namespace czh
       }
     }
   
-    Node parse()
-    {
-      auto ret = parser.parse();
-      error::czh_assert(ret != nullptr, "Unexpected nullptr from Parser::parse");
-      return std::move(*ret.release());
-    }
-  
-    std::unique_ptr<Node> try_parse()
+    std::unique_ptr<Node> parse()
     {
       std::unique_ptr<Node> ret;
       try

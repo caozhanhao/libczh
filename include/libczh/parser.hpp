@@ -40,6 +40,7 @@ namespace czh::parser
     std::unique_ptr<node::Node> parse()
     {
       curr_tok = get();
+      std::unique_ptr<node::Node> ret;
       while (check())
       {
         switch (curr_tok.type)
@@ -54,13 +55,19 @@ namespace czh::parser
             curr_tok = get();
             break;
           case token::TokenType::FEND:
-            return std::move(node);
+            ret.reset(node.release());
+            node = nullptr;
+            curr_node = nullptr;
+            return std::move(ret);
           default:
             error::czh_unreachable("Unexpected token");
             break;
         }
       }
-      return std::move(node);
+      ret.reset(node.release());
+      node = nullptr;
+      curr_node = nullptr;
+      return std::move(ret);
     }
   
   private:

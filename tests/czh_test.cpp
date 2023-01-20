@@ -72,7 +72,8 @@ namespace czh::test
   LIBCZH_TEST(czh)
   {
     czh::Czh czhtest("../../tests/czh/inputtest.czh", czh::InputMode::nonstream);
-    auto nodetest = czhtest.parse();
+    auto nodetestptr = czhtest.parse();
+    auto &nodetest = *nodetestptr;
     LIBCZH_EXPECT_EQ(nodetest["czh"]("dt1").get<double>(), 1.0000000000000002);
     LIBCZH_EXPECT_EQ(nodetest("czh")["dt2"].get<double>(), 2.2250738585072009e-308);
     LIBCZH_EXPECT_EQ(nodetest["czh"]["dt3"].get<double>(), -2.2250738585072009e-308);
