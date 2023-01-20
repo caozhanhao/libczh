@@ -17,6 +17,7 @@
 
 #ifndef LIBCZH_DTOA_HPP
 #define LIBCZH_DTOA_HPP
+#pragma once
 
 #include "error.hpp"
 #include <string>

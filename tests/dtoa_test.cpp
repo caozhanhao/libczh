@@ -11,9 +11,6 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#ifndef LIBCZH_DTOA_TEST_CPP
-#define LIBCZH_DTOA_TEST_CPP
-
 #include "unittest.hpp"
 
 namespace czh::test
@@ -41,4 +38,3 @@ namespace czh::test
     LIBCZH_EXPECT_EQ(dtoa(1.7976931348623157e308), "1.7976931348623157e308");
   }
 }
-#endif

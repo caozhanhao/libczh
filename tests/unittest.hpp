@@ -11,8 +11,9 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-#ifndef LIBCZH_UNITTESTS_HPP
-#define LIBCZH_UNITTESTS_HPP
+#ifndef LIBCZH_UNITTEST_HPP
+#define LIBCZH_UNITTEST_HPP
+#pragma once
 
 #include "libczh/czh.hpp"
 #include <random>

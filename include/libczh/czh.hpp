@@ -13,6 +13,7 @@
 //   limitations under the License.
 #ifndef LIBCZH_CZH_HPP
 #define LIBCZH_CZH_HPP
+#pragma once
 
 #include "error.hpp"
 #include "node.hpp"

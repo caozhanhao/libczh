@@ -1,5 +1,6 @@
 #ifndef LIBCZH_EXAMPLE_HPP
 #define LIBCZH_EXAMPLE_HPP
+#pragma once
 
 #include <vector>
 

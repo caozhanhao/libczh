@@ -13,6 +13,7 @@
 //   limitations under the License.
 #ifndef LIBCZH_TOKEN_HPP
 #define LIBCZH_TOKEN_HPP
+#pragma once
 
 #include "file.hpp"
 #include "utils.hpp"

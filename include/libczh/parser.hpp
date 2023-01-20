@@ -13,6 +13,7 @@
 //   limitations under the License.
 #ifndef LIBCZH_PARSER_HPP
 #define LIBCZH_PARSER_HPP
+#pragma once
 
 #include "lexer.hpp"
 #include "token.hpp"

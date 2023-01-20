@@ -13,6 +13,7 @@
 //   limitations under the License.
 #ifndef LIBCZH_UTILS_HPP
 #define LIBCZH_UTILS_HPP
+#pragma once
 
 #include "dtoa.hpp"
 #include <cstdlib>

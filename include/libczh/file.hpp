@@ -13,6 +13,7 @@
 //   limitations under the License.
 #ifndef LIBCZH_FILE_HPP
 #define LIBCZH_FILE_HPP
+#pragma once
 
 #include <memory>
 #include <string>

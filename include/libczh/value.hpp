@@ -13,6 +13,7 @@
 //   limitations under the License.
 #ifndef LIBCZH_VALUE_HPP
 #define LIBCZH_VALUE_HPP
+#pragma once
 
 #include "error.hpp"
 #include <variant>
