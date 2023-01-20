@@ -351,17 +351,17 @@ namespace czh
         return value;
       }
     
-      std::string get_typename() const { return details::get_typename(value.index()); }
+      [[nodiscard]] std::string get_typename() const { return details::get_typename(value.index()); }
   
     private:
       template<typename T>
-      bool internal_can_get(details::ValueTag) const { return is<T>(); }
-    
+      [[nodiscard]] bool internal_can_get(details::ValueTag) const { return is<T>(); }
+  
       template<typename T>
-      bool internal_can_get(details::AnyArrayTag) const { return is<Array>(); }
-    
+      [[nodiscard]] bool internal_can_get(details::AnyArrayTag) const { return is<Array>(); }
+  
       template<typename T>
-      bool internal_can_get(details::NormalArrayTag) const { return is<Array>(); }
+      [[nodiscard]] bool internal_can_get(details::NormalArrayTag) const { return is<Array>(); }
     
       template<typename T>
       void internal_assign(T &&v, details::ValueTag) { value = std::forward<T>(v); }

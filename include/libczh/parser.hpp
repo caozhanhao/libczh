@@ -159,6 +159,7 @@ namespace czh::parser
         }
         try
         {
+          error::czh_assert(call != nullptr);
           call = &(*call)[curr_tok.what.get<std::string>()];
         }
         catch (error::Error &err)
@@ -184,8 +185,8 @@ namespace czh::parser
         if (curr_tok.type == token::TokenType::COMMA) continue;
         std::visit(utils::overloaded{
             [&ret](auto &&a) { ret.insert(ret.end(), a); },
-            [](node::Node *) {},
-            [](value::Array) {}
+            [](node::Node *) { error::czh_unreachable(); },
+            [](value::Array) { error::czh_unreachable(); }
         }, curr_tok.what.get_variant());
       }
       curr_tok = get();//eat ]

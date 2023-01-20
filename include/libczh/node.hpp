@@ -336,9 +336,9 @@ namespace czh::node
       return *ret;
     }
   
-    Node &add(std::string add_name, Node &node_, std::string before = "")
+    Node &add(std::string add_name, Node &node_, const std::string &before = "")
     {
-      return add(std::move(add_name), &node_, std::move(before), node_.czh_token);
+      return add(std::move(add_name), &node_, before, node_.czh_token);
     }
   
     Node &add_node(std::string add_name, const std::string &before = "", token::Token token = token::Token(),
@@ -374,7 +374,7 @@ namespace czh::node
     {
       assert_node(l);
       auto &nd = std::get<NodeData>(data);
-      NodeData::IndexType::const_iterator it = nd.find(s);
+      auto it = nd.find(s);
       if (it == nd.end()) report_no_node(s, l);
       return *it->second;
     }
@@ -450,14 +450,14 @@ namespace czh::node
       }
     }
   
-    void report_error(const std::string &str, const token::Token &token,
-                      const std::experimental::source_location &l) const
+    static void report_error(const std::string &str, const token::Token &token,
+                             const std::experimental::source_location &l)
     {
       token.report_error(str + " Required from " + error::location_to_str(l) + ".");
     }
   
-    void assert_true(bool a, const std::string &str, const token::Token &token,
-                     const std::experimental::source_location &l) const
+    static void assert_true(bool a, const std::string &str, const token::Token &token,
+                            const std::experimental::source_location &l)
     {
       if (!a) report_error(str, token, l);
     }

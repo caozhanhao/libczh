@@ -49,7 +49,7 @@ namespace czh::token
     explicit Pos(std::shared_ptr<file::File> code_)
         : pos(0), size(0), code(std::move(code_)) {}
   
-    explicit Pos() = default;
+    explicit Pos() : pos(0), size(0) {}
   
     Pos &operator+=(const std::size_t &p)
     {
@@ -124,8 +124,8 @@ namespace czh::token
     template<typename T>
     Token(TokenType type_, T what_, Pos pos_)
         :type(type_), what(std::move(what_)), pos(std::move(pos_)) {}
-    
-    explicit Token() = default;
+  
+    explicit Token() : type(TokenType::UNEXPECTED) {}
     
     Token(const Token &) = default;
     
