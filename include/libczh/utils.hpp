@@ -16,6 +16,7 @@
 #pragma once
 
 #include "dtoa.hpp"
+#include "value.hpp"
 #include <cstdlib>
 #include <iomanip>
 #include <vector>
@@ -155,7 +156,7 @@ namespace czh::utils
     for (auto it = v.cbegin(); it != std::prev(v.cend()); ++it)
     {
       result += std::visit(visitor, *it);
-      result += ", ";
+      result += ",";
     }
     result += std::visit(visitor, *std::prev(v.cend()));
     result += "}";

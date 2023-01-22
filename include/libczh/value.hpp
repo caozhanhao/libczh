@@ -36,7 +36,11 @@ namespace czh
   }
   namespace value
   {
-    class Null {};
+    class Null
+    {
+    public:
+      bool operator==(const Null &) const { return true; }
+    };
     
     namespace details
     {
@@ -304,13 +308,18 @@ namespace czh
       {
         *this = std::forward<T>(data);
       }
-      
+  
       Value(Value &&) = default;
-      
+  
       Value(const Value &) = default;
-      
+  
       Value() : value(Null()) {}
-      
+  
+      bool operator==(const Value &v) const
+      {
+        return value == v.value;
+      }
+  
       template<typename T>
       [[nodiscard]]T get(const std::experimental::source_location &l =
       std::experimental::source_location::current()) const
@@ -318,7 +327,7 @@ namespace czh
         check_type<T>();
         return internal_get<T>(typename details::TagDispatch<T>::tag{}, l);
       }
-      
+  
       template<typename T>
       Value &operator=(T &&v)
       {

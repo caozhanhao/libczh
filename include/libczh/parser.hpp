@@ -41,6 +41,7 @@ namespace czh::parser
     std::unique_ptr<node::Node> parse()
     {
       curr_tok = get();
+      error::czh_assert(curr_tok.type != token::TokenType::FEND, "Unexpected end of czh.");
       std::unique_ptr<node::Node> ret;
       while (check())
       {

@@ -16,6 +16,7 @@
 #pragma once
 
 #include "value.hpp"
+#include "writer.hpp"
 #include "error.hpp"
 #include "utils.hpp"
 #include "token.hpp"
@@ -46,10 +47,15 @@ namespace czh::node
       std::list<Node> nodes;
     public:
       NodeData() = default;
-      
+  
       [[nodiscard]]const auto &get_nodes() const { return nodes; }
-      
+  
       auto &get_nodes() { return nodes; }
+  
+      bool operator==(const NodeData &nd) const
+      {
+        return (nodes == nd.nodes);
+      }
   
       Node *add(Node node, const std::string &before, int &err)
       {
@@ -144,6 +150,25 @@ namespace czh::node
       return data.index() == 0;
     }
   
+    bool operator==(const Node &n) const
+    {
+      if (is_node() != n.is_node() || name != n.name) return false;
+      if (is_node())
+      {
+        auto &nd1 = std::get<NodeData>(data);
+        auto &nd2 = std::get<NodeData>(n.data);
+        return nd1 == nd2;
+      }
+      auto &v1 = std::get<Value>(data);
+      auto &v2 = std::get<Value>(n.data);
+      if (v1.is<node::Node *>() && v2.is<node::Node *>())
+      {
+        return *v1.get<node::Node *>() == *v2.get<node::Node *>();
+      }
+      return v1 == v2;
+    }
+  
+  
     [[nodiscard]]std::string get_name() const
     {
       return name;
@@ -191,21 +216,65 @@ namespace czh::node
       return std::move(std::make_unique<decltype(res)>(res));
     }
   
-    [[nodiscard]] std::string to_string
-        (Color with_color = Color::no_color, std::size_t indentation = 2, int n = -1) const
+    template<writer::Writer W>
+    const Node &accept(W &writer) const
     {
       if (is_node())
       {
-        if (name == "/")
+        if (last_node != nullptr)
         {
-          return node_to_string(with_color, indentation, n);
+          writer.node_begin(name);
+        }
+        auto &nd = std::get<NodeData>(data);
+        for (auto &r: nd.nodes)
+        {
+          r.template accept(writer);
+        }
+        if (last_node != nullptr)
+        {
+          writer.node_end();
+        }
+      }
+      else
+      {
+        auto &value = std::get<Value>(data);
+        writer.value_begin(name);
+        if (value.is<node::Node *>())
+        {
+          auto n = value.get<node::Node *>();
+          auto path = *n->get_path();
+          auto this_path = *get_last_node()->get_path();
+          auto[itpath, itthis] = std::mismatch(path.rbegin(), path.rend(),
+                                               this_path.rbegin(), this_path.rend());
+          if (itpath == path.rend() && itthis == this_path.rend())
+          {
+            writer.value_ref_path_set_global();
+          }
+          for (; itpath < path.rend() - 1; ++itpath)
+          {
+            writer.value_ref_path(*itpath);
+          }
+          writer.value_ref_id(path[0]);
+        }
+        else if (value.is<value::Array>())
+        {
+          auto arr = value.get<value::Array>();
+          writer.value_array_begin();
+          for (auto it = arr.cbegin(); it < arr.cend() - 1; ++it)
+          {
+            writer.value_array_value(*it);
+          }
+          if (!arr.empty())
+          {
+            writer.value_array_end(*arr.crbegin());
+          }
         }
         else
         {
-          return node_to_string(with_color, indentation, n + 1);
+          writer.value(value);
         }
       }
-      return value_to_string(with_color, indentation, n + 1);
+      return *this;
     }
   
     template<typename T>
@@ -240,6 +309,7 @@ namespace czh::node
       value = v;
       return *this;
     }
+  
   
     // Node only
     [[nodiscard]] bool has_node(const std::string &tag, const std::experimental::source_location &l =
@@ -482,60 +552,12 @@ namespace czh::node
       report_error("There is no node named '" + str + "'.Do you mean '" + it->name + "'?", it->czh_token, l);
     }
   
-    [[nodiscard]]std::string node_to_string(Color with_color, std::size_t indentation, int n) const
-    {
-      auto &nd = std::get<NodeData>(data);
-      std::string ret;
-      if (name != "/")
-      {
-        ret += std::string(indentation * n, ' ')
-               + colorify(name, with_color, utils::ColorType::BLOCK_BEG) //node name
-               + ":" + "\n";
-      }
-      for (auto &node: nd.get_nodes())
-        ret += node.to_string(with_color, indentation, n);
-      if (name != "/")
-      {
-        ret += std::string(indentation * n, ' ')
-               + colorify("end", with_color, utils::ColorType::BLOCK_END)
-               + "\n";
-      }
-      return ret;
-    }
-    
-    [[nodiscard]]std::string value_to_string(Color with_color, std::size_t indentation, int n) const
-    {
-      auto &value = std::get<Value>(data);
-      std::string valuestr = std::visit(
-          utils::overloaded{
-              [&with_color](auto &&i) -> std::string { return czh::utils::to_czhstr(i, with_color); },
-              [&with_color, this](Node *n) -> std::string
-              {
-                std::string res;
-                auto path = *n->get_path();
-                auto this_path = *get_last_node()->get_path();
-                auto[itpath, itthis] = std::mismatch(path.rbegin(), path.rend(),
-                                                     this_path.rbegin(), this_path.rend());
-                if (itpath == path.rend() && itthis == this_path.rend()) res += "::";
-                for (; itpath < path.rend() - 1; ++itpath)
-                {
-                  res += colorify(*itpath, with_color, utils::ColorType::REF_ID) + "::";
-                }
-                res += colorify(path[0], with_color, utils::ColorType::REF_ID);
-                return res;
-              }
-          },
-          value.get_variant());
-      std::string ret = std::string(indentation * n, ' ') +
-                        colorify(name, with_color, utils::ColorType::ID)// id name
-                        + " = " + valuestr + "\n";
-      return ret;
-    }
   };
   
   std::ostream &operator<<(std::ostream &os, const Node &node)
   {
-    os << node.to_string();
+    writer::BasicWriter<std::ostream> w{os};
+    node.accept(w);
     return os;
   }
 }

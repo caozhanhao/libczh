@@ -60,9 +60,8 @@
 
 ##### mode
 
--   `czh::InputMode::stream` -> The first parameter is the file name
--   `czh::InputMode::nonstream` -> The first parameter is the file name
--   `czh::InputMode::string` -> The first parameter is a `std::string` where czh is stored
+-   `czh::InputMode::file`   -> `str` is a path
+-   `czh::InputMode::string` -> `str` is a `std::string` where czh is stored
 
 ```c++
   Czh("example: a = 1; end;", czh::InputMode::string);
@@ -110,14 +109,13 @@ auto vmap = example["example"]["valmap"].value_map<vector<int>>();
 -   When the type of Array is not unique, use `czh::value::Array`
 
 ```c++
-node["czh"]["int_array"] = Range(1, 10);        //begin() end() value_type
-node["czh"]["int_array"] = {1, 2, 3};           //brace-enclosed initializer list
-node["czh"]["any_array"] = {false, 1, "2", 3.0};//czh::value::Array
+node["czh"]["int_array"] = Range(1, 10);        // custom container
+node["czh"]["int_array"] = std::ranges::views::iota(1,10); // std::ranges
+node["czh"]["int_array"] = {1, 2, 3};           // brace-enclosed initializer list
+node["czh"]["any_array"] = {false, 1, "2", 3.0};// czh::value::Array
 ```
 
 #### Modify
-
--   After modification, you can use the `operator <<` or `Node::to_string()` to update the file
 
 #### Add
 
@@ -191,12 +189,13 @@ example["a"].rename("b");
 
 #### Node::to_string(with_color)
 
--   Returns the formatted czh
--   `czh::node::Color::with_color` -> with highlight
--   `czh::node::Color::no_color`   -> no highlight
--   Do not write highlighted czh to the file, otherwise it will not be able to be parsed.
+- accept a `Writer`, see `writer.hpp`
 
 #### operator<<
 
--   Output `Node::to_string()` return value
--   Without highlight
+- equal to
+
+```c++
+    writer::BasicWriter<std::ostream> w{ os };
+node.accept(w);
+```

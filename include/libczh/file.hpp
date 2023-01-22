@@ -15,6 +15,7 @@
 #define LIBCZH_FILE_HPP
 #pragma once
 
+#include "utils.hpp"
 #include <memory>
 #include <string>
 #include <fstream>

@@ -58,9 +58,8 @@
 
 ##### mode
 
--   `czh::InputMode::stream` -> 第一个参数为文件名
--   `czh::InputMode::nonstream`->第一个参数为文件名
--   `czh::InputMode::string`-> 第一个参数为存储czh的`std::string`
+-   `czh::InputMode::file`  -> `str` 是路径
+-   `czh::InputMode::string`-> `str` 是存储czh的`std::string`
 
 ```c++
   Czh("example: a = 1; end;", czh::InputMode::string);
@@ -106,14 +105,13 @@ auto vmap = example["example"]["valmap"].value_map<vector<int>>();
 -   当Array存储的类型不唯一时，使用`czh::value::Array`
 
 ```c++
-node["czh"]["int_array"] = Range(1, 10);        //begin() end() value_type
-node["czh"]["int_array"] = {1, 2, 3};           //brace-enclosed initializer list
-node["czh"]["any_array"] = {false, 1, "2", 3.0};//czh::value::Array
+node["czh"]["int_array"] = Range(1, 10);        // custom container
+node["czh"]["int_array"] = std::ranges::views::iota(1,10); // std::ranges
+node["czh"]["int_array"] = {1, 2, 3};           // brace-enclosed initializer list
+node["czh"]["any_array"] = {false, 1, "2", 3.0};// czh::value::Array
 ```
 
 #### 修改
-
--   修改后可使用`operator<<`或`Node::to_string()`以更新文件
 
 #### 添加
 
@@ -184,14 +182,15 @@ example["a"].rename("b");
 
 -   输出的czh不保留注释
 
-#### Node::to_string(with_color)
+#### Node::accept()
 
--   返回格式化后的czh
--   `czh::node::Color::with_color` 有高亮
--   `czh::node::Color::no_color` 无高亮(默认)
--   不要将高亮的czh写入文件，否则无法解析
+- 接受一个`Writer`, 见`writer.hpp`
 
 #### operator<<
 
--   输出`Node::to_string()`返回值
--   无高亮
+- 等同于
+
+```c++
+    writer::BasicWriter<std::ostream> w{ os };
+node.accept(w);
+```

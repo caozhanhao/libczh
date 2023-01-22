@@ -15,23 +15,33 @@
 #define LIBCZH_CZH_HPP
 #pragma once
 
+#include "dtoa.hpp"
 #include "error.hpp"
+#include "file.hpp"
+#include "lexer.hpp"
 #include "node.hpp"
 #include "parser.hpp"
+#include "token.hpp"
+#include "utils.hpp"
+#include "value.hpp"
+#include "writer.hpp"
 #include <fstream>
 #include <iostream>
 #include <memory>
 
-using czh::parser::Parser;
-using czh::node::Node;
-using czh::lexer::Lexer;
-using czh::error::Error;
-using czh::error::CzhError;
 namespace czh
 {
+  using czh::parser::Parser;
+  using czh::node::Node;
+  using czh::lexer::Lexer;
+  using czh::error::Error;
+  using czh::error::CzhError;
+  using czh::writer::BasicWriter;
+  using czh::writer::PrettyWriter;
+  using czh::writer::ColorWriter;
   enum class InputMode
   {
-    stream, nonstream, string
+    stream, file, string
   };
   
   class Czh
@@ -43,7 +53,7 @@ namespace czh
     explicit Czh(const std::string &path, InputMode mode)
         : parser(&lexer)
     {
-      if (mode == InputMode::nonstream)
+      if (mode == InputMode::file)
       {
         lexer.set_czh(path, path);
       }

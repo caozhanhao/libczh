@@ -54,5 +54,4 @@ public:
   
   Iterator end() const { return Iterator{b}; }
 };
-
 #endif

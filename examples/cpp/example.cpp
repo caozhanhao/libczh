@@ -11,7 +11,7 @@ int main()
    *   Parse
    *
    */
-  czh::Czh e("examples/czh/example.czh", czh::InputMode::nonstream);
+  czh::Czh e("examples/czh/example.czh", czh::InputMode::file);
   // or czh::Czh e("example.czh", czh::InputMode::stream);
   // or czh::Czh e("example: a = 1; end;",  czh::InputMode::string);
   auto nodeptr = e.parse();// returns nullptr when czh has errors.
@@ -66,6 +66,7 @@ int main()
   node["czh"]["int_array"] = {1, 2, 3};            // braced initializer list
   node["czh"]["any_array"] = {false, 1, "2", 3.0}; // czh::value::Array(see above)
   node["czh"]["int_array"] = Range(1, 10);         // containers that have begin(), end() and value_type
+  node["czh"]["int_array"] = std::ranges::views::iota(1, 10); // or std::ranges
   
   // Add Node
   // Node::add_node(name, before) will add a Node before "before"
@@ -75,7 +76,6 @@ int main()
   node["czh"].add("add_test1", Range(10, 15), "int");
   //ranges
   node["czh"].add("add_test2", std::ranges::views::iota(15, 20), "int");
-  node["czh"].add("ref", node["czh"]["int"]);
   
   // rename
   node["czh"]["double"].rename("edit");
@@ -89,18 +89,19 @@ int main()
    *   Output
    *
    */
-  // operator<< or Node::to_string()
+  // writer
   std::fstream output_file("examples/czh/output.czh", std::ios_base::out);
   output_file << node;
-  // or output_file << node.to_string();
+  // or
+  // czh::BasicWriter<std::fstream> fw{output_file};
+  // node.accept(fw);
+  output_file.close();
   
-  // prettify
+  // prettify + color, use PrettyWriter to disable color.
   czh::Czh preety_file("examples/czh/czh.czh", czh::InputMode::stream);
   auto pretty_ptr = preety_file.parse();
   auto &pretty = *pretty_ptr;
-  std::cout << pretty.to_string(czh::node::Color::with_color) << std::endl;
-  // to_string(czh::node::Color::with_color) will use ANSI Escape Code to colorify the czh.
-  // So don't write this czh to the file, otherwise it won't be able to be parsed.
-  
+  czh::ColorWriter<std::ostream> cw{std::cout};
+  pretty.accept(cw);
   return 0;
 }

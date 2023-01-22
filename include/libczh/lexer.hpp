@@ -522,9 +522,7 @@ namespace czh::lexer
         if (match.get_state() == State::END || match.get_state() == State::INIT)
           return;
         else
-        {
           token.report_error("Unexpected end of file.");
-        }
       }
       if (match.end() && token.type != token::TokenType::SEND)
         match.match(token::TokenType::SEND);
