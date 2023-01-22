@@ -67,12 +67,11 @@ namespace czh
       }
     }
   
-    std::unique_ptr<Node> parse()
+    Node parse()
     {
-      std::unique_ptr<Node> ret;
       try
       {
-        ret = parser.parse();
+        return parser.parse();
       }
       catch (czh::error::Error &err)
       {
@@ -82,9 +81,18 @@ namespace czh
       {
         std::cout << err.get_content() << std::endl;
       }
-      error::czh_assert(ret != nullptr, "Unexpected nullptr from Parser::parse");
-      return ret;
+      error::czh_unreachable();
+      return {};
     }
   };
+  
+  inline namespace literals
+  {
+    inline node::Node operator "" _czh(const char *c, size_t n)
+    {
+      Czh czh(std::string(c, n), InputMode::string);
+      return czh.parse();
+    }
+  }
 }
 #endif

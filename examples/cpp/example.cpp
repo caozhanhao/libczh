@@ -14,8 +14,7 @@ int main()
   czh::Czh e("examples/czh/example.czh", czh::InputMode::file);
   // or czh::Czh e("example.czh", czh::InputMode::stream);
   // or czh::Czh e("example: a = 1; end;",  czh::InputMode::string);
-  auto nodeptr = e.parse();// returns nullptr when czh has errors.
-  auto &node = *nodeptr;
+  auto node = e.parse();// returns nullptr when czh has errors.
   
   /*
    *
@@ -97,10 +96,24 @@ int main()
   // node.accept(fw);
   output_file.close();
   
-  // prettify + color, use PrettyWriter to disable color.
-  czh::Czh preety_file("examples/czh/czh.czh", czh::InputMode::stream);
-  auto pretty_ptr = preety_file.parse();
-  auto &pretty = *pretty_ptr;
+  using namespace czh::literals;
+  // literal
+  auto pretty = R"(
+< note >
+czh:
+    int = +6e+2
+    longlong = +6e+12
+    😀 = "字符串"
+    double = +6e-2
+    ref = int
+    array = {false, 1.0, "2", 3}
+    arrays:
+        k1 = {1,2,3}
+        k2 = {4,5,6}
+    end
+end
+)"_czh;
+  // ColorWriter -> PrettyWriter + color, use PrettyWriter to disable color.
   czh::ColorWriter<std::ostream> cw{std::cout};
   pretty.accept(cw);
   return 0;

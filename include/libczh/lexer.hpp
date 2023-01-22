@@ -466,7 +466,16 @@ namespace czh::lexer
           is_eof(false),
           ch(0),
           buffer(token::TokenType::UNEXPECTED, 0, codepos) {}
-    
+  
+    void reset()
+    {
+      is_eof = false;
+      buffer = token::Token{token::TokenType::UNEXPECTED, 0, codepos};
+      match.reset();
+      nmatch.reset();
+      codepos.reset();
+    }
+  
     void set_czh(std::string filename, std::unique_ptr<std::ifstream> fs)
     {
       error::czh_assert(fs->good(), error::czh_invalid_file);

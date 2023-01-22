@@ -30,19 +30,24 @@ namespace czh::parser
   {
   private:
     lexer::Lexer *lex;
-    std::unique_ptr<node::Node> node;
+    node::Node node;
     node::Node *curr_node;
     token::Token curr_tok;
   public:
     explicit Parser(lexer::Lexer *lex_)
-        : lex(lex_), node(std::make_unique<node::Node>()), curr_node(node.get()),
+        : lex(lex_), node(node::Node()), curr_node(&node),
           curr_tok(token::TokenType::UNEXPECTED, 0, token::Pos(nullptr)) {}
   
-    std::unique_ptr<node::Node> parse()
+    node::Node parse()
     {
+      if (curr_node == nullptr)
+      {
+        node.reset();
+        curr_node = &node;
+        lex->reset();
+      }
       curr_tok = get();
       error::czh_assert(curr_tok.type != token::TokenType::FEND, "Unexpected end of czh.");
-      std::unique_ptr<node::Node> ret;
       while (check())
       {
         switch (curr_tok.type)
@@ -57,19 +62,15 @@ namespace czh::parser
             curr_tok = get();
             break;
           case token::TokenType::FEND:
-            ret.reset(node.release());
-            node = nullptr;
             curr_node = nullptr;
-            return std::move(ret);
+            return std::move(node);
           default:
             error::czh_unreachable("Unexpected token");
             break;
         }
       }
-      ret.reset(node.release());
-      node = nullptr;
       curr_node = nullptr;
-      return std::move(ret);
+      return std::move(node);
     }
   
   private:
@@ -91,28 +92,28 @@ namespace czh::parser
       if (!check()) return;
       auto id_name = curr_tok.what.get<std::string>();
       if (curr_node->has_node(id_name)) curr_tok.report_error("Duplicate node name.");
-      auto bak = curr_tok;
+      auto bak = token::Token(curr_tok);
       curr_tok = get();//eat name
       // id:
       if (curr_tok.type == token::TokenType::COLON)//scope
       {
         curr_tok = get();//eat ':'
-        curr_node = &curr_node->add_node(id_name, "", bak);
+        curr_node = &curr_node->add_node(id_name, "", std::move(bak));
         return;
       }
       //id = xxx
       curr_tok = get();//eat '='
       if (curr_tok.type == token::TokenType::ID || curr_tok.type == token::TokenType::REF)//ref id = -x:x
       {
-        curr_node->add(id_name, parse_ref(), "", bak);
+        curr_node->add(id_name, parse_ref(), "", std::move(bak));
         return;
       }
       else if (curr_tok.type == token::TokenType::ARR_LP)// array id = [1,2,3]
       {
-        curr_node->add(id_name, parse_array(), "", bak);
+        curr_node->add(id_name, parse_array(), "", std::move(bak));
         return;
       }
-      curr_node->add(id_name, curr_tok.what, "", bak);
+      curr_node->add(id_name, curr_tok.what, "", std::move(bak));
       curr_tok = get();//eat value
     }
     
@@ -122,7 +123,7 @@ namespace czh::parser
       node::Node *call = curr_node;
       if (curr_tok.type == token::TokenType::REF)
       {
-        call = node.get();
+        call = &node;
       }
       else
       {

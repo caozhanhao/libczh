@@ -145,6 +145,15 @@ namespace czh::node
     Node(Node &&) = default;
   
     // Node and Value
+  
+    Node &reset()
+    {
+      data.emplace<NodeData>();
+      last_node = nullptr;
+      name = "/";
+      return *this;
+    }
+  
     [[nodiscard]]bool is_node() const
     {
       return data.index() == 0;
@@ -278,6 +287,7 @@ namespace czh::node
     }
   
     template<typename T>
+    requires (!std::is_base_of_v<Node, std::decay_t<T>>)
     Node &operator=(T &&v)
     {
       if (is_node()) data.template emplace<Value>();
@@ -409,7 +419,7 @@ namespace czh::node
   
     Node &add(std::string add_name, Node &node_, const std::string &before = "")
     {
-      return add(std::move(add_name), &node_, before, node_.czh_token);
+      return add(std::move(add_name), &node_, before, token::Token(node_.czh_token));
     }
   
     Node &add_node(std::string add_name, const std::string &before = "", token::Token token = token::Token(),

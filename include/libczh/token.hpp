@@ -52,6 +52,12 @@ namespace czh::token
   
     explicit Pos() : pos(0), size(0) {}
   
+    void reset()
+    {
+      pos = 0;
+      size = 0;
+    }
+  
     Pos &operator+=(const std::size_t &p)
     {
       pos += p;
@@ -127,13 +133,13 @@ namespace czh::token
         :type(type_), what(std::move(what_)), pos(std::move(pos_)) {}
   
     explicit Token() : type(TokenType::UNEXPECTED) {}
-    
-    Token(const Token &) = default;
-    
-    Token(Token &&) = default;
-    
-    Token &operator=(Token &&) = default;
-    
+  
+    explicit Token(const Token &) = default;
+  
+    Token(Token &&t) = default;
+  
+    Token &operator=(Token &&t) = default;
+  
     void report_error(const std::string &details) const
     {
       if (pos.code != nullptr)

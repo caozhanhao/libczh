@@ -303,7 +303,8 @@ namespace czh
     private:
       details::VT value;
     public:
-      template<typename T, typename = std::enable_if_t<!std::is_base_of_v<Value, std::decay_t<T>>>>
+      template<typename T>
+      requires (!std::is_base_of_v<Value, std::decay_t<T>>)
       explicit Value(T &&data)
       {
         *this = std::forward<T>(data);
@@ -311,9 +312,11 @@ namespace czh
   
       Value(Value &&) = default;
   
-      Value(const Value &) = default;
+      explicit Value(const Value &) = default;
   
-      Value() : value(Null()) {}
+      Value &operator=(Value &&v) = default;
+  
+      explicit Value() : value(Null()) {}
   
       bool operator==(const Value &v) const
       {
@@ -329,21 +332,21 @@ namespace czh
       }
   
       template<typename T>
+      requires (!std::is_base_of_v<Value, std::decay_t<T>>)
+               && (!std::is_same_v<char *, std::remove_const_t<std::decay_t<T>>>)
       Value &operator=(T &&v)
       {
         check_type<T>();
         internal_assign<T>(std::forward<T>(v), typename details::TagDispatch<T>::tag{});
         return *this;
       }
-      
-      Value &operator=(Value &&v) = default;
-      
+  
       Value &operator=(const char *v)
       {
         value = std::string(v);
         return *this;
       }
-    
+  
       template<typename T>
       [[nodiscard]]bool is() const
       {
