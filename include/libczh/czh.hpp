@@ -71,7 +71,7 @@ namespace czh
     {
       try
       {
-        return parser.parse();
+        return std::move(parser.parse());
       }
       catch (czh::error::Error &err)
       {
@@ -91,7 +91,7 @@ namespace czh
     inline node::Node operator "" _czh(const char *c, size_t n)
     {
       Czh czh(std::string(c, n), InputMode::string);
-      return czh.parse();
+      return std::move(czh.parse());
     }
   }
 }

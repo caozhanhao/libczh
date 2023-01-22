@@ -50,7 +50,7 @@ namespace czh::writer
     std::visit(
         utils::overloaded{
             [&os, &c](auto &&i) { *os << utils::to_czhstr(i, c); },
-            [](node::Node *i) { error::czh_unreachable(); },
+            [](value::Reference i) { error::czh_unreachable(); },
         },
         v.get_variant());
   }
@@ -147,7 +147,7 @@ namespace czh::writer
       std::visit(
           utils::overloaded{
               [this](auto &&i) { *os << utils::to_czhstr(i); },
-              [](node::Node *i) { error::czh_unreachable(); },
+              [](value::Reference i) { error::czh_unreachable(); },
           },
           v.get_variant());
       *os << "\n";
@@ -222,7 +222,7 @@ namespace czh::writer
       std::visit(
           utils::overloaded{
               [this](auto &&i) { *os << utils::to_czhstr(i, utils::Color::with_color); },
-              [](node::Node *i) { error::czh_unreachable(); },
+              [](value::Reference) { error::czh_unreachable(); },
           },
           v.get_variant());
       *os << "\n";

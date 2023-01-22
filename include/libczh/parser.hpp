@@ -116,69 +116,32 @@ namespace czh::parser
       curr_node->add(id_name, curr_tok.what, "", std::move(bak));
       curr_tok = get();//eat value
     }
-    
-    node::Node *parse_ref()
+  
+    value::Reference parse_ref()
     {
-      if (!check()) return nullptr;
-      node::Node *call = curr_node;
+      std::vector<std::string> path;
       if (curr_tok.type == token::TokenType::REF)
       {
-        call = &node;
+        path = {""};
       }
-      else
+      bool id = false;
+      while (curr_tok.type == token::TokenType::ID || curr_tok.type == token::TokenType::REF)
       {
-        auto name = curr_tok.what.get<std::string>();
-        while (call != nullptr)
+        if (curr_tok.type == token::TokenType::ID)
         {
-          if (call->has_node(name))
-          {
-            call = &(*call)[name];
-            curr_tok = get();
-            if (curr_tok.type != token::TokenType::REF)
-            {
-              return call;
-            }
-            else
-            {
-              break;
-            }
-          }
-          else
-          {
-            call = call->get_last_node();
-          }
+          if (id) break;// double id
+          path.insert(path.begin(), curr_tok.what.get<std::string>());
+          id = true;
         }
-        if (call == nullptr)
+        else
         {
-          curr_tok.report_error("There is no node named '" + name + "'.");
-        }
-      }
-      
-      while (true)
-      {
-        if (curr_tok.type == token::TokenType::REF)
-        {
-          curr_tok = get();
-        }
-        try
-        {
-          error::czh_assert(call != nullptr);
-          call = &(*call)[curr_tok.what.get<std::string>()];
-        }
-        catch (error::Error &err)
-        {
-          curr_tok.report_error(err.get_detail());
+          id = false;
         }
         curr_tok = get();
-        if (curr_tok.type != token::TokenType::REF)
-        {
-          return call;
-        }
       }
-      error::czh_unreachable();
-      return nullptr;
+      return {path};
     }
-    
+  
     value::Array parse_array()
     {
       value::Array ret;
@@ -188,7 +151,7 @@ namespace czh::parser
         if (curr_tok.type == token::TokenType::COMMA) continue;
         std::visit(utils::overloaded{
             [&ret](auto &&a) { ret.insert(ret.end(), a); },
-            [](node::Node *) { error::czh_unreachable(); },
+            [](value::Reference) { error::czh_unreachable(); },
             [](value::Array) { error::czh_unreachable(); }
         }, curr_tok.what.get_variant());
       }

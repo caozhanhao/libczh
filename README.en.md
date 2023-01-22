@@ -47,7 +47,6 @@
 -   Use `id = key` as a Reference
 -   Use `id = key` as a Reference
 -   The scope of the Reference is connected by '::'
--   The Reference can only reference previously defined keys
 
 ### Usage of libczh
 

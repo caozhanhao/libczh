@@ -157,8 +157,7 @@ namespace czh::token
       return std::visit(
           utils::overloaded{
               [](auto &&i) -> auto { return czh::utils::to_czhstr(i); },
-              [](node::Node *i) -> auto { return std::string(); },
-              [](const char *i) -> auto { return std::string(); },
+              [](value::Reference) -> auto { return std::string(); },
               [this](int i) -> auto
               {
                 if (type == TokenType::VALUE) return czh::utils::to_czhstr(i);

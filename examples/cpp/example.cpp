@@ -12,9 +12,8 @@ int main()
    *
    */
   czh::Czh e("examples/czh/example.czh", czh::InputMode::file);
-  // or czh::Czh e("example.czh", czh::InputMode::stream);
   // or czh::Czh e("example: a = 1; end;",  czh::InputMode::string);
-  auto node = e.parse();// returns nullptr when czh has errors.
+  auto node = e.parse();
   
   /*
    *
@@ -83,21 +82,14 @@ int main()
   // clear
   node["czh"]["value_array_map"].clear();
   
-  /*
-   *
-   *   Output
-   *
-   */
-  // writer
-  std::fstream output_file("examples/czh/output.czh", std::ios_base::out);
-  output_file << node;
-  // or
-  // czh::BasicWriter<std::fstream> fw{output_file};
-  // node.accept(fw);
-  output_file.close();
   
-  using namespace czh::literals;
+  /*
+  *
+  *   Construct
+  *
+  */
   // literal
+  using namespace czh::literals;
   auto pretty = R"(
 < note >
 czh:
@@ -113,8 +105,41 @@ czh:
     end
 end
 )"_czh;
+  // constructor
+  czh::Node a{"a", 1};
+  czh::Node b{
+      "node",
+      {
+          {"abc", 123}
+      }
+  };
+  czh::Node c{
+      {"a", 1},
+      {
+       "node",
+            {
+                {"abc", 123}
+            }
+      }
+  };
+  
+  
+  /*
+  *
+  *   Output
+  *
+  */
+  // writer
+  std::fstream output_file("examples/czh/output.czh", std::ios_base::out);
+  output_file << node;
+  // or
+  // czh::BasicWriter<std::fstream> fw{output_file};
+  // node.accept(fw);
+  output_file.close();
+  
   // ColorWriter -> PrettyWriter + color, use PrettyWriter to disable color.
   czh::ColorWriter<std::ostream> cw{std::cout};
   pretty.accept(cw);
+  
   return 0;
 }

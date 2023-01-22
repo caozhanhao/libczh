@@ -100,8 +100,9 @@ namespace czh::utils
     return std::to_string(std::forward<T>(a));
   }
   
-  template<typename T, typename = std::enable_if_t<!std::is_same_v<double, std::decay_t<T>>
-                                                   && !std::is_same_v<bool, std::decay_t<T>>>>
+  template<typename T>
+  requires (!std::is_same_v<double, std::decay_t<T>>) &&
+           (!std::is_same_v<bool, std::decay_t<T>>)
   std::string value_to_str(T &&a)
   {
     return std::to_string(std::forward<T>(a));
@@ -116,7 +117,6 @@ namespace czh::utils
   {
     return dtoa(a);
   }
-  
   
   template<typename T>
   std::string to_czhstr(const T &val, Color color = Color::no_color)

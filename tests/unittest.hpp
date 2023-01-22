@@ -19,6 +19,7 @@
 #include <random>
 #include <map>
 #include <set>
+#include <sstream>
 #include <functional>
 #include <chrono>
 #include <type_traits>
@@ -154,7 +155,10 @@ namespace czh::test
     template<typename T>
     std::string internal_to_str(const T &a, CzhTag)
     {
-      return a.to_string();
+      std::stringstream ss;
+      writer::ColorWriter<std::stringstream> cw{ss};
+      a.accept(cw);
+      return ss.str();
     }
     
     template<typename T>

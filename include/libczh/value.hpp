@@ -42,6 +42,23 @@ namespace czh
       bool operator==(const Null &) const { return true; }
     };
     
+    class Reference
+    {
+    public:
+      std::vector<std::string> path;
+      
+      Reference() = delete;
+      
+      Reference(std::vector<std::string> v) : path(std::move(v)) {}
+      
+      bool operator==(const Reference &ref) const
+      {
+        // Sometimes path doesn't matter.
+        // Not use. (See as Node::operator==)
+        return path == ref.path;
+      }
+    };
+    
     namespace details
     {
       template<typename... List>
@@ -190,8 +207,8 @@ namespace czh
       constexpr size_t basic_vtlist_size = size_of_v<BasicVTList>;
   
       using Array = std::vector<BasicVT>;//insert() begin() end()
-  
-      using HighVTList = TypeList<node::Node *, Array>;
+      
+      using HighVTList = TypeList<Reference, Array>;
       using VTList = link_t<BasicVTList, HighVTList>;
       using VT = decltype(as_variant(VTList{}));
   
@@ -207,7 +224,7 @@ namespace czh
       std::string get_typename(size_t sz)
       {
         static std::vector<std::string>
-            names{"Null", "int", "long long", "double", "bool", "std::string", "czh::node::Node*",
+            names{"Null", "int", "long long", "double", "bool", "std::string", "czh::value::Reference",
                   "czh::value::Array"};
         return names[sz];
       }
@@ -293,7 +310,7 @@ namespace czh
       static_assert(
           details::is_czh_type_v<T> || (details::is_czh_container_v<T> && !std::is_array_v<std::decay_t<T>>),
           "T must be in "
-          "[Null, int, long long, double, bool, std::string, czh::node::Node*, czh::value::Array], "
+          "[Null, int, long long, double, bool, std::string, czh::value::Reference, czh::value::Array], "
           "or a container that stores Type in "
           "[Null, int, long long, double, bool, std::string].");
     }
