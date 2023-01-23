@@ -252,7 +252,7 @@ namespace czh::node
         if (v.is<value::Reference>())
         {
           if (!n.is<value::Reference>()) return false;
-          return *get_ref(v.get<value::Reference>()) == *n.get_last_node()->get_ref(n.get<value::Reference>());
+          return get_ref(v.get<value::Reference>())->get_path() == n.get_last_node()->get_ref(n.get<value::Reference>())->get_path();
         }
       }
       return data == n.data;
