@@ -373,7 +373,9 @@ namespace czh::node
       auto &value = std::get<Value>(data);
       if (value.is<value::Reference>())
       {
-        *get_ref(value.get<value::Reference>()) = std::forward<T>(v);
+	auto ptr = get_end_of_list_of_ref(value.get<value::Reference>());
+	assert_true(ptr != nullptr, "Can not get a circular reference.", czh_token);
+        *ptr = std::forward<T>(v);
       }
       else
       {
@@ -581,7 +583,9 @@ namespace czh::node
       auto &value = std::get<Value>(data);
       if (value.is<value::Reference>() && typeid(T) != typeid(value::Reference))
       {
-        return get_ref(value.get<value::Reference>(), l)->get<T>();
+        auto ptr = get_end_of_list_of_ref(value.get<value::Reference>(), l);
+	assert_true(ptr != nullptr, "Can not get a circular reference.", czh_token, l);
+	return ptr->get<T>();
       }
   
       if (!value.can_get<T>())
@@ -594,6 +598,22 @@ namespace czh::node
 
 
   private:
+    // If there is no cycle, it returns the result of a (list of) Reference.
+    Node *get_end_of_list_of_ref(const value::Reference &ref, const std::experimental::source_location &l = std::experimental::source_location::current()) const
+    { 
+      Node* fast = get_ref(ref, l);
+      Node* slow = fast;
+      while (fast->is<value::Reference>())
+      {
+        fast = get_ref(fast->get<value::Reference>(), l);
+      	if(!fast->is<value::Reference>()) break;
+        fast = get_ref(fast->get<value::Reference>(), l);
+      	if(!fast->is<value::Reference>()) break;
+        slow = get_ref(slow->get<value::Reference>(), l);
+	if(fast == slow) return nullptr;
+      }
+      return fast;
+    }
     Node *get_ref(const value::Reference &ref, const std::experimental::source_location &l =
     std::experimental::source_location::current()) const
     {
@@ -650,7 +670,7 @@ namespace czh::node
     }
   
     static void assert_true(bool a, const std::string &str, const token::Token &token,
-                            const std::experimental::source_location &l)
+                            const std::experimental::source_location &l = std::experimental::source_location::current())
     {
       if (!a) report_error(str, token, l);
     }
