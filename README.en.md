@@ -77,9 +77,8 @@
 ##### Node::get<T>()
 
 -   Get the Value
--   When the Value is Array, most containers in STL can be used directly.W
--   When T is a custom type, its value needs to be convertible to the czh type (except Array and Reference, (
-    除Array和Reference, int, long long, double, std::string, bool)
+-   When the Value is Array, most containers in STL can be used directly.
+-   When T is a custom type, its value needs to be convertible to the czh type except Array and Reference, ( int, long long, double, std::string, bool)
 -   When the type of Array is not unique, T must be czh::value::Array
 
 ```c++
@@ -102,8 +101,6 @@ auto vmap = example["example"]["valmap"].value_map<vector<int>>();
 #### Node::operator=(value)
 
 -   Like `Node::get<T>`， When Value is Array, T meets the following requirements
--   have member functions `begin()`、`end()`
--   have a member named `value_type` to describe a type
 -   You can use `brace-enclosed initializer list` directly
 -   When the type of Array is not unique, use `czh::value::Array`
 

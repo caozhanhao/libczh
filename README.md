@@ -96,11 +96,8 @@ auto vmap = example["example"]["valmap"].value_map<vector<int>>();
 
 #### Node::operator=(value)
 
--   与`Node::get<T>`类似， 当Value为Array时,T满足如下要求
--   有`begin()`、`end()`
--   有一个`value_type`的成员来表明类型
+-   与`Node::get<T>`类似，其中当Value为Array时,T满足如下要求
 -   容器内部的类型为除Array和Reference的czh类型
--   可以直接使用`brace-enclosed initializer list`
 -   当Array存储的类型不唯一时，使用`czh::value::Array`
 
 ```c++
