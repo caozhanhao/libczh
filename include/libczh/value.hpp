@@ -183,18 +183,21 @@ namespace czh
       
       template<typename List>
       constexpr size_t size_of_v = size_of<List>::value;
-      
-      
+  
+  
       template<typename T>
-      struct size_of_array;
+      struct info_of_array;
       template<typename T, std::size_t sz>
-      struct size_of_array<T[sz]>
+      struct info_of_array<T[sz]>
       {
         static const std::size_t value = sz;
+        using type = T;
       };
       template<typename T>
-      constexpr size_t size_of_array_v = size_of_array<T>::value;
+      constexpr size_t size_of_array_v = info_of_array<T>::value;
   
+      template<typename T>
+      using type_of_array_t = typename info_of_array<T>::type;
   
       using BasicVTList = TypeList<Null, int, long long, double, bool, std::string>;
       using BasicVT = decltype(as_variant(BasicVTList{}));
@@ -305,55 +308,56 @@ namespace czh
     using details::Array;
   
     template<typename T>
-    void check_type()
-    {
-      static_assert(
-          details::is_czh_type_v<T> || (details::is_czh_container_v<T> && !std::is_array_v<std::decay_t<T>>),
-          "T must be in "
-          "[Null, int, long long, double, bool, std::string, czh::value::Reference, czh::value::Array], "
-          "or a container that stores Type in "
-          "[Null, int, long long, double, bool, std::string].");
-    }
+    concept CzhValueType = details::is_czh_type_v<T>;
+    template<typename T>
+    concept CzhGetType = details::is_czh_type_v<T> ||
+                         (details::is_czh_container_v<T> && !std::is_array_v<std::decay_t<T>>);
+  
+    class Value;
+  
+    template<typename T>
+    concept CzhAssignType = (details::is_czh_type_v<T> || details::is_czh_container_v<T>)
+                            && (!std::is_base_of_v<Value, std::decay_t<T>>)
+                            // avoid conflicts with other assignment operator
+                            && (!std::is_same_v<char *, std::remove_cvref_t<std::decay_t<T>>>);
+    // char* should be converted to std::string.
   
     class Value
     {
     private:
       details::VT value;
     public:
-      template<typename T>
-      requires (!std::is_base_of_v<Value, std::decay_t<T>>)
+      template<CzhAssignType T>
       explicit Value(T &&data)
       {
         *this = std::forward<T>(data);
       }
-  
+    
+      explicit Value(const char *c) : value(std::string(c)) {}
+    
       Value(Value &&) = default;
-  
+    
       explicit Value(const Value &) = default;
-  
+    
       Value &operator=(Value &&v) = default;
-  
+    
       explicit Value() : value(Null()) {}
-  
+    
       bool operator==(const Value &v) const
       {
         return value == v.value;
       }
-  
-      template<typename T>
+    
+      template<CzhGetType T>
       [[nodiscard]]T get(const std::experimental::source_location &l =
       std::experimental::source_location::current()) const
       {
-        check_type<T>();
         return internal_get<T>(typename details::TagDispatch<T>::tag{}, l);
       }
-  
-      template<typename T>
-      requires (!std::is_base_of_v<Value, std::decay_t<T>>)
-               && (!std::is_same_v<char *, std::remove_const_t<std::decay_t<T>>>)
+    
+      template<CzhAssignType T>
       Value &operator=(T &&v)
       {
-        check_type<T>();
         internal_assign<T>(std::forward<T>(v), typename details::TagDispatch<T>::tag{});
         return *this;
       }
@@ -363,14 +367,14 @@ namespace czh
         value = std::string(v);
         return *this;
       }
-  
-      template<typename T>
+    
+      template<CzhValueType T>
       [[nodiscard]]bool is() const
       {
         return value.index() == details::index_of_v<T, details::VTList>;
       }
     
-      template<typename T>
+      template<CzhGetType T>
       [[nodiscard]]bool can_get() const
       {
         return internal_can_get<T>(typename details::TagDispatch<T>::tag{});
@@ -384,22 +388,57 @@ namespace czh
       [[nodiscard]] std::string get_typename() const { return details::get_typename(value.index()); }
   
     private:
-      template<typename T>
+      template<CzhGetType T>
       [[nodiscard]] bool internal_can_get(details::ValueTag) const { return is<T>(); }
-  
-      template<typename T>
+    
+      template<CzhGetType T>
       [[nodiscard]] bool internal_can_get(details::AnyArrayTag) const { return is<Array>(); }
-  
-      template<typename T>
+    
+      template<CzhGetType T>
       [[nodiscard]] bool internal_can_get(details::NormalArrayTag) const { return is<Array>(); }
     
-      template<typename T>
+      template<CzhGetType T>
+      [[nodiscard]]T internal_get(details::ValueTag, const std::experimental::source_location &l) const
+      {
+        if (!is<T>()) get_error_index<T>(l);
+        return std::get<T>(value);
+      }
+    
+      template<CzhGetType T>
+      void narrow_transfrom_to_container(const Array &from, T &to) const
+      {
+        for (auto &r: from)
+        {
+          auto pval = std::get_if<typename T::value_type>(&r);
+          error::czh_assert(pval, "This array contains different types.");
+          to.insert(std::end(to), *pval);
+        }
+      }
+    
+      template<CzhGetType T>
+      [[nodiscard]]T internal_get(details::NormalArrayTag, const std::experimental::source_location &l) const
+      {
+        if (!is<Array>()) get_error_index<T>(l);
+        auto &varr = std::get<Array>(value);
+        T ret;
+        narrow_transfrom_to_container(varr, ret);
+        return std::move(ret);
+      }
+    
+      template<CzhGetType T>
+      [[nodiscard]]Array internal_get(details::AnyArrayTag, const std::experimental::source_location &l) const
+      {
+        if (!is<Array>()) get_error_index<T>(l);
+        return std::get<Array>(value);
+      }
+    
+      template<CzhAssignType T>
       void internal_assign(T &&v, details::ValueTag) { value = std::forward<T>(v); }
     
-      template<typename T>
+      template<CzhAssignType T>
       void internal_assign(T &&v, details::AnyArrayTag) { value = std::forward<T>(v); }
     
-      template<typename T>
+      template<CzhAssignType T>
       void internal_assign(T &&v, details::NormalArrayTag)
       {
         Array tmp;
@@ -410,7 +449,7 @@ namespace czh
         value = std::move(tmp);
       }
     
-      template<typename T>
+      template<CzhAssignType T>
       void internal_assign(T &&v, details::CppArrayTag)
       {
         Array tmp;
@@ -420,48 +459,13 @@ namespace czh
         }
         value = std::move(tmp);
       }
-  
-      template<typename T>
-      [[nodiscard]]T internal_get(details::ValueTag, const std::experimental::source_location &l) const
-      {
-        if (!is<T>()) get_error_index<T>(l);
-        return std::get<T>(value);
-      }
-  
-      template<typename T>
-      void narrow_transfrom_to_container(const Array &from, T &to) const
-      {
-        for (auto &r: from)
-        {
-          auto pval = std::get_if<typename T::value_type>(&r);
-          error::czh_assert(pval, "This array contains different types.");
-          to.insert(std::end(to), *pval);
-        }
-      }
-      
-      template<typename T>
-      [[nodiscard]]T internal_get(details::NormalArrayTag, const std::experimental::source_location &l) const
-      {
-        if (!is<Array>()) get_error_index<T>(l);
-        auto &varr = std::get<Array>(value);
-        T ret;
-        narrow_transfrom_to_container(varr, ret);
-        return std::move(ret);
-      }
-      
-      template<typename T>
-      [[nodiscard]]Array internal_get(details::AnyArrayTag, const std::experimental::source_location &l) const
-      {
-        if (!is<Array>()) get_error_index<T>(l);
-        return std::get<Array>(value);
-      }
-      
-      template<typename T>
+    
+      template<CzhGetType T>
       void get_error_index(const std::experimental::source_location &l) const
       {
         throw error::Error("Get wrong type.[Required T = '"
                            + details::get_typename(details::index_of_v<T, details::VTList>)
-                           + "', Actual T = '" + details::get_typename(value.index())
+                           + "', Value T = '" + details::get_typename(value.index())
                            + "'], Requires from " + error::location_to_str(l));
       }
     };

@@ -131,13 +131,15 @@ end
   */
   // writer
   std::fstream output_file("examples/czh/output.czh", std::ios_base::out);
-  output_file << node;
-  // or
+  czh::PrettyWriter<std::ostream> pw{output_file};
+  // To avoid some format, use
   // czh::BasicWriter<std::fstream> fw{output_file};
-  // node.accept(fw);
+  // or just
+  // output_file << node;
+  node.accept(pw);
   output_file.close();
   
-  // ColorWriter -> PrettyWriter + color, use PrettyWriter to disable color.
+  // ColorWriter -> PrettyWriter + color(ANSI Escape Code)
   czh::ColorWriter<std::ostream> cw{std::cout};
   pretty.accept(cw);
   

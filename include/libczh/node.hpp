@@ -252,7 +252,8 @@ namespace czh::node
         if (v.is<value::Reference>())
         {
           if (!n.is<value::Reference>()) return false;
-          return get_ref(v.get<value::Reference>())->get_path() == n.get_last_node()->get_ref(n.get<value::Reference>())->get_path();
+          return get_ref(v.get<value::Reference>())->get_path() ==
+                 n.get_last_node()->get_ref(n.get<value::Reference>())->get_path();
         }
       }
       return data == n.data;
@@ -373,8 +374,8 @@ namespace czh::node
       auto &value = std::get<Value>(data);
       if (value.is<value::Reference>())
       {
-	auto ptr = get_end_of_list_of_ref(value.get<value::Reference>());
-	assert_true(ptr != nullptr, "Can not get a circular reference.", czh_token);
+        auto ptr = get_end_of_list_of_ref(value.get<value::Reference>());
+        assert_true(ptr != nullptr, "Can not get a circular reference.", czh_token);
         *ptr = std::forward<T>(v);
       }
       else
@@ -578,14 +579,13 @@ namespace czh::node
     T get(const std::experimental::source_location &l =
     std::experimental::source_location::current()) const
     {
-      value::check_type<T>();
       assert_value(l);
       auto &value = std::get<Value>(data);
       if (value.is<value::Reference>() && typeid(T) != typeid(value::Reference))
       {
         auto ptr = get_end_of_list_of_ref(value.get<value::Reference>(), l);
-	assert_true(ptr != nullptr, "Can not get a circular reference.", czh_token, l);
-	return ptr->get<T>();
+        assert_true(ptr != nullptr, "Can not get a circular reference.", czh_token, l);
+        return ptr->get<T>();
       }
   
       if (!value.can_get<T>())
@@ -599,21 +599,23 @@ namespace czh::node
 
   private:
     // If there is no cycle, it returns the result of a (list of) Reference.
-    Node *get_end_of_list_of_ref(const value::Reference &ref, const std::experimental::source_location &l = std::experimental::source_location::current()) const
-    { 
-      Node* fast = get_ref(ref, l);
-      Node* slow = fast;
+    Node *get_end_of_list_of_ref(const value::Reference &ref,
+                                 const std::experimental::source_location &l = std::experimental::source_location::current()) const
+    {
+      Node *fast = get_ref(ref, l);
+      Node *slow = fast;
       while (fast->is<value::Reference>())
       {
         fast = get_ref(fast->get<value::Reference>(), l);
-      	if(!fast->is<value::Reference>()) break;
+        if (!fast->is<value::Reference>()) break;
         fast = get_ref(fast->get<value::Reference>(), l);
-      	if(!fast->is<value::Reference>()) break;
+        if (!fast->is<value::Reference>()) break;
         slow = get_ref(slow->get<value::Reference>(), l);
-	if(fast == slow) return nullptr;
+        if (fast == slow) return nullptr;// circular reference
       }
       return fast;
     }
+  
     Node *get_ref(const value::Reference &ref, const std::experimental::source_location &l =
     std::experimental::source_location::current()) const
     {
@@ -631,7 +633,7 @@ namespace czh::node
         }
         rit++;
       }
-    
+  
       for (; rit < ref.path.crend(); ++rit)
       {
         if (!nptr->has_node(*rit))
@@ -690,7 +692,7 @@ namespace czh::node
                                    return czh::utils::get_string_edit_distance(n1.name, str)
                                           < czh::utils::get_string_edit_distance(n2.name, str);
                                  });
-    
+  
       report_error("There is no node named '" + str + "'.Do you mean '" + it->name + "'?", it->czh_token, l);
     }
   
