@@ -548,7 +548,7 @@ namespace czh::lexer
       return codepos;
     }
   
-    [[nodiscard]]std::size_t get_char_num() const
+    [[nodiscard]]std::size_t get_character_size() const
     {
       if ((ch & 0x80) == 0x00) return 1;
       if ((ch & 0xE0) == 0xC0) return 2;
@@ -559,7 +559,7 @@ namespace czh::lexer
   
     void skip()
     {
-      while (check_char() && get_char_num() == 1 && isspace(ch))
+      while (check_char() && get_character_size() == 1 && isspace(ch))
       {
         ch = get_char();
       }
@@ -577,7 +577,7 @@ namespace czh::lexer
         if (notes != 0 && !check_char())
         {
           token::Token tmp(token::TokenType::UNEXPECTED, static_cast<int>('<'), bak);
-          tmp.report_error("Unexpected note begin.");
+          tmp.report_error("Expected '>' to match this '<'.");
         }
         if (ch == '>')
         {
@@ -598,22 +598,21 @@ namespace czh::lexer
               {',', token::TokenType::COMMA}
           };
       //space and note
-      while (check_char() && ((get_char_num() == 1 && isspace(ch)) || ch == '<'))
+      while (check_char() && ((get_character_size() == 1 && isspace(ch)) || ch == '<'))
       {
         skip();
       }
       //num
-      if (get_char_num() == 1 && (std::isdigit(ch) || ch == '.'
-                                  || ch == '+' || ch == '-'))
+      if (get_character_size() == 1 && (std::isdigit(ch) || ch == '.'
+                                        || ch == '+' || ch == '-'))
       {
-        std::string temp;
-        do
+        std::string temp(1, ch);
+        while (std::isdigit(ch = get_char())
+               || ch == '.' || ch == 'e' || ch == 'E'
+               || ch == '+' || ch == '-')
         {
           temp += ch;
-          ch = get_char();
-        } while (check_char() && (std::isdigit(ch)
-                                  || ch == '.' || ch == 'e' || ch == 'E'
-                                  || ch == '+' || ch == '-'));
+        }
         if (nmatch.match(temp))
         {
           if (nmatch.has_dot())
@@ -661,37 +660,43 @@ namespace czh::lexer
           temp += ch;
           ch = get_char();
         }
+        if (!check_char() && ch != '"')
+        {
+          token::Token tmp(token::TokenType::UNEXPECTED, 0, get_pos().set_size(temp.size()));
+          tmp.report_error("Expected '\"' to match this '\"'.");
+        }
         ch = get_char();
         return {token::TokenType::VALUE, temp, get_pos().set_size(temp.size())};
       }
         //id = ...
-      else if (get_char_num() > 1 || isalpha(ch) || ch == '_')
+      else if (get_character_size() > 1 || isalpha(ch) || ch == '_')
       {
         std::string temp;
-        while (check_char() && (get_char_num() > 1 || isalnum(ch) || ch == '_'))
+        auto get_multichar = [&temp, this]
         {
-          auto nchar = get_char_num();
-          if (nchar == 1)
+          auto nchar = get_character_size();
+          for (int i = 0; check_char() && i < nchar; ++i)
           {
-            if (!std::isalnum(ch) && ch != '_') continue;
             temp += ch;
             ch = get_char();
           }
-          else
-          {
-            temp += ch;
-            for (int i = 0; i < nchar - 1; ++i)
-            {
-              temp += ch = get_char();
-            }
-            ch = get_char();
-          }
+        };
+        do { get_multichar(); }
+        while (check_char() && (get_character_size() > 1 || isalnum(ch) || ch == '_'));
+        if (!check_char() && (get_character_size() > 1 || isalnum(ch) || ch == '_'))
+        {
+          temp += ch;//EOF
+          ch = 0;
         }
   
         if (temp == "end")
+        {
           return {token::TokenType::SCEND, temp, get_pos().set_size(3)};
+        }
         else if (temp == "true")
+        {
           return {token::TokenType::VALUE, true, get_pos().set_size(4)};
+        }
         else if (temp == "false")
         {
           return {token::TokenType::VALUE, false, get_pos().set_size(5)};

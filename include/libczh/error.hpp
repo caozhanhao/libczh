@@ -33,8 +33,8 @@ namespace czh::error
   
     [[nodiscard]] std::string get_content() const
     {
-      return {"\033[1;37m" + location + ":"
-              + "\033[0;32;31m report_error : \033[m" + detail};
+      return {"\033[1;37m" + location + ": "
+              + "\033[0;32;31mError: \033[m" + detail};
     }
   };
   
@@ -47,19 +47,17 @@ namespace czh::error
   class Error : public std::logic_error
   {
   private:
-    std::string location;
     std::string detail;
   
   public:
     Error(const std::string &detail_, const std::experimental::source_location &l =
     std::experimental::source_location::current())
-        : logic_error(detail_),
-          location(location_to_str(l)),
+        : logic_error("\033[0;32;31mError: \033[1;37m" + location_to_str(l) + ":\033[m " + detail_),
           detail(detail_) {}
     
     [[nodiscard]] std::string get_content() const
     {
-      return "\033[0;32;31mError: \033[1;37m" + location + ":\033[m " + detail;
+      return what();
     }
     
     [[nodiscard]] std::string get_detail() const
@@ -76,10 +74,11 @@ namespace czh::error
   
   constexpr auto czh_invalid_file = "Invalid file";
   
-  auto czh_unreachable(const std::string &detail_ = "", const std::experimental::source_location &l =
+  auto
+  czh_unreachable(const std::string &detail_ = "Something unreachable.", const std::experimental::source_location &l =
   std::experimental::source_location::current())
   {
-    throw Error("Unreachable code: " + detail_, l);
+    throw Error(detail_, l);
   }
   
   void czh_assert(bool b,
