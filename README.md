@@ -50,7 +50,7 @@
 
 #### 编译
 
--   `#include "czh.hpp"`即可
+-   `#include "libczh/czh.hpp"`即可
 -   需要C++20
 
 #### Czh::Czh(str, mode)
@@ -180,13 +180,16 @@ example["a"].rename("b");
 
 #### Node::accept()
 
-- 接受一个`Writer`, 见`writer.hpp`
+- 接收一个`Writer`，如下
+- `BasicWriter`， 无格式化
+- `PrettyWriter`，格式化
+- `ColorWriter`，格式化 + 高亮(ANSI Escape Code)
+
+```c++
+    writer::BasicWriter<std::ostream> w{ std::cout };
+node.accept(w);
+```
 
 #### operator<<
 
-- 等同于
-
-```c++
-    writer::BasicWriter<std::ostream> w{ os };
-node.accept(w);
-```
+- 等同于`BasicWriter`

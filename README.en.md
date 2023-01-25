@@ -27,7 +27,7 @@
 -   Indentation is not required
 -   The `;` after the statement is not required
 
-#### Note
+#### Comment
 
 -   `<xxxx>`
 
@@ -45,14 +45,13 @@
 #### Reference
 
 -   Use `id = key` as a Reference
--   Use `id = key` as a Reference
 -   The scope of the Reference is connected by '::'
 
 ### Usage of libczh
 
 #### Compile
 
--   just `#include "czh.hpp"`
+-   just `#include "libczh/czh.hpp"`
 -   Requires C++ 20
 
 #### Czh::Czh(str, mode)
@@ -181,17 +180,19 @@ example["a"].rename("b");
 
 #### Output
 
--   The output of czh does not contain any Notes.
+-   The output of czh does not contain any Comments.
 
-#### Node::to_string(with_color)
+#### Node::accept()
 
-- accept a `Writer`, see `writer.hpp`
-
-#### operator<<
-
-- equal to
+- accept a `Writer`, see below
+- `BasicWriter`, no format
+- `PrettyWriter`, format
+- `ColorWriter`, format + highlight(ANSI Escape Code)
 
 ```c++
-    writer::BasicWriter<std::ostream> w{ os };
+    writer::BasicWriter<std::ostream> w{ std::cout };
 node.accept(w);
 ```
+#### operator<<
+
+- equal to `BasicWriter`
