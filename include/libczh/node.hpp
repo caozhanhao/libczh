@@ -50,8 +50,27 @@ namespace czh::node
       std::list<Node> nodes;
     public:
       NodeData() = default;
-      
+  
+      NodeData(const NodeData &nd)
+      {
+        for (auto &r: nd.nodes)
+        {
+          int e;
+          add(Node(r), "", e);
+        }
+      }
+  
+      NodeData(NodeData &&nd)
+      {
+        for (auto &r: nd.nodes)
+        {
+          int e;
+          add(std::move(r), "", e);
+        }
+      }
+  
       template<typename T>
+      requires (!std::is_base_of_v<NodeData, std::decay_t<T>>)
       NodeData(const T &il)
       {
         for (auto &r: il)
@@ -174,7 +193,7 @@ namespace czh::node
       czh_token = token::Token(v.czh_token);
       if (v.is_node())
       {
-        data = NodeData(std::get<NodeData>(v.data));
+        data.emplace<NodeData>(NodeData(std::get<NodeData>(v.data)));
         auto &nd = std::get<NodeData>(data);
         for (auto &r: nd.nodes)
         {

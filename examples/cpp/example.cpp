@@ -13,7 +13,19 @@ int main()
    */
   czh::Czh e("examples/czh/example.czh", czh::InputMode::file);
   // or czh::Czh e("example: a = 1; end;",  czh::InputMode::string);
-  auto node = e.parse();
+  czh::Node node;
+  try
+  {
+    node = e.parse();
+  }
+  catch (czh::error::Error &err)
+  {
+    std::cout << "Internal:\n" << err.get_content() << std::endl;
+  }
+  catch (czh::error::CzhError &err)
+  {
+    std::cout << err.get_content() << std::endl;
+  }
   
   /*
    *

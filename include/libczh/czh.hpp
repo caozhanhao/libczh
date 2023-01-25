@@ -69,20 +69,7 @@ namespace czh
   
     Node parse()
     {
-      try
-      {
-        return std::move(parser.parse());
-      }
-      catch (czh::error::Error &err)
-      {
-        std::cout << "Internal:\n" << err.get_content() << std::endl;
-      }
-      catch (czh::error::CzhError &err)
-      {
-        std::cout << err.get_content() << std::endl;
-      }
-      error::czh_unreachable();
-      return {};
+      return std::move(parser.parse());
     }
   };
   
