@@ -34,6 +34,7 @@ namespace czh::writer
     { w.value_array_begin() };
     { w.value_array_value(value::Array::value_type{}) };
     { w.value_array_end(value::Array::value_type{}) };
+    { w.value_array_end() };
   };
   
   template<typename Os>
@@ -109,10 +110,15 @@ namespace czh::writer
       write_array_value(os, v);
       *os << ",";
     }
-    
+  
     void value_array_end(const value::Array::value_type &v)
     {
       write_array_value(os, v);
+      *os << "};";
+    }
+  
+    void value_array_end()
+    {
       *os << "};";
     }
   };
@@ -178,10 +184,15 @@ namespace czh::writer
       write_array_value(os, v);
       *os << ", ";
     }
-    
+  
     void value_array_end(const value::Array::value_type &v)
     {
       write_array_value(os, v);
+      *os << "}\n";
+    }
+  
+    void value_array_end()
+    {
       *os << "}\n";
     }
   };
@@ -249,16 +260,21 @@ namespace czh::writer
     {
       *os << "{";
     }
-    
+  
     void value_array_value(const value::Array::value_type &v)
     {
       write_array_value(os, v, utils::Color::with_color);
       *os << ", ";
     }
-    
+  
     void value_array_end(const value::Array::value_type &v)
     {
       write_array_value(os, v, utils::Color::with_color);
+      *os << "}\n";
+    }
+  
+    void value_array_end()
+    {
       *os << "}\n";
     }
   };

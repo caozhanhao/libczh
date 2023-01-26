@@ -368,13 +368,18 @@ namespace czh::node
         {
           auto arr = value.get<value::Array>();
           writer.value_array_begin();
-          for (auto it = arr.cbegin(); it < arr.cend() - 1; ++it)
+          for (auto it = arr.cbegin(); it < arr.cend(); ++it)
           {
+            if (it + 1 == arr.cend()) break;
             writer.value_array_value(*it);
           }
           if (!arr.empty())
           {
             writer.value_array_end(*arr.crbegin());
+          }
+          else
+          {
+            writer.value_array_end();
           }
         }
         else
