@@ -1,12 +1,37 @@
-# <center> libczh
+<h2 align="center">
+libczh
+</h2> 
 
-#### <center> **一个易用的数据序列化格式**
+<p align="center">
+<strong>一个简单易用的数据序列化格式</strong>
+</p>
 
-###### <center>[![Unit Test](https://img.shields.io/github/actions/workflow/status/caozhanhao/libczh/tests.yml?style=flat-square)](https://github.com/caozhanhao/libczh/actions/workflows/tests.yml) [![License](https://img.shields.io/github/license/caozhanhao/libczh?label=License&style=flat-square&color=yellow)](LICENSE) ![](https://img.shields.io/github/v/release/caozhanhao/libczh?label=Release&style=flat-square&color=orange)
+<p align="center">
+  <a href="https://github.com/caozhanhao/libczh/actions/workflows/tests.yml" >
+    <img src="https://img.shields.io/github/actions/workflow/status/caozhanhao/libczh/tests.yml?style=flat-square" alt="build" />  
+  </a>
+  <a href="LICENSE" >
+    <img src="https://img.shields.io/github/license/caozhanhao/libczh?label=License&style=flat-square&color=yellow" alt="License" />  
+  </a>
+  <a href="https://github.com/caozhanhao/libczh/releases" >
+    <img src="https://img.shields.io/github/v/release/caozhanhao/libczh?label=Release&style=flat-square&color=orange" alt="Release" />  
+  </a>
+</p>
 
-###### <center> [![Document](https://img.shields.io/static/v1?label=Document&message=English&color=informational&style=flat-square)](README.md)  [![Document](https://img.shields.io/static/v1?label=文档&message=简体中文&color=informational&style=flat-square)](README-cn.md)
+<p align="center">
+  <a href="README.md" >
+    <img src="https://img.shields.io/badge/Document-English-blue" alt="Document" />  
+  </a>
+  <a href="README-cn.md" >
+    <img src="https://img.shields.io/badge/文档-简体中文-blue" alt="Document" />  
+  </a>
+</p>
 
-###### <center>![example](examples/example.png)
+<p align="center">
+  <a href="examples/example.png" >
+    <img src="examples/example.png" alt="Example" />  
+  </a>
+</p>
 
 ## 使用方法
 
