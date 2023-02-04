@@ -105,16 +105,9 @@ int main()
   auto pretty = R"(
 < note >
 czh:
-    int = +6e+2
-    longlong = +6e+12
-    😀 = "字符串"
-    double = +6e-2
-    ref = int
+    int = 666
     array = {false, 1.0, "2", 3}
-    arrays:
-        k1 = {1,2,3}
-        k2 = {4,5,6}
-    end
+    ref = int
 end
 )"_czh;
   // constructor

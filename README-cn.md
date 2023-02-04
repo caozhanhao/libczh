@@ -1,6 +1,6 @@
 # <center> libczh
 
-#### <center> **An easy-to-use data serialization format**
+#### <center> **一个易用的数据序列化格式**
 
 ###### <center>[![Unit Test](https://img.shields.io/github/actions/workflow/status/caozhanhao/libczh/tests.yml?style=flat-square)](https://github.com/caozhanhao/libczh/actions/workflows/tests.yml) [![License](https://img.shields.io/github/license/caozhanhao/libczh?label=License&style=flat-square&color=yellow)](LICENSE) ![](https://img.shields.io/github/v/release/caozhanhao/libczh?label=Release&style=flat-square&color=orange)
 
@@ -8,50 +8,50 @@
 
 ###### <center>![example](examples/example.png)
 
-## Tutorial
+## 使用方法
 
-### Syntax
+### 语法
 
-#### Type
+#### 类型
 
 -   `int`,`double`,`string`,`bool`,`Array`,`Reference`
 
-#### Statement
+#### 语句
 
--   Indentation is not required
--   The `;` after the statement is not required
+- 可以没有缩进
+- 语句后可以有`;`, 但不是必需的
 
-#### Comment
+#### 注释
 
 -   `<xxxx>`
 
 #### Node
 
-- Duplicate names are not allowed
+- 名字不可重复
 - Node: `id: end`
 - Value: `id = xxx`
 
-#### Array
+#### 数组
 
 - `{}` .
 
-#### Reference
+#### 引用
 
 -   `id = a::b::c::id`
 
-### Usage of libczh
+### libczh使用方法
 
-#### Setup
+#### 配置
 
--   just `#include "libczh/czh.hpp"`!
--   Requires C++ 20
+-   只需 `#include "libczh/czh.hpp"`!
+-   要求 C++ 20
 
 #### Czh::Czh(str, mode)
 
-##### mode
+##### 模式
 
--   `czh::InputMode::file`   -> `str` is a path
--   `czh::InputMode::string` -> `str` is a `std::string` where czh is stored
+-   `czh::InputMode::file`   -> `str` 是路径
+-   `czh::InputMode::string` -> `str` 是一个存储`czh`的字符串
 
 ```c++
   Czh("example: a = 1; end;", czh::InputMode::string);
@@ -59,15 +59,15 @@
 
 #### Node::operator[str]
 
-- Returns a Node named str
+- 返回名为str的Node。
 
 #### Node::operator(str)
 
-- Similar to `Node::operator[str]`, but it provides a better error message.
+- 与Node::operator[str]相似，但提供更好的错误提示。
 
 #### Node::get<T>()
 
-- When the Array value's type in czh is not unique, T must be czh::value::Array
+- 当czh中数组存储的数据类型不唯一时，`T`必须是`czh::value::Array`
 
 ```c++
 auto arr = node["czh"]["any_array"].get<czh::value::Array>();
@@ -75,12 +75,11 @@ auto arr = node["czh"]["any_array"].get<czh::value::Array>();
 
 #### value_map
 
--   When the values under Node are of the same type, use `value_map()` to get a `std::map` consisting of all ids and
-    values.
+-  同一Node下的值的类型相同时时，使用`value_map()`获取一个存储了所有key和value的`std::map`
 
 #### Node::value_map<T>()
 
-- Returns `std::map<std::string, T>`
+- 返回 `std::map<std::string, T>`
 
 ```c++
 auto value_map = example["example"]["arrays"].value_map<vector<int>>();
@@ -104,13 +103,13 @@ node["czh"]["int_array"] = {1, 2, 3};           // brace-enclosed initializer li
 node["czh"]["any_array"] = {false, 1, "2", 3.0};// czh::value::Array
 ```
 
-#### Add
+#### 添加
 
 ##### Node::add(key, value, before)
 
-- Add a new Value named `key` whose value is `value` before the Node named `before`. -`before` defaults to be empty,
-  which will add at the end.
-- Returns a reference to the added Node.
+- 在名为 `before`的Node前添加一个值为`value`的Node
+- `before` 默认为空，此时添加在末尾
+- 返回添加的Node的引用
 
 ```c++
 example["add"].add("add", "123", "abc");
@@ -118,14 +117,14 @@ example["add"].add("add", "123", "abc");
 
 ##### Node::add_node(name, before)
 
--   Add a new Node named `name` before the Node named `before`.
--   Returns a reference to the added Node.
+- 在名为 `before`的Node前添加一个名为`name`的Node
+- 返回添加的Node的引用
 
 ```c++
 example.add_node("new", "before");
 ```
 
-#### Remove
+#### 删除
 
 ##### Node::remove()
 
@@ -133,7 +132,7 @@ example.add_node("new", "before");
 example["example"].remove();
 ```
 
-#### Clear
+#### 清空
 
 ##### Node::clear()
 
@@ -141,7 +140,7 @@ example["example"].remove();
 example["example"].clear();
 ```
 
-#### Rename
+#### 重命名
 
 #### Node::rename(name, newname)
 
@@ -149,21 +148,21 @@ example["example"].clear();
 example["a"].rename("b");
 ```
 
-#### Output
+#### 输出
 
 ##### Writer
 
-- libczh originally support three writers
+- libczh 原生支持三个`writer`
 
-| Writer        | Format                               |
-|---------------|--------------------------------------|
-| BasicWriter   | No Format                            |
-| PrettyWriter  | Format                               |
-| ColorWriter   | Format + Highlight(ANSI Escape Code) |
+| Writer        | 格式                         |
+|---------------|----------------------------|
+| BasicWriter   | 无格式化                       |
+| PrettyWriter  | 格式化                        |
+| ColorWriter   | 格式化 + 高亮(ANSI Escape Code) |
 
 ##### Node::accept()
 
-- accept a `Writer`
+- 接受一个 `Writer`
 
 ```c++
     writer::BasicWriter<std::ostream> w{ std::cout };
@@ -172,11 +171,11 @@ node.accept(w);
 
 ##### operator<<
 
-- equal to `BasicWriter`
+- 等同于 `BasicWriter`
 
-##### Write a Writer
+##### 写一个Writer
 
-- All we need is to write a class satisfied the following concept.
+- 我们只需写一个满足如下concept的类。
 
 ```c++
 template<typename T>
@@ -197,15 +196,15 @@ requires(T w)
 };
 ```
 
-## Contact
+## 联系
 
-- If you have any questions or suggestions, please submit an issue or email me.
-- Email: cao2013zh at 163 dot com
+- 如果你有任何问题或建议，请提交一个issue或给我发邮件
+- 邮箱: cao2013zh at 163 dot com
 
-## Contribution
+## 贡献
 
-- Any contributions are welcomed, just send a PR.
+- 任何贡献都是受欢迎的，只需提一个PR
 
-## License
+## 许可
 
-- libczh is licensed under the [Apache-2.0 license](LICENSE)
+- libczh 根据 [Apache-2.0 license](LICENSE)获得许可
