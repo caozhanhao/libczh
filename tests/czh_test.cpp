@@ -113,15 +113,18 @@ namespace czh::test
     std::stringstream sstest1;
     writer::BasicWriter<std::stringstream> bwt{sstest1};
     wt1.accept(bwt);
-    
+  
     czh::Czh writertest2(sstest1.str(), czh::InputMode::string);
     auto wt2 = writertest2.parse();
     LIBCZH_EXPECT_EQ(wt1, wt2);
     LIBCZH_EXPECT_EQ(wt1, nodetest);
     LIBCZH_EXPECT_EQ(wt2, nodetest);
-    
+  
     using namespace czh::literals;
     LIBCZH_EXPECT_EQ((czh::Node{"a", 1}), ("a=1;"_czh["a"]));
+  
+    Czh cp(std::string("abc=\"\\\"abc\\\"\""), InputMode::string);
+    auto s = cp.parse();
     LIBCZH_EXPECT_EQ((czh::Node{
         "node",
         {

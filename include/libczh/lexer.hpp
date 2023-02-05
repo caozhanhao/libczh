@@ -655,12 +655,52 @@ namespace czh::lexer
       {
         std::string temp;
         ch = get_char();
-        while (check_char() && ch != '"')
+        bool escape = false;
+        while (check_char() && !(!escape && ch == '"'))
         {
-          temp += ch;
-          ch = get_char();
+          if (escape)
+          {
+            switch (ch)
+            {
+              case '"':
+                temp += '\"';
+                break;
+              case '\\':
+                temp += '\\';
+                break;
+              case '/':
+                temp += '/';
+                break;
+              case 'b':
+                temp += '\b';
+                break;
+              case 'f':
+                temp += '\f';
+                break;
+              case 'n':
+                temp += '\n';
+                break;
+              case 'r':
+                temp += '\r';
+                break;
+              case 't':
+                temp += '\t';
+                break;
+              default:
+                error::czh_unreachable("Unexpected escape.");
+                break;
+            }
+            ch = get_char();
+            escape = false;
+          }
+          else
+          {
+            if (ch == '\\') { escape = true; }
+            else { temp += ch; }
+            ch = get_char();
+          }
         }
-        if (!check_char() && ch != '"')
+        if (!check_char() && !(!escape && ch == '"'))
         {
           token::Token tmp(token::TokenType::UNEXPECTED, 0, get_pos().set_size(temp.size()));
           tmp.report_error("Expected '\"' to match this '\"'.");

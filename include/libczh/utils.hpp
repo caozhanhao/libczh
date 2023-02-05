@@ -139,6 +139,44 @@ namespace czh::utils
   template<>
   std::string to_czhstr(const std::string &val, Color color)
   {
+    std::string ret;
+    for (auto &r: val)
+    {
+      switch (r)
+      {
+        case '\"':
+          ret += '\\';
+          ret += '\"';
+          break;
+        case '\\':
+          ret += '\\';
+          ret += '\\';
+          break;
+        case '\b':
+          ret += '\\';
+          ret += 'b';
+          break;
+        case '\f':
+          ret += '\\';
+          ret += 'f';
+          break;
+        case '\n':
+          ret += '\\';
+          ret += 'n';
+          break;
+        case '\r':
+          ret += '\\';
+          ret += 'r';
+          break;
+        case '\t':
+          ret += '\\';
+          ret += 't';
+          break;
+        default:
+          ret += r;
+          break;
+      }
+    }
     return colorify(("\"" + val + "\""), color, ColorType::STR);
   }
   
