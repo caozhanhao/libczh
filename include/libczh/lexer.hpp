@@ -668,9 +668,6 @@ namespace czh::lexer
               case '\\':
                 temp += '\\';
                 break;
-              case '/':
-                temp += '/';
-                break;
               case 'b':
                 temp += '\b';
                 break;
@@ -687,7 +684,8 @@ namespace czh::lexer
                 temp += '\t';
                 break;
               default:
-                error::czh_unreachable("Unexpected escape.");
+                temp += '\\';
+                temp += ch;
                 break;
             }
             ch = get_char();

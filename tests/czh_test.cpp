@@ -123,8 +123,14 @@ namespace czh::test
     using namespace czh::literals;
     LIBCZH_EXPECT_EQ((czh::Node{"a", 1}), ("a=1;"_czh["a"]));
   
-    Czh cp(std::string("abc=\"\\\"abc\\\"\""), InputMode::string);
-    auto s = cp.parse();
+    // from qwrpc
+    auto qwrpc_test_str = R"(id="great_func2";expected_ret="std::vector<int> ";args={"std::vector<int> ","value:v=\"\\001\\000\\000\\000\";end;"};)";
+    Czh qwrpc_test_case(qwrpc_test_str, InputMode::string);
+    auto qwrpc_test_case_node = qwrpc_test_case.parse();
+    std::stringstream qwrpc_test_case_ss;
+    writer::BasicWriter<std::stringstream> qwrpc_test_case_bwt{qwrpc_test_case_ss};
+    qwrpc_test_case_node.accept(qwrpc_test_case_bwt);
+    LIBCZH_EXPECT_EQ(qwrpc_test_case_ss.str(), qwrpc_test_str);
     LIBCZH_EXPECT_EQ((czh::Node{
         "node",
         {

@@ -177,7 +177,7 @@ namespace czh::utils
           break;
       }
     }
-    return colorify(("\"" + val + "\""), color, ColorType::STR);
+    return colorify(("\"" + ret + "\""), color, ColorType::STR);
   }
   
   template<>
