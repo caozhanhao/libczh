@@ -222,7 +222,7 @@ namespace czh::utils
         int down = D[i][j - 1] + 1;
         int left_down = D[i - 1][j - 1];
         if (s1[i - 1] != s2[j - 1]) left_down += 1;
-        D[i][j] = std::min(left, std::min(down, left_down));
+        D[i][j] = (std::min)(left, (std::min)(down, left_down));
       }
     }
     return D[n][m];

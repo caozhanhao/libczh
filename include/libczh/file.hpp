@@ -59,7 +59,7 @@ namespace czh::file
         : File(std::move(name_)), file(std::move(fs_))
     {
       error::czh_assert(file->good(), error::czh_invalid_file);
-      file->ignore(std::numeric_limits<std::streamsize>::max());
+      file->ignore((std::numeric_limits<std::streamsize>::max)());
       file_size = file->gcount();
       file->clear();
       file->seekg(std::ios_base::beg);

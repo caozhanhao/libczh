@@ -632,7 +632,7 @@ namespace czh::lexer
             }
             else
             {
-              if (t < std::numeric_limits<int>::max())
+              if (t < (std::numeric_limits<int>::max)())
               {
                 return {token::TokenType::VALUE, static_cast<int>(t), get_pos().set_size(temp.size())};
               }
