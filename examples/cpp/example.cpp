@@ -11,7 +11,7 @@ int main()
    *   Parse
    *
    */
-  czh::Czh e("examples/czh/example.czh", czh::InputMode::file);
+  czh::Czh e("../../../examples/czh/example.czh", czh::InputMode::file);
   // or czh::Czh e("example: a = 1; end;",  czh::InputMode::string);
   czh::Node node;
   try
@@ -135,7 +135,7 @@ end
   *
   */
   // writer
-  std::fstream output_file("examples/czh/output.czh", std::ios_base::out);
+  std::fstream output_file("../../../examples/czh/output.czh", std::ios_base::out);
   czh::PrettyWriter<std::ostream> pw{output_file};
   // To avoid some format, use
   // czh::BasicWriter<std::fstream> fw{output_file};

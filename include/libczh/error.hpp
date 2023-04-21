@@ -17,7 +17,7 @@
 
 #include <stdexcept>
 #include <string>
-#include <experimental/source_location>
+#include <source_location>
 
 namespace czh::error
 {
@@ -38,7 +38,7 @@ namespace czh::error
     }
   };
   
-  std::string location_to_str(const std::experimental::source_location &l)
+  std::string location_to_str(const std::source_location &l)
   {
     return std::string(l.file_name()) + ":" + std::to_string(l.line()) +
            ":" + l.function_name() + "()";
@@ -50,8 +50,8 @@ namespace czh::error
     std::string detail;
   
   public:
-    Error(const std::string &detail_, const std::experimental::source_location &l =
-    std::experimental::source_location::current())
+    Error(const std::string &detail_, const std::source_location &l =
+    std::source_location::current())
         : logic_error("\033[0;32;31mError: \033[1;37m" + location_to_str(l) + ":\033[m " + detail_),
           detail(detail_) {}
     
@@ -75,16 +75,16 @@ namespace czh::error
   constexpr auto czh_invalid_file = "Invalid file";
   
   auto
-  czh_unreachable(const std::string &detail_ = "Something unreachable.", const std::experimental::source_location &l =
-  std::experimental::source_location::current())
+  czh_unreachable(const std::string &detail_ = "Something unreachable.", const std::source_location &l =
+  std::source_location::current())
   {
     throw Error(detail_, l);
   }
   
   void czh_assert(bool b,
                   const std::string &detail_ = "Assertion failed.",
-                  const std::experimental::source_location &l =
-                  std::experimental::source_location::current())
+                  const std::source_location &l =
+                  std::source_location::current())
   {
     if (!b)
     {
